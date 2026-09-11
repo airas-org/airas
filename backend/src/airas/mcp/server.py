@@ -949,7 +949,7 @@ async def prepare_repository(
                 github_owner,
                 repository_name,
                 protected_branch,
-                [RECORD_GATE_CHECK_NAME],
+                [RECORD_GATE_CHECK_NAME, PAPER_GATE_CHECK_NAME],
             )
         except Exception as e:
             warnings.append(
@@ -1004,6 +1004,9 @@ async def set_github_actions_secrets(
 
 
 RECORD_GATE_CHECK_NAME = "Verify the record"
+# Values only, no PDF build: the build commits back onto the protected branch,
+# so requiring it would deadlock. It stays in the non-required publish workflow.
+PAPER_GATE_CHECK_NAME = "Verify the paper"
 
 
 async def _apply_secrets(
@@ -1066,8 +1069,9 @@ async def protect_branch(
 
     Sets three things on `branch_name`:
 
-    - the record gate as a **required status check**, so a commit whose
-      check is missing or red cannot land, by push or by merge;
+    - the record and paper gates as **required status checks** — always;
+      `required_check_names` can add checks, never drop these — so a commit
+      whose check is missing or red cannot land, by push or by merge;
     - `enforce_admins`, because the default exempts exactly the person who
       configured the rule — usually the repository's own owner, and so the
       one whose work most needs to be held to it;
@@ -1085,7 +1089,12 @@ async def protect_branch(
 
     Requires GH_PERSONAL_ACCESS_TOKEN with admin rights on the repository.
     """
-    contexts = required_check_names or [RECORD_GATE_CHECK_NAME]
+    contexts = list(
+        dict.fromkeys(
+            (required_check_names or [])
+            + [RECORD_GATE_CHECK_NAME, PAPER_GATE_CHECK_NAME]
+        )
+    )
     protected, merge_settings = await _apply_branch_protection(
         github_owner, repository_name, branch_name, contexts
     )
@@ -2228,7 +2237,8 @@ async def preregister_record(
     and commits it with the record; `\\input{claims.tex}` where the paper
     lists its claims. The gate regenerates and diffs it at every stage.
 
-    Fails if record.json already exists (use `append_to_record`), if a claim
+    Fails if record.json already holds declarations (use `append_to_record`;
+    the empty record a repository ships is initialised in place), if a claim
     declares no run, if a seyval claim lacks its criterion or prediction, or
     if the clone cannot commit. After this: write every future experimental
     number in main.tex as `\\airasval{<run_id>.<metric>}` or
@@ -2239,10 +2249,15 @@ async def preregister_record(
 
     def _run() -> dict[str, Any]:
         path = record_path(local_path)
-        if path.is_file():
+        if (
+            path.is_file()
+            and ResearchRecord.model_validate_json(
+                path.read_text(encoding="utf-8")
+            ).hypotheses
+        ):
             raise ValueError(
-                f"{path} already exists — the record only ever grows; add "
-                "declarations with append_to_record"
+                f"{path} already holds declarations — the record only ever "
+                "grows; add declarations with append_to_record"
             )
 
         record = ResearchRecord(hypotheses=parsed)

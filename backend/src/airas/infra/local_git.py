@@ -67,6 +67,25 @@ def commits_touching(repo_root: Path, repo_path: str) -> list[str] | None:
     return [line for line in log.splitlines() if line]
 
 
+def commits_with_parents(
+    repo_root: Path, repo_path: str
+) -> list[tuple[str, list[str]]] | None:
+    # --full-history: the default path walk follows one parent of a merge that
+    # is treesame to it and never lists the other, so a version reached only
+    # through that parent drops out (git merge -s ours). Keep every merge with
+    # all its parents; the caller compares along those edges.
+    log = _text(repo_root, "log", "--full-history", "--format=%H %P", "--", repo_path)
+    if log is None:
+        return None
+
+    edges = []
+    for line in log.splitlines():
+        if line:
+            commit, *parents = line.split()
+            edges.append((commit, parents))
+    return edges
+
+
 def commit_paths(repo_root: Path, paths: list[str], message: str) -> str | None:
     # Commits exactly `paths` (anything else staged is left alone); None on
     # failure. Unchanged paths return the current HEAD — already committed

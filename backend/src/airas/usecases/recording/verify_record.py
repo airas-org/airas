@@ -19,7 +19,11 @@ from airas.core.types.run_provenance import (
     PROVENANCE_MANIFEST_PATH,
     RunProvenanceManifest,
 )
-from airas.infra.local_git import commits_touching, file_bytes_at_commit, is_shallow
+from airas.infra.local_git import (
+    commits_with_parents,
+    file_bytes_at_commit,
+    is_shallow,
+)
 from airas.infra.seyval_client import SeyvalClient, default_seyval_client
 from airas.usecases.recording._seyval_provenance import (
     _ProvenanceCheckResult,
@@ -44,13 +48,25 @@ async def verify_record(
     check_provenance: bool = True,
     require_provenance: bool = True,
     require_history: bool = True,
+    require_record: bool = True,
     seyval_client_factory: Callable[[], SeyvalClient] = default_seyval_client,
 ) -> RecordVerification:
-    # A repository with no record has made no claim to contradict; requiring
-    # one is the paper's concern (verify_paper), which knows a paper exists.
     root = Path(local_path).expanduser().resolve()
     if not (root / RECORD_PATH).is_file():
-        return RecordVerification(ok=True, stage="prereg")
+        # An AIRAS repository ships record.json (empty at first), so its
+        # absence is not an initial state — it was deleted, taking the
+        # declarations the gate reads with it. The gate requires it;
+        # verify_paper's preview (require_record=False) tolerates a paper that
+        # opts out of the record system.
+        problems = (
+            [
+                "record.json is missing: every AIRAS repository ships one "
+                "(empty at first), so its absence means it was deleted"
+            ]
+            if require_record
+            else []
+        )
+        return RecordVerification(ok=not problems, stage="prereg", problems=problems)
 
     try:
         record = load_record(str(root))
@@ -164,28 +180,44 @@ def _verify_append_only(
     )
     if is_shallow(root):
         return unavailable
-    commit_hashes = commits_touching(root, RECORD_PATH)
-    if commit_hashes is None:
+    edges = commits_with_parents(root, RECORD_PATH)
+    if edges is None:
         return unavailable
 
-    versions: list[tuple[str, ResearchRecord]] = []
-    for commit_hash in reversed(commit_hashes):  # oldest first
+    # The record as of each commit involved. Absent counts as empty, so a
+    # deletion is a shrink and a first creation contains nothing to lose.
+    versions: dict[str, ResearchRecord] = {}
+    for commit_hash in {h for commit, parents in edges for h in (commit, *parents)}:
         raw = file_bytes_at_commit(root, commit_hash, RECORD_PATH)
         if raw is None:
-            continue  # the commit deleted the file
+            versions[commit_hash] = ResearchRecord()
+            continue
         try:
-            versions.append((commit_hash, ResearchRecord.model_validate_json(raw)))
+            versions[commit_hash] = ResearchRecord.model_validate_json(raw)
         except ValidationError:
             return [f"record.json at {commit_hash[:12]} is not a valid record"]
-    versions.append(("worktree", record))
 
-    return [
-        f"{older_hash[:12]} -> {newer_hash[:12]}: {problem}"
-        for (older_hash, older), (newer_hash, newer) in zip(
-            versions, versions[1:], strict=False
+    # Each commit against each of its parents — not against its neighbour in
+    # a linear list, which would set two sibling branches against each other.
+    problems = [
+        f"{parent[:12]} -> {commit[:12]}: {problem}"
+        for commit, parents in edges
+        for parent in parents
+        for problem in _containment_violations(
+            versions[parent].model_dump(), versions[commit].model_dump()
         )
-        for problem in _containment_violations(older.model_dump(), newer.model_dump())
     ]
+    head = file_bytes_at_commit(root, "HEAD", RECORD_PATH)
+    committed = (
+        ResearchRecord() if head is None else ResearchRecord.model_validate_json(head)
+    )
+    problems += [
+        f"HEAD -> worktree: {problem}"
+        for problem in _containment_violations(
+            committed.model_dump(), record.model_dump()
+        )
+    ]
+    return problems
 
 
 def _containment_violations(older: Any, newer: Any, path: str = "") -> list[str]:

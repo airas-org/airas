@@ -170,13 +170,12 @@ def _realized_repo(tmp_path: Path, proposed_mode: str = "full") -> Path:
 # --------------------------------------------------- the states that pass
 
 
-def test_a_repository_with_no_record_passes(tmp_path: Path) -> None:
-    """A repository that has made no claim is not contradicting one."""
+def test_a_repository_with_no_record_fails(tmp_path: Path) -> None:
+    """record.json is mandatory: every repository ships one, so its absence is a deletion."""
     _init(tmp_path)
     report = _verify(str(tmp_path))
-    assert report.ok
-    assert report.stage == "prereg"
-    assert report.problems == []
+    assert not report.ok
+    assert any("record.json is missing" in p for p in report.problems)
 
 
 def test_a_preregistered_record_with_no_runs_passes(tmp_path: Path) -> None:
@@ -449,11 +448,10 @@ def test_a_reworded_claim_is_reported_as_violated_history(tmp_path: Path) -> Non
     assert any("statement" in p for p in result.problems)
 
 
-def test_a_repository_without_a_record_is_not_demanded_one(tmp_path: Path) -> None:
+def test_a_missing_record_is_tolerated_when_not_required(tmp_path: Path) -> None:
+    # The escape hatch for a paper that opts out of the record system.
     _init(tmp_path)
-    result = _verify(
-        str(tmp_path), require_history=True, seyval_client_factory=_no_seyval
-    )
+    result = _verify(str(tmp_path), require_record=False)
     assert result.ok
     assert result.stage == "prereg"
 
@@ -632,3 +630,137 @@ def test_a_missing_or_hand_edited_claims_tex_is_caught(tmp_path: Path) -> None:
     claims_tex.unlink()
     result = _verify_paper(str(repo))
     assert any("claims.tex is missing" in p for p in result.problems)
+
+
+def test_an_empty_record_verifies(tmp_path: Path) -> None:
+    # The state every repository ships in: record.json present but empty.
+    (tmp_path / RECORD_PATH).parent.mkdir(parents=True)
+    (tmp_path / RECORD_PATH).write_text("{}")
+    _init(tmp_path)
+
+    result = _verify(str(tmp_path))
+    assert result.ok
+
+
+def test_deleting_the_record_after_declaring_it_fails(tmp_path: Path) -> None:
+    _init(tmp_path)
+    save_record(str(tmp_path), _record())
+    _commit(tmp_path, "preregister")
+    (tmp_path / RECORD_PATH).unlink()
+    _commit(tmp_path, "delete the record")
+
+    result = _verify(str(tmp_path))
+    assert not result.ok
+    assert any("record.json is missing" in p for p in result.problems)
+
+
+def test_a_merge_cannot_hide_a_landed_declaration(tmp_path: Path) -> None:
+    # git merge -s ours makes the protected tip an ancestor while keeping the
+    # rewritten record; git's simplified path walk never listed that tip.
+    _init(tmp_path)
+    save_record(str(tmp_path), ResearchRecord())
+    base = _commit(tmp_path, "initial empty record")
+    save_record(str(tmp_path), _record())
+    _commit(tmp_path, "frozen original claim")
+    _git(tmp_path, "branch", "protected-main")
+    _git(tmp_path, "checkout", "-qb", "side", base)
+    modified = _record()
+    modified.hypotheses[0].claims[0].statement = "CHANGED AFTER FREEZE"
+    save_record(str(tmp_path), modified)
+    _commit(tmp_path, "rewrite claim on side")
+    _git(tmp_path, "merge", "-s", "ours", "--no-edit", "protected-main")
+
+    result = _verify(str(tmp_path))
+    assert not result.ok
+    assert any("statement" in p for p in result.problems)
+
+
+def _record_with(claim_ids: list[str]) -> ResearchRecord:
+    # One hypothesis with the given claims, run ids unique across claims.
+    return ResearchRecord(
+        hypotheses=[
+            Hypothesis(
+                id="h1",
+                statement="The proposed method beats the baseline.",
+                claims=[
+                    SeyvalClaim(
+                        verifier=SEYVAL,
+                        id=cid,
+                        statement=f"{cid}: proposed beats baseline.",
+                        rationale="Head-to-head on the hypothesis's own metric.",
+                        criterion=Criterion(
+                            metric="accuracy",
+                            subject=f"{cid}-proposed",
+                            reference=f"{cid}-baseline",
+                            op=">=",
+                            margin=0.02,
+                        ),
+                        prediction=Prediction(low=0.02, high=0.04, basis="pilot"),
+                        designs=[
+                            SeyvalDesign(
+                                id="d1",
+                                summary="Head-to-head on one dataset.",
+                                runs=[
+                                    SeyvalRun(run_id=f"{cid}-proposed"),
+                                    SeyvalRun(run_id=f"{cid}-baseline"),
+                                ],
+                            )
+                        ],
+                    )
+                    for cid in claim_ids
+                ],
+            )
+        ]
+    )
+
+
+def _fork(tmp_path: Path) -> str:
+    """c1 on the base; `trunk` appends c2; `side` branches from the base."""
+    _init(tmp_path)
+    save_record(str(tmp_path), _record_with(["c1"]))
+    base = _commit(tmp_path, "c1")
+    _git(tmp_path, "branch", "trunk")
+    _git(tmp_path, "checkout", "-q", "trunk")
+    save_record(str(tmp_path), _record_with(["c1", "c2"]))
+    _commit(tmp_path, "trunk appends c2")
+    _git(tmp_path, "checkout", "-qb", "side", base)
+    return base
+
+
+def test_merging_main_into_a_branch_that_did_not_touch_the_record_passes(
+    tmp_path: Path,
+) -> None:
+    """The realistic update-merge: main appended a claim, the branch only
+    changed code. The merge equals main's record and extends the branch's."""
+    _fork(tmp_path)
+    (tmp_path / "README.md").write_text("code only\n")
+    _commit(tmp_path, "side: code only")
+    _git(tmp_path, "merge", "--no-edit", "trunk")
+
+    result = _verify(str(tmp_path))
+    assert result.ok, result.problems
+
+
+def test_a_merge_of_two_concurrent_appends_is_an_append_only_conflict(
+    tmp_path: Path,
+) -> None:
+    """Append-only lists grow at the end: every revision keeps the prior one
+    as a prefix (reordering fails too). Two branches that each append a
+    claim cannot both be prefixes of one merge, so the merge fails against
+    one parent. Declarations are serialised — the fast-forward-only flow
+    never produces this — and such a merge must be redone as a linear
+    append."""
+    _fork(tmp_path)
+    save_record(str(tmp_path), _record_with(["c1", "c3"]))
+    _commit(tmp_path, "side appends c3")
+    subprocess.run(  # conflicts on record.json; resolved below as the union
+        ["git", "-C", str(tmp_path), "merge", "--no-commit", "--no-edit", "trunk"],
+        capture_output=True,
+    )
+    save_record(str(tmp_path), _record_with(["c1", "c2", "c3"]))
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-q", "-m", "merge: union of both appends")
+
+    result = _verify(str(tmp_path))
+    assert not result.ok
+    assert any("changed" in p for p in result.problems)

@@ -471,6 +471,7 @@ async def verify_paper(
             check_provenance=check_provenance,
             require_provenance=require_provenance,
             require_history=require_history,
+            require_record=require_record,
             seyval_client_factory=seyval_client_factory,
         )
     root = Path(local_path).expanduser().resolve()
@@ -486,7 +487,7 @@ async def verify_paper(
         )
     build: LatexBuildReport | None = None
     if pdf_path is not None:
-        build = await asyncio.to_thread(_verify_build, local_path, template, pdf_path)
+        build = await asyncio.to_thread(build_paper, local_path, template, pdf_path)
         if not build.ok:
             problems.append("the LaTeX build failed (see build)")
 
@@ -573,9 +574,11 @@ def _verify_mapping(
     return problems, unverified
 
 
-def _verify_build(
+def build_paper(
     local_path: str, template: LATEX_TEMPLATE_NAME, pdf_path: str
 ) -> LatexBuildReport:
+    # Build only, no value check: the paper gate (verify-paper) already
+    # verified the numbers, so publish just compiles and commits.
     latex_files = collect_latex_project_files_local(local_path, template)
     return verify_latex_build(latex_files, "main.tex", pdf_path)
 
@@ -594,3 +597,12 @@ def detect_templates(local_path: str) -> list[str]:
             continue
         found.append(path.name)
     return found
+
+
+def paper_directories(local_path: str) -> list[str]:
+    # Every directory holding a main.tex, known template or not — so a caller
+    # can tell "no paper yet" from "a paper this version cannot verify".
+    latex_root = Path(local_path).expanduser().resolve() / ".research" / "latex"
+    if not latex_root.is_dir():
+        return []
+    return sorted(p.name for p in latex_root.iterdir() if (p / "main.tex").is_file())
