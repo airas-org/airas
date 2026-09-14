@@ -11,6 +11,7 @@ from airas.infra.seyval_client import SeyvalClient, parse_overrides
 from airas.usecases.executors.dispatch_experiment_subgraph.dispatch_experiment_subgraph import (
     RUN_COMMAND_TEMPLATE,
     DispatchExperimentSubgraph,
+    run_command,
 )
 
 GITHUB_CONFIG = GitHubConfig(
@@ -35,7 +36,8 @@ def test_seyval_needs_its_client():
 
 
 def test_the_default_command_is_the_repository_entry_point_and_carries_its_overrides():
-    command = RUN_COMMAND_TEMPLATE.format(run_id="run-1", mode="full")
+    command = run_command("run-1", "full")
+    assert command == RUN_COMMAND_TEMPLATE.format(run_id="run-1", mode="full")
     assert command == "make run RUN_ID=run-1 MODE=full"
     # The provenance manifest is realized from the recorded argv, with the
     # Makefile's upper-case variables as the record's lower-case params.
@@ -119,6 +121,16 @@ async def _dispatch_seyval(analysis: dict[str, Any]) -> tuple[dict, FakeSeyvalCl
         .ainvoke({"github_config": GITHUB_CONFIG, "run_id": "run-1"})
     )
     return result, fake
+
+
+@pytest.mark.parametrize(
+    "run_id", ["run-1; rm -rf /", "$(id)", "a b", "../x", ".hidden", ""]
+)
+def test_a_run_id_the_makefile_would_not_accept_is_refused_before_it_reaches_bash(
+    run_id: str,
+) -> None:
+    with pytest.raises(ValueError, match="run_id"):
+        run_command(run_id, "full")
 
 
 async def test_seyval_dispatch_starts_the_analyzed_experiment_with_the_chain() -> None:

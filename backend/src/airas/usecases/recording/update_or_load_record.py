@@ -176,11 +176,17 @@ def load_provenance_manifest(root: Path) -> RunProvenanceManifest | None:
 
 
 def runs_with_reports(root: Path, record: ResearchRecord) -> set[str]:
+    """The declared runs whose verifier report is on disk and readable. A
+    file that does not parse is no report: the run stays unexecuted rather
+    than verified with nothing to check."""
     return {
         run.run_id
         for _, claim in record.active_claims()
         for _, run in claim.runs()
-        if _verifier_report_path(root, claim.verifier.kind, run.run_id).is_file()
+        if isinstance(
+            _read_json(_verifier_report_path(root, claim.verifier.kind, run.run_id)),
+            dict,
+        )
     }
 
 
@@ -321,8 +327,8 @@ def _lean_errors(claim: LeanClaim, run: LeanRun, payload: dict[str, Any]) -> lis
         ("mathlib_rev", claim.verifier.mathlib_rev),
     ):
         built_value = payload.get(key)
-        if wanted and built_value and built_value != wanted:
-            errors.append(f"{key} differs from the declaration: built '{built_value}'")
+        if wanted and built_value != wanted:
+            errors.append(f"{key} differs from the declaration: built {built_value!r}")
     if errors:
         return errors
     built = _normalize_statement(payload.get("statement", ""))

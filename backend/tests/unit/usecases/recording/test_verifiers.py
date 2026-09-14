@@ -246,6 +246,8 @@ def test_a_sorry_free_build_supports_the_claim(tmp_path: Path) -> None:
         ({"decl": "thm1'"}, "decl differs"),
         ({"toolchain": "leanprover/lean4:v4.13.0"}, "toolchain differs"),
         ({"mathlib_rev": "c" * 40}, "mathlib_rev differs"),
+        ({"mathlib_rev": ""}, "mathlib_rev differs"),
+        ({"decl": None}, "decl differs"),
         (
             {"statement": "", "errors": ["error: unknown identifier 'thm1'"]},
             "unknown identifier",
@@ -260,6 +262,23 @@ def test_a_sorry_a_drifted_statement_a_foreign_axiom_or_a_failed_build_is_inconc
     assert claim.verified and claim.verdict == "inconclusive"
     assert any(error in e for e in claim.designs[0].runs[0].results[0].errors)
     assert _verify(str(tmp_path)).ok
+
+
+def test_an_unreadable_lean_report_leaves_the_claim_unverified(tmp_path: Path) -> None:
+    _init(tmp_path)
+    record = _record(_lean_claim())
+    save_record(str(tmp_path), record)
+    _commit(tmp_path, "prereg")
+    out = tmp_path / RESULTS_DIR / "thm1"
+    out.mkdir(parents=True)
+    (out / "lean.json").write_text("{not json")
+    _commit(tmp_path, "broken report")
+    statuses, appended = update_record_with_results(tmp_path, record, {}, None)
+    claim = _c1(record)
+    assert appended == 0 and claim.designs[0].runs[0].results == []
+    assert not claim.verified and claim.verdict is None
+    assert statuses[0].verified is False
+    assert _verify(str(tmp_path)).stage == "prereg"
 
 
 def test_a_tampered_lean_report_fails(tmp_path: Path) -> None:

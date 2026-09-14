@@ -220,8 +220,11 @@ async def _check_dir(
 
     parameters_match: bool | None = None
     if run.overrides is not None or run.parameters is not None:
+        # parse_overrides lower-cases keys; a manifest imported before it did
+        # still holds `RUN_ID`, so compare on the same footing.
+        declared_overrides = {k.lower(): v for k, v in declared.overrides.items()}
         parameters_match = (
-            run.overrides is None or dict(declared.overrides) == run.overrides
+            run.overrides is None or declared_overrides == run.overrides
         ) and (run.parameters is None or dict(declared.parameters) == run.parameters)
         if not parameters_match:
             return fail(

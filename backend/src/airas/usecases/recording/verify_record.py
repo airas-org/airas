@@ -389,7 +389,9 @@ def _params_problems(run: AnyRun, manifest: RunProvenanceManifest | None) -> lis
     declared = manifest.dirs.get(run.run_id) if manifest else None
     if declared is None or not run.params:
         return problems
-    resolved = declared.parameters or declared.overrides
+    resolved = declared.parameters or {
+        k.lower(): v for k, v in declared.overrides.items()
+    }
     complete = bool(declared.parameters)
     for key, wanted in run.params.items():
         if key not in resolved:

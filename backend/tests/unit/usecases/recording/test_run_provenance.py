@@ -575,3 +575,29 @@ async def test_a_lean_results_directory_is_anchored_by_its_report(
     result = await _verify(fake, str(tmp_path), {"thm1"})
     assert result.status == "mismatch"
     assert "differs from the bytes" in result.checks[0].detail
+
+
+async def test_a_manifest_imported_before_keys_were_lower_cased_still_matches(
+    tmp_path: Path,
+) -> None:
+    _, metrics_bytes, commit_hash = _make_repo(tmp_path, declared_run=None)
+    (tmp_path / PROVENANCE_MANIFEST_PATH).write_text(
+        json.dumps(
+            {
+                "dirs": {
+                    "run-1": {
+                        "execution_id": DECLARED_RUN,
+                        "overrides": {"RUN_ID": "run-1", "mode": "full"},
+                    }
+                }
+            }
+        )
+    )
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-q", "-m", "manifest")
+    run = _completed(DECLARED_RUN, commit_hash)
+    run["command_args"] = ["bash", "-c", "make run RUN_ID=run-1 MODE=full"]
+    fake = FakeSeyvalClient(runs=[run], stored={DECLARED_RUN: metrics_bytes})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
+    assert result.status == "verified", result.checks
+    assert result.checks[0].parameters_match is True
