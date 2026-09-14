@@ -14,6 +14,19 @@ CONFERENCES_AND_YEARS = {
     "acl": ["2020", "2021", "2022", "2023", "2024"],
     "emnlp": ["2020", "2021", "2022", "2023", "2024"],
     "naacl": ["2021", "2022", "2024"],
+    # ==================== Formal Methods / Theorem Proving ====================
+    # The human-authored formalization and verification venues (Lean, Isabelle,
+    # Rocq/Coq, automated deduction, model checking, logic, PL), for theory
+    # claims verified in Lean. ITP 2020 was merged into IJCAR 2020; CADE runs
+    # in odd years and IJCAR in even years.
+    "itp": ["2019", "2021", "2022", "2023", "2024", "2025", "2026"],
+    "cpp": ["2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"],
+    "cade": ["2019", "2021", "2023", "2025"],
+    "ijcar": ["2020", "2022", "2024", "2026"],
+    "cav": ["2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"],
+    "tacas": ["2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"],
+    "lics": ["2019", "2020", "2021", "2022", "2023", "2024", "2025"],
+    "popl": ["2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"],
     # ==================== Computer Vision (CV) ====================
     # "cvpr": ["2023", "2024", "2025"],
     # "eccv": ["2024"],
