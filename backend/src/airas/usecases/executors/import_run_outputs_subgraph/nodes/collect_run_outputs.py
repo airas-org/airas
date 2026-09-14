@@ -4,16 +4,11 @@ import posixpath
 
 from airas.core.research_paths import RESULTS_DIR
 from airas.core.types.run_provenance import PROVENANCE_MANIFEST_PATH
-from airas.infra.run_output_store import RunOutputStore
+from airas.infra.run_output_store import MAX_TOTAL_BYTES, RunOutputStore
 
 logger = logging.getLogger(__name__)
 
 MAX_CONCURRENT_DOWNLOADS = 5
-# A circuit breaker, not a capacity limit: metrics and figures are a few MB.
-# Past this the run is writing checkpoints or datasets into the results
-# directory, and those must not enter git history. 50 MB is also where
-# GitHub starts warning about a single file.
-MAX_TOTAL_BYTES = 50 * 1024 * 1024
 _OVERSIZE_REPORT_COUNT = 5
 
 

@@ -30,6 +30,12 @@ from airas.infra.seyval_client import (
 Backend = Literal["seyval", "github_actions"]
 
 COMPLETED_STATUS = "completed"
+# A circuit breaker, not a capacity limit: metrics and figures are a few MB.
+# Past this the run is writing checkpoints or datasets into the results
+# directory, and those must not enter git history. 50 MB is also where
+# GitHub starts warning about a single file.
+MAX_TOTAL_BYTES = 50 * 1024 * 1024
+_MAX_RUN_PAGES = 20
 
 
 class StoredRun(BaseModel):
@@ -149,11 +155,20 @@ class GithubActionsOutputStore:
         self._archives: dict[str, dict[str, bytes]] = {}
 
     async def alist_runs(self) -> list[StoredRun]:
-        # ponytail: newest 100 only; add paging when an older run is still needed
-        response = await self._client.alist_workflow_runs(
-            self._owner, self._repo, event="workflow_dispatch", per_page=100
-        )
-        return [_actions_run(run) for run in (response or {}).get("workflow_runs", [])]
+        runs: list[StoredRun] = []
+        for page in range(1, _MAX_RUN_PAGES + 1):
+            response = await self._client.alist_workflow_runs(
+                self._owner,
+                self._repo,
+                event="workflow_dispatch",
+                per_page=100,
+                page=page,
+            )
+            batch = (response or {}).get("workflow_runs", [])
+            runs += [_actions_run(run) for run in batch]
+            if len(batch) < 100:
+                break
+        return runs
 
     async def alist_outputs(self, execution_id: str) -> dict[str, int]:
         archive = await self._archive(execution_id)
@@ -185,6 +200,12 @@ class GithubActionsOutputStore:
                 f"the results artifact of workflow run {execution_id} has "
                 "expired (GitHub's artifact retention)"
             )
+        declared_size = int(artifact.get("size_in_bytes") or 0)
+        if declared_size > MAX_TOTAL_BYTES:
+            raise ValueError(
+                f"the results artifact of workflow run {execution_id} is "
+                f"{declared_size} bytes, over the {MAX_TOTAL_BYTES}-byte import limit"
+            )
         zip_bytes = await self._client.adownload_artifact_archive(
             self._owner, self._repo, int(artifact["id"])
         )
@@ -194,11 +215,16 @@ class GithubActionsOutputStore:
             )
         prefix = f"{RESULTS_DIR}/{match.group(2)}/"
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zipped:
-            files = {
-                prefix + info.filename: zipped.read(info)
-                for info in zipped.infolist()
-                if not info.is_dir()
-            }
+            members = [info for info in zipped.infolist() if not info.is_dir()]
+            # Checked before any member is read: a zip's declared sizes are
+            # what a compressed archive would inflate to.
+            inflated = sum(info.file_size for info in members)
+            if inflated > MAX_TOTAL_BYTES:
+                raise ValueError(
+                    f"the results artifact of workflow run {execution_id} inflates "
+                    f"to {inflated} bytes, over the {MAX_TOTAL_BYTES}-byte import limit"
+                )
+            files = {prefix + info.filename: zipped.read(info) for info in members}
         self._archives[execution_id] = files
         return files
 

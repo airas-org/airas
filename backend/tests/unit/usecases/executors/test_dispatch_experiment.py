@@ -144,3 +144,36 @@ async def test_seyval_dispatch_starts_the_analyzed_experiment_with_the_chain() -
 async def test_seyval_dispatch_asks_for_a_retry_while_the_analysis_runs() -> None:
     with pytest.raises(ValueError, match="still analyzing"):
         await _dispatch_seyval({"status": "running", "analysis_id": "an-1"})
+
+
+@pytest.mark.parametrize("run_id", ["run-1; rm -rf /", "$(id)", "a b", ""])
+async def test_a_run_id_that_is_not_a_plain_name_is_rejected_before_any_call(
+    run_id: str,
+) -> None:
+    fake = FakeSeyvalClient({"status": "completed"})
+    with pytest.raises(ValueError, match="plain name"):
+        await (
+            DispatchExperimentSubgraph(
+                backend="seyval",
+                github_client=cast(GithubClient, object()),
+                seyval_client=cast(SeyvalClient, fake),
+            )
+            .build_graph()
+            .ainvoke({"github_config": GITHUB_CONFIG, "run_id": run_id})
+        )
+    assert fake.started == []
+
+
+async def test_github_actions_dispatch_without_a_run_id_is_an_error() -> None:
+    client = GithubClient(
+        github_token="t",
+        async_session=httpx.AsyncClient(
+            transport=httpx.MockTransport(lambda request: httpx.Response(204))
+        ),
+    )
+    with pytest.raises(ValueError, match="no run id"):
+        await (
+            DispatchExperimentSubgraph(backend="github_actions", github_client=client)
+            .build_graph()
+            .ainvoke({"github_config": GITHUB_CONFIG, "run_id": "run-1"})
+        )

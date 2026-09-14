@@ -77,6 +77,13 @@ class _ProvenanceDirCheck(BaseModel):
             "choice; listed to make that choice reviewable"
         ),
     )
+    expired_fallback: bool = Field(
+        default=False,
+        description=(
+            "The backend no longer holds the run; the bytes were checked "
+            "against the import-time hashes instead"
+        ),
+    )
     detail: str = ""
 
 
@@ -338,6 +345,7 @@ def _check_expired(
         local_paths,
         f"{reason}; {len(local_paths)} file(s) match the import-time hashes",
         common,
+        expired_fallback=True,
     )
 
 
@@ -347,6 +355,7 @@ def _anchored(
     files_checked: list[str],
     detail: str,
     common: dict[str, Any],
+    expired_fallback: bool = False,
 ) -> _ProvenanceDirCheck:
     commit_hash = common.get("commit_hash") or ""
     commit_ok = bool(commit_hash) and commit_is_ancestor(root, commit_hash)
@@ -355,6 +364,7 @@ def _anchored(
         commit_in_history=commit_ok,
         matched=commit_ok,
         files_checked=files_checked,
+        expired_fallback=expired_fallback,
         detail=(
             detail
             if commit_ok

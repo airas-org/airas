@@ -4,8 +4,13 @@ from typing import Any, cast
 
 import pytest
 
+from airas.infra import run_output_store
 from airas.infra.github_client import GithubClient
-from airas.infra.run_output_store import GithubActionsOutputStore, RunExpired
+from airas.infra.run_output_store import (
+    MAX_TOTAL_BYTES,
+    GithubActionsOutputStore,
+    RunExpired,
+)
 
 RUN_DIR = ".research/results/run-1"
 
@@ -23,7 +28,8 @@ class FakeGithubClient:
         self.downloads = 0
 
     async def alist_workflow_runs(self, owner: str, repo: str, **kw: Any) -> dict:
-        return {"workflow_runs": self.runs}
+        page = int(kw.get("page", 1))
+        return {"workflow_runs": self.runs[(page - 1) * 100 : page * 100]}
 
     async def alist_workflow_run_artifacts(
         self, owner: str, repo: str, workflow_run_id: int
@@ -113,3 +119,33 @@ async def test_runs_carry_the_mode_from_the_run_name() -> None:
     assert ok.overrides == {"mode": "full"}
     assert failed.status == "failure"
     assert failed.overrides is None
+
+
+async def test_an_artifact_over_the_import_cap_is_refused_before_download() -> None:
+    artifact = {**_artifact(), "size_in_bytes": MAX_TOTAL_BYTES + 1}
+    client = FakeGithubClient(runs=[], artifacts=[artifact], zip_bytes=b"")
+    with pytest.raises(ValueError, match="import limit"):
+        await _store(client).alist_outputs("12345")
+    assert client.downloads == 0
+
+
+async def test_an_archive_that_inflates_over_the_cap_is_refused_unread(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(run_output_store, "MAX_TOTAL_BYTES", 8)
+    client = FakeGithubClient(
+        runs=[], artifacts=[_artifact()], zip_bytes=_zip({"metrics.json": b"0" * 64})
+    )
+    with pytest.raises(ValueError, match="inflates"):
+        await _store(client).alist_outputs("12345")
+
+
+async def test_runs_are_paged_past_the_first_hundred() -> None:
+    runs = [
+        {"id": i, "status": "completed", "conclusion": "success", "head_sha": "a" * 40}
+        for i in range(101)
+    ]
+    client = FakeGithubClient(runs=runs, artifacts=[], zip_bytes=b"")
+    listed = await _store(client).alist_runs()
+    assert [r.execution_id for r in listed][-1] == "100"
+    assert len(listed) == 101

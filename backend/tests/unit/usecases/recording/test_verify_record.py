@@ -11,6 +11,7 @@ and the files it stored).
 """
 
 import asyncio
+import hashlib
 import json
 import subprocess
 from pathlib import Path
@@ -35,6 +36,7 @@ from airas.core.types.run_provenance import (
     ResultsDirProvenance,
     RunProvenanceManifest,
 )
+from airas.infra.run_output_store import RunExpired, StoredRun
 from airas.usecases.publication.map_record_to_publication import (
     render_claims_tex,
     render_values_tex,
@@ -801,3 +803,89 @@ def test_import_time_hashes_may_not_change_under_the_same_execution(
     manifest_path.write_text(json.dumps(manifest))
     result = _verify(str(repo), require_history=True)
     assert any("dropped the declaration" in p for p in result.problems), result.problems
+
+
+# ------------------------------------ once the backend has dropped the run
+
+
+class _ExpiredStore:
+    """Every declared execution is completed but its outputs are gone."""
+
+    backend = "seyval"
+
+    def __init__(self, manifest: dict[str, Any]) -> None:
+        self.runs = [
+            StoredRun(
+                execution_id=entry["execution_id"],
+                status="completed",
+                commit_hash=entry.get("commit_hash"),
+            )
+            for entry in manifest["dirs"].values()
+        ]
+
+    async def alist_runs(self) -> list[StoredRun]:
+        return self.runs
+
+    async def alist_outputs(self, execution_id: str) -> dict[str, int]:
+        raise RunExpired("outputs expired")
+
+    async def adownload(self, execution_id: str, path: str) -> bytes:
+        raise AssertionError("nothing to download once expired")
+
+
+def _write_import_hashes(repo: Path) -> dict[str, Any]:
+    manifest_path = repo / PROVENANCE_MANIFEST_PATH
+    manifest = json.loads(manifest_path.read_text())
+    for dir_name, entry in manifest["dirs"].items():
+        entry["files"] = {
+            path.relative_to(repo).as_posix(): hashlib.sha256(
+                path.read_bytes()
+            ).hexdigest()
+            for path in (repo / RESULTS_DIR / dir_name).rglob("*")
+            if path.is_file()
+        }
+    manifest_path.write_text(json.dumps(manifest))
+    return manifest
+
+
+def _verify_expired(repo: Path, manifest: dict[str, Any]) -> RecordVerification:
+    if "origin" not in _git(repo, "remote"):
+        _git(repo, "remote", "add", "origin", "https://github.com/test-org/test-repo")
+    store = _ExpiredStore(manifest)
+    return _verify(
+        str(repo),
+        check_provenance=True,
+        require_history=True,
+        store_factory=lambda backend, url: store,
+    )
+
+
+def test_import_time_hashes_carry_a_dir_once_the_backend_drops_the_run(
+    tmp_path: Path,
+) -> None:
+    repo = _realized_repo(tmp_path)
+    manifest = _write_import_hashes(repo)
+    _commit(repo, "import with hashes")
+
+    result = _verify_expired(repo, manifest)
+    assert result.ok, result.problems
+
+
+def test_a_re_pointed_dir_cannot_lean_on_hashes_once_the_backend_drops_the_run(
+    tmp_path: Path,
+) -> None:
+    """After expiry any completed execution could be named, so the hashes
+    would vouch only for whatever the manifest says."""
+    repo = _realized_repo(tmp_path)
+    manifest = _write_import_hashes(repo)
+    _commit(repo, "import with hashes")
+
+    manifest["dirs"]["proposed"]["execution_id"] = "run-z"
+    (repo / PROVENANCE_MANIFEST_PATH).write_text(json.dumps(manifest))
+    _commit(repo, "re-point proposed to another run")
+
+    result = _verify_expired(repo, manifest)
+    assert not result.ok
+    assert any("re-pointed" in p and "proposed" in p for p in result.problems), (
+        result.problems
+    )

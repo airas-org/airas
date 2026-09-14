@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Collection
 from pathlib import Path
 from typing import Any, Literal
 
@@ -90,7 +91,10 @@ async def verify_record(
     problems += await asyncio.to_thread(
         _verify_append_only, root, record, require_history
     )
-    problems += await asyncio.to_thread(_verify_manifest_history, root, require_history)
+    history_problems, repointed = await asyncio.to_thread(
+        _verify_manifest_history, root, require_history
+    )
+    problems += history_problems
     problems += await _verify_additions(
         root,
         record,
@@ -101,6 +105,7 @@ async def verify_record(
         # Turning the check off is a decision not to require it.
         require_provenance=require_provenance and check_provenance,
         store_factory=store_factory,
+        repointed=repointed,
     )
     return RecordVerification(ok=not problems, stage=stage, problems=problems)
 
@@ -222,11 +227,16 @@ def _verify_append_only(
     return problems
 
 
-def _verify_manifest_history(root: Path, require_history: bool) -> list[str]:
+def _verify_manifest_history(
+    root: Path, require_history: bool
+) -> tuple[list[str], set[str]]:
     """An import-time hash may not change under the same execution: once the
-    backend drops the run, the hashes are all the gate has left."""
+    backend drops the run, the hashes are all the gate has left. Also returns
+    the directories whose execution was ever re-pointed: for those the hashes
+    vouch for nothing once the backend has dropped the run, since any expired
+    execution could have been named."""
     if not (root / PROVENANCE_MANIFEST_PATH).is_file():
-        return []
+        return [], set()
     unavailable = (
         [
             f"{PROVENANCE_MANIFEST_PATH}'s history could not be checked (shallow "
@@ -236,10 +246,10 @@ def _verify_manifest_history(root: Path, require_history: bool) -> list[str]:
         else []
     )
     if is_shallow(root):
-        return unavailable
+        return unavailable, set()
     edges = commits_with_parents(root, PROVENANCE_MANIFEST_PATH)
     if edges is None:
-        return unavailable
+        return unavailable, set()
 
     def manifest_at(commit_hash: str) -> RunProvenanceManifest:
         raw = file_bytes_at_commit(root, commit_hash, PROVENANCE_MANIFEST_PATH)
@@ -264,12 +274,15 @@ def _verify_manifest_history(root: Path, require_history: bool) -> list[str]:
     pairs.append(("HEAD", "worktree", manifest_at("HEAD"), worktree))
 
     problems = []
+    repointed: set[str] = set()
     for older_hash, newer_hash, older, newer in pairs:
         for dir_name, old_entry in older.dirs.items():
             new_entry = newer.dirs.get(dir_name)
             edge = f"{older_hash[:12]} -> {newer_hash[:12]}: {PROVENANCE_MANIFEST_PATH}"
             if new_entry is None:
                 problems.append(f"{edge} dropped the declaration for {dir_name}")
+            elif new_entry.execution_id != old_entry.execution_id:
+                repointed.add(dir_name)
             elif (
                 new_entry.execution_id == old_entry.execution_id
                 and old_entry.files
@@ -279,7 +292,7 @@ def _verify_manifest_history(root: Path, require_history: bool) -> list[str]:
                     f"{edge} changed the import-time hashes of {dir_name} "
                     "under the same execution"
                 )
-    return problems
+    return problems, repointed
 
 
 def _containment_violations(older: Any, newer: Any, path: str = "") -> list[str]:
@@ -332,6 +345,7 @@ async def _verify_additions(
     check_provenance: bool,
     require_provenance: bool,
     store_factory: StoreFactory,
+    repointed: Collection[str] = (),
 ) -> list[str]:
     if stage == "prereg":
         # Nothing measured yet, so nothing realized may exist.
@@ -379,6 +393,15 @@ async def _verify_additions(
 
     if metrics_data:
         problems += _provenance_problems(provenance, require_provenance)
+    if provenance is not None:
+        problems += [
+            f"run '{check.dir}': the backend no longer holds its execution and "
+            "the directory was re-pointed to another execution in history, so "
+            "the import-time hashes cannot vouch for it — a replacement must be "
+            "verified while the backend still holds the run"
+            for check in provenance.checks
+            if check.expired_fallback and check.dir in repointed
+        ]
     return problems
 
 

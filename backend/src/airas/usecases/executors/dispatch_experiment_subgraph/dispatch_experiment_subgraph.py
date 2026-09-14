@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from typing import Literal
 
 from langgraph.graph import END, START, StateGraph
@@ -37,6 +38,9 @@ RUN_COMMAND_TEMPLATE = (
 )
 
 ANALYSIS_ACTIVE = ("pending", "running")
+# The contract's `{method}-{model}-{dataset}`; also what keeps a run id from
+# carrying shell syntax into the command above.
+_RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
 def record_execution_time(f):
@@ -109,6 +113,11 @@ class DispatchExperimentSubgraph:
     ) -> dict[str, bool | str | None]:
         github_config = state["github_config"]
         run_id = state["run_id"]
+        if not _RUN_ID.match(run_id):
+            raise ValueError(
+                f"run_id {run_id!r} is not a plain name (letters, digits, '.', "
+                "'_' and '-')"
+            )
         if self.backend == "seyval":
             return await self._on_seyval(github_config, run_id)
         return await self._on_github_actions(github_config, run_id)
@@ -136,11 +145,14 @@ class DispatchExperimentSubgraph:
         )
         details = response if isinstance(response, dict) else {}
         workflow_run_id = details.get("workflow_run_id")
+        if workflow_run_id is None:
+            raise ValueError(
+                "GitHub accepted the dispatch but returned no run id, so the run "
+                "cannot be tracked or imported; find it with get_workflow_runs"
+            )
         return {
-            "dispatched": bool(response),
-            "execution_id": str(workflow_run_id)
-            if workflow_run_id is not None
-            else None,
+            "dispatched": True,
+            "execution_id": str(workflow_run_id),
             "execution_url": details.get("html_url"),
         }
 
