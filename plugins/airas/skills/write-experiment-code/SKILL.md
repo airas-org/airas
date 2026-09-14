@@ -44,6 +44,11 @@ it to; swapping the producer changes nothing else.
    uv run python -u -m src.evaluate results_dir=.research/results run_ids='["run-1","run-2"]'
    ```
 
+   `run_ids` is a Hydra list override and arrives in either spelling —
+   quoted JSON as above, or the quote-free `run_ids=[run-1,run-2]` the
+   executors use because nested quotes do not survive their shells — so
+   parse it as Hydra does, not with `json.loads`.
+
    **Run ids** are `{method_type}-{model}-{dataset}`, dropping whichever of
    model/dataset does not apply; `method_type` is `proposed` or
    `comparative-{index}`.

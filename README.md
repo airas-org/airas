@@ -77,7 +77,7 @@ chmod 600 ~/.airas/credentials.json
 | Key | Purpose |
 | --- | --- |
 | `GH_PERSONAL_ACCESS_TOKEN` | Required. Creates and drives the experiment repository (`repo` + `workflow` scopes, admin on the repository). |
-| `SEYVAL_API_KEY` (+ optional `SEYVAL_COMPUTE_ID`) | Needed to run experiments on the Seyval compute platform and for the provenance cross-check. See [Execution platforms](#execution-platforms-and-llms). |
+| `SEYVAL_API_KEY` (+ optional `SEYVAL_COMPUTE_ID`, `SEYVAL_WORKSPACE_ID`) | Needed for `backend="seyval"`: running experiments on the Seyval compute platform and cross-checking their provenance. See [Execution platforms](#execution-platforms-and-llms). |
 | `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `AWS_BEARER_TOKEN_BEDROCK` / `VERCEL_AI_GATEWAY_API_KEY` | Not needed for the flow. The agent driving AIRAS authors every generated artifact itself via `get_generation_prompt`. A key is only used when you call the backend-LLM generation tools directly. |
 
 ### 3. Start a research project
@@ -101,7 +101,7 @@ It walks through the flow below, asking you to settle the operational choices (r
 | 3 | `hypothesize-and-design` | A falsifiable hypothesis and an experimental design that fixes run ids, metrics, models, datasets, and the compute environment. |
 | 4 | `preregister-paper` | The full paper, written **before any experiment**, as numbered claims with criteria and predicted intervals. Its commit is the freeze point; `.research/record.json` is created here. |
 | 5 | `write-experiment-code` | Experiment code against a fixed execution contract (Hydra entrypoint, `sanity` / `pilot` / `full` modes), environment fixed by lockfile and Dockerfile. Metrics are produced by [airas-eval](https://github.com/airas-org/airas-eval), not by the code itself. |
-| 6 | `run-experiments` | Runs executed on the compute platform, outputs brought back under `.research/results/` with provenance. **Under construction**: see [Execution platforms](#execution-platforms-and-llms). |
+| 6 | `run-experiments` | Runs executed on the chosen backend (GitHub Actions or Seyval), outputs brought back under `.research/results/` with provenance. See [Execution platforms](#execution-platforms-and-llms). |
 | 7 | `analyze-results` | The analysis and verifiable figures (Vega-Lite charts, text-defined diagrams). |
 | 8 | `publish-paper` | Every stated number realized from the record, compile and verification green locally, then pushed. CI re-runs the verification and commits `paper.pdf` to the protected branch: the paper of record. |
 
@@ -115,7 +115,7 @@ It walks through the flow below, asking you to settle the operational choices (r
 
 ### Execution platforms and LLMs
 
-**Experiment execution is under construction.** The `run-experiments` skill currently drives the **Seyval** compute platform (bring-your-own Slurm compute) through Seyval's own MCP server, and the MCP tools for **GitHub Actions** execution (`dispatch_experiment`, `get_workflow_runs`, `get_experiment_run_status`) are not yet wired into the flow. Every other step, including the record and verification gate, works independently of the execution backend.
+Experiments run through the same three MCP tools on either backend: `dispatch_experiment` starts the run, `get_experiment_run_status` follows it, and `import_run_outputs` copies its outputs from where the backend keeps them (Seyval's storage, or the workflow's artifact on **GitHub Actions**) into `.research/results/` with a provenance manifest. The record gate cross-checks the committed bytes against that same store, and once the store has dropped the run, against the sha256 hashes the import recorded. **Seyval** (bring-your-own Slurm compute) and **GitHub Actions** are supported; a backend for machines you run yourself (RunPod, a lab cluster) is not yet, since it needs a store the agent cannot rewrite.
 
 Generation steps need no LLM key: `get_generation_prompt` hands the agent the curated prompt and output schema, and the agent authors the artifact itself. The same steps also exist as backend-LLM tools (`generate_hypothesis`, `generate_paper`, ...) for use outside the flow; those need a provider key (`get_available_llms` lists the models your keys allow). Supported providers: OpenAI, Anthropic, Google Gemini, OpenRouter, Amazon Bedrock, and Vercel AI Gateway.
 
@@ -140,7 +140,7 @@ The `auto-research` flow uses the following tools; the skills above are thin con
 | `hypothesize-and-design` | `retrieve_models`, `retrieve_datasets`, `get_generation_prompt` |
 | `preregister-paper` | `preregister_record`, `append_to_record`, `update_record`, `verify_latex` |
 | `write-experiment-code` | `get_library_docs` |
-| `run-experiments` | `fetch_experiment_results`, `import_run_outputs`, `verify_paper_values` (execution itself goes through the Seyval MCP server; see above) |
+| `run-experiments` | `dispatch_experiment`, `get_experiment_run_status`, `import_run_outputs`, `fetch_experiment_results` |
 | `analyze-results` | `fetch_experiment_results`, `render_chart`, `render_diagram`, `append_to_record`, `update_record` |
 | `publish-paper` | `generate_bibfile`, `verify_latex`, `open_in_overleaf`, `get_workflow_runs`, `download_research_history` |
 
