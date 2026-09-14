@@ -16,7 +16,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from airas.core.research_paths import RECORD_PATH
+from airas.core.research_paths import RECORD_PATH, RESULTS_DIR
 from airas.core.types.research_record import (
     ClaimDeclaration,
     Criterion,
@@ -427,13 +427,13 @@ def test_unparseable_json_fails(tmp_path: Path) -> None:
 # ------------------------------------------------------------ CI policy
 
 
-def _no_seyval():
-    raise RuntimeError("no Seyval credentials in this environment")
+def _no_store(backend: str, git_url: str):
+    raise RuntimeError("no backend credentials in this environment")
 
 
 def test_a_realized_record_passes_with_history_required(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
-    result = _verify(str(repo), require_history=True, seyval_client_factory=_no_seyval)
+    result = _verify(str(repo), require_history=True, store_factory=_no_store)
     assert result.ok, result.problems
     assert result.stage == "results"
 
@@ -458,7 +458,7 @@ def test_a_missing_record_is_tolerated_when_not_required(tmp_path: Path) -> None
 
 def test_unreachable_provenance_fails_where_required(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
-    result = _verify(str(repo), check_provenance=True, seyval_client_factory=_no_seyval)
+    result = _verify(str(repo), check_provenance=True, store_factory=_no_store)
     assert not result.ok
     assert any("provenance" in p for p in result.problems)
 
@@ -466,7 +466,7 @@ def test_unreachable_provenance_fails_where_required(tmp_path: Path) -> None:
         str(repo),
         check_provenance=True,
         require_provenance=False,
-        seyval_client_factory=_no_seyval,
+        store_factory=_no_store,
     )
     assert relaxed.ok, relaxed.problems
 
@@ -764,3 +764,40 @@ def test_a_merge_of_two_concurrent_appends_is_an_append_only_conflict(
     result = _verify(str(tmp_path))
     assert not result.ok
     assert any("changed" in p for p in result.problems)
+
+
+# ------------------------------------------ the provenance manifest's history
+
+
+def test_import_time_hashes_may_not_change_under_the_same_execution(
+    tmp_path: Path,
+) -> None:
+    repo = _realized_repo(tmp_path)
+    manifest_path = repo / PROVENANCE_MANIFEST_PATH
+    manifest = json.loads(manifest_path.read_text())
+    entry = manifest["dirs"]["proposed"]
+    entry["files"] = {f"{RESULTS_DIR}/proposed/metrics.json": "0" * 64}
+    manifest_path.write_text(json.dumps(manifest))
+    _commit(repo, "import with hashes")
+
+    # A new execution may replace the entry wholesale.
+    entry["execution_id"] = "another-run"
+    entry["files"] = {f"{RESULTS_DIR}/proposed/metrics.json": "1" * 64}
+    manifest_path.write_text(json.dumps(manifest))
+    _commit(repo, "re-import from another run")
+    result = _verify(str(repo), require_history=True)
+    assert not any(PROVENANCE_MANIFEST_PATH in p for p in result.problems), (
+        result.problems
+    )
+
+    # The same execution may not: the hashes are what outlives the store.
+    entry["files"] = {f"{RESULTS_DIR}/proposed/metrics.json": "2" * 64}
+    manifest_path.write_text(json.dumps(manifest))
+    result = _verify(str(repo), require_history=True)
+    assert any("import-time hashes" in p for p in result.problems), result.problems
+
+    # Nor may a declaration be dropped.
+    del manifest["dirs"]["proposed"]
+    manifest_path.write_text(json.dumps(manifest))
+    result = _verify(str(repo), require_history=True)
+    assert any("dropped the declaration" in p for p in result.problems), result.problems

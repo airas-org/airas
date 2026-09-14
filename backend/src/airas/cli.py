@@ -270,13 +270,13 @@ def main() -> None:
     verify.add_argument(
         "--no-provenance",
         action="store_true",
-        help="Skip the Seyval provenance cross-check entirely",
+        help="Skip the provenance cross-check against the execution backend",
     )
     verify.add_argument(
         "--allow-unavailable-provenance",
         action="store_true",
         help=(
-            "Do not fail when the provenance check cannot reach Seyval "
+            "Do not fail when the provenance check cannot reach the execution backend "
             "(a real mismatch still fails); CI should not pass this"
         ),
     )
@@ -310,13 +310,13 @@ def main() -> None:
     record.add_argument(
         "--no-provenance",
         action="store_true",
-        help="Skip the Seyval provenance cross-check entirely",
+        help="Skip the provenance cross-check against the execution backend",
     )
     record.add_argument(
         "--allow-unavailable-provenance",
         action="store_true",
         help=(
-            "Do not fail when the provenance check cannot reach Seyval "
+            "Do not fail when the provenance check cannot reach the execution backend "
             "(a real mismatch still fails); CI should not pass this"
         ),
     )
