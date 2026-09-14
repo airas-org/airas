@@ -486,8 +486,10 @@ async def search_papers(
 ) -> dict[str, Any]:
     """Search academic papers across multiple sources in parallel.
 
-    Sources: openalex, semantic_scholar, arxiv, airas_db (curated major-ML-
-    conference database). Pass a comma-separated subset or "all". `year`
+    Sources: openalex, semantic_scholar, arxiv, airas_db (curated conference
+    database: the major ML and NLP venues, plus the formal-methods and
+    theorem-proving venues — ITP, CPP, CADE, IJCAR, CAV, TACAS, LICS, POPL —
+    for theory claims). Pass a comma-separated subset or "all". `year`
     filters by publication year ("2024" or "2020-2024").
 
     `search_mode="keyword"` (default) does lexical/relevance search on every
