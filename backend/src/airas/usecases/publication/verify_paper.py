@@ -8,7 +8,7 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, Callable, get_args
+from typing import Any, get_args
 
 from pydantic import ValidationError
 
@@ -22,7 +22,7 @@ from airas.infra.local_git import (
     normalize_git_url,
     remote_origin_url,
 )
-from airas.infra.seyval_client import SeyvalClient, default_seyval_client
+from airas.infra.run_output_store import default_store
 from airas.usecases.publication.map_record_to_publication import (
     CHART_DIR,
     CHART_SUFFIXES,
@@ -44,6 +44,7 @@ from airas.usecases.publication.open_in_overleaf_subgraph.nodes.collect_latex_pr
     collect_latex_project_files_local,
     select_engine,
 )
+from airas.usecases.recording._run_provenance import StoreFactory
 from airas.usecases.recording.update_or_load_record import (
     load_metrics_data,
     load_record,
@@ -461,7 +462,7 @@ async def verify_paper(
     require_record: bool = True,
     require_provenance: bool = True,
     require_history: bool = True,
-    seyval_client_factory: Callable[[], SeyvalClient] = default_seyval_client,
+    store_factory: StoreFactory = default_store,
     record: RecordVerification | None = None,
 ) -> PaperVerification:
     """The paper's numbers are the record's, and the record holds; then, optionally, it builds."""
@@ -472,7 +473,7 @@ async def verify_paper(
             require_provenance=require_provenance,
             require_history=require_history,
             require_record=require_record,
-            seyval_client_factory=seyval_client_factory,
+            store_factory=store_factory,
         )
     root = Path(local_path).expanduser().resolve()
 

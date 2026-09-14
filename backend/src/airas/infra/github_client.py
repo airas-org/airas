@@ -1174,12 +1174,20 @@ class GithubClient(BaseHTTPClient):
         workflow_file_name: str,
         ref: str,
         inputs: dict | None = None,
-    ) -> bool:
+        return_run_details: bool = False,
+    ) -> bool | dict:
+        """With `return_run_details`, GitHub answers 200 with the created run
+        (`workflow_run_id`, `run_url`, `html_url`) instead of a bare 204."""
         path = f"/repos/{github_owner}/{repository_name}/actions/workflows/{workflow_file_name}/dispatches"
         json = {"ref": ref, **({"inputs": inputs} if inputs else {})}
+        if return_run_details:
+            json["return_run_details"] = True
 
         response = await self.apost(path=path, json=json)
         match response.status_code:
+            case 200:
+                logger.info("Workflow dispatch accepted with run details.")
+                return response.json()
             case 204:
                 logger.info("Workflow dispatch accepted.")
                 return True

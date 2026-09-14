@@ -1,11 +1,13 @@
+import hashlib
 import json
 import subprocess
 from pathlib import Path
 from typing import Any, cast
 
 from airas.core.types.run_provenance import PROVENANCE_MANIFEST_PATH
+from airas.infra.run_output_store import RunExpired, SeyvalOutputStore, StoredRun
 from airas.infra.seyval_client import SeyvalClient
-from airas.usecases.recording._seyval_provenance import verify_seyval_provenance
+from airas.usecases.recording._run_provenance import verify_run_provenance
 from airas.usecases.recording.verify_record import _provenance_problems
 
 GIT_URL = "https://github.com/test-org/test-repo"
@@ -90,7 +92,9 @@ def _completed(run_id: str, commit_hash: str) -> dict[str, Any]:
 
 
 async def _verify(fake: FakeSeyvalClient, path: str, dirs: set[str]):
-    return await verify_seyval_provenance(path, dirs, lambda: cast(SeyvalClient, fake))
+    return await verify_run_provenance(
+        path, dirs, lambda _, url: SeyvalOutputStore(cast(SeyvalClient, fake), url)
+    )
 
 
 async def test_verified_when_declared_run_backs_the_bytes(tmp_path: Path) -> None:
@@ -133,7 +137,7 @@ async def test_mismatch_when_manifest_commit_disagrees_with_seyval(
     )
     result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "mismatch"
-    assert any("Seyval recorded" in c.detail for c in result.checks)
+    assert any("seyval recorded" in c.detail for c in result.checks)
 
 
 async def test_mismatch_when_local_metrics_tampered(tmp_path: Path) -> None:
@@ -353,7 +357,7 @@ async def test_cached_parameters_must_match_the_dispatch(tmp_path: Path) -> None
     result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "mismatch"
     assert result.checks[0].parameters_match is False
-    assert "differ from what Seyval recorded" in result.checks[0].detail
+    assert "differ from what seyval recorded" in result.checks[0].detail
 
 
 async def test_cached_parameters_that_match_are_reported_as_such(
@@ -432,3 +436,96 @@ async def test_an_unreported_dispatch_is_not_compared(tmp_path: Path) -> None:
     result = await _verify(fake, str(tmp_path), {"run-1"})
     assert result.status == "verified", result.checks[0].detail
     assert result.checks[0].parameters_match is None
+
+
+# ------------------------------------------------ other backends, and expiry
+
+
+class FakeStore:
+    backend = "github_actions"
+
+    def __init__(
+        self, runs: list[StoredRun], files: dict[str, bytes], expired: bool = False
+    ) -> None:
+        self.runs = runs
+        self.files = files
+        self.expired = expired
+
+    async def alist_runs(self) -> list[StoredRun]:
+        return self.runs
+
+    async def alist_outputs(self, execution_id: str) -> dict[str, int]:
+        if self.expired:
+            raise RunExpired("the results artifact has expired")
+        return {path: len(content) for path, content in self.files.items()}
+
+    async def adownload(self, execution_id: str, path: str) -> bytes:
+        return self.files[path]
+
+
+METRICS_PATH = ".research/results/run-1/metrics.json"
+
+
+def _actions_run(commit_hash: str) -> StoredRun:
+    return StoredRun(execution_id="12345", status="completed", commit_hash=commit_hash)
+
+
+async def test_a_dir_is_checked_through_its_declared_backend(tmp_path: Path) -> None:
+    _, metrics_bytes, commit_hash = _make_repo(tmp_path, declared_run=None)
+    _write_manifest(
+        tmp_path,
+        execution_id="12345",
+        backend="github_actions",
+        commit_hash=commit_hash,
+    )
+    store = FakeStore(
+        runs=[_actions_run(commit_hash)], files={METRICS_PATH: metrics_bytes}
+    )
+    asked: list[str] = []
+
+    def factory(backend: str, url: str) -> FakeStore:
+        asked.append(backend)
+        return store
+
+    result = await verify_run_provenance(str(tmp_path), {"run-1"}, factory)
+    assert result.status == "verified", result.checks[0].detail
+    assert asked == ["github_actions"]
+    assert result.checks[0].backend == "github_actions"
+
+
+async def test_an_expired_store_falls_back_to_the_import_time_hashes(
+    tmp_path: Path,
+) -> None:
+    metrics_path, metrics_bytes, commit_hash = _make_repo(tmp_path, declared_run=None)
+    _write_manifest(
+        tmp_path,
+        execution_id="12345",
+        backend="github_actions",
+        commit_hash=commit_hash,
+        files={METRICS_PATH: hashlib.sha256(metrics_bytes).hexdigest()},
+    )
+    store = FakeStore(runs=[_actions_run(commit_hash)], files={}, expired=True)
+
+    result = await verify_run_provenance(str(tmp_path), {"run-1"}, lambda b, u: store)
+    assert result.status == "verified", result.checks[0].detail
+    assert "expired" in result.checks[0].detail
+
+    metrics_path.write_text(json.dumps({"accuracy": 0.971}))
+    result = await verify_run_provenance(str(tmp_path), {"run-1"}, lambda b, u: store)
+    assert result.status == "mismatch"
+    assert "import-time hash" in result.checks[0].detail
+
+
+async def test_an_expired_store_without_hashes_is_a_mismatch(tmp_path: Path) -> None:
+    _, _, commit_hash = _make_repo(tmp_path, declared_run=None)
+    _write_manifest(
+        tmp_path,
+        execution_id="12345",
+        backend="github_actions",
+        commit_hash=commit_hash,
+    )
+    store = FakeStore(runs=[_actions_run(commit_hash)], files={}, expired=True)
+
+    result = await verify_run_provenance(str(tmp_path), {"run-1"}, lambda b, u: store)
+    assert result.status == "mismatch"
+    assert "re-import" in result.checks[0].detail

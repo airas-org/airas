@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -14,31 +14,34 @@ class ResultsDirProvenance(BaseModel):
     """Which execution produced the files in one results directory."""
 
     execution_id: str = Field(
-        description="Seyval run id whose stored outputs this directory holds"
+        description="The backend's run id whose stored outputs this directory holds"
     )
+    backend: Literal["seyval", "github_actions"] = "seyval"
     commit_hash: Optional[str] = Field(
         default=None,
-        description="Commit that run executed, as recorded by Seyval",
+        description="Commit that run executed, as recorded by the backend",
     )
     overrides: dict[str, str] = Field(
         default_factory=dict,
         description=(
-            "Parameters the dispatch applied on top of the commit, parsed "
-            "from the argv Seyval recorded. The commit fixes the config "
-            "files but not the dispatch, so this is the only place a "
-            "`mode=pilot` run of a design declared as `mode=full` shows up — "
-            "and unlike the run's own output it is Seyval's record, which "
-            "the experiment code cannot write"
+            "Parameters the dispatch applied on top of the commit, as the "
+            "backend recorded them — the only place a `mode=pilot` run of a "
+            "design declared as `mode=full` shows up"
         ),
     )
     parameters: dict[str, str] = Field(
         default_factory=dict,
         description=(
-            "Every parameter the run resolved, as reported by Seyval. "
-            "Strictly better than `overrides`, which carries only the "
-            "explicit deltas and so cannot distinguish a parameter left at "
-            "its default from one the platform never reported. Empty when "
-            "the platform does not supply it"
+            "Every parameter the run resolved, as reported by the backend; "
+            "empty when it does not supply it"
+        ),
+    )
+    files: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Repository path -> sha256 of every file imported for this "
+            "directory; what the gate checks once the backend has dropped "
+            "the run"
         ),
     )
 

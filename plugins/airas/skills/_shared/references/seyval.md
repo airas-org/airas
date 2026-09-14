@@ -5,7 +5,9 @@ AIRAS の実験を RIKYU（BYO Slurm / GB200 / **aarch64**）で回すための�
 ときに読む。
 
 前提が 3 つ。実行先は **aarch64**、Seyval は **prod（`https://api.seyval.dev`）**
-のみ、そして実行は **seyval MCP を直接叩く**（`dispatch_experiment` は使わない）。
+のみ、そして起動と回収は airas の **`dispatch_experiment` / `import_run_outputs`**
+（`backend="seyval"`）で行い、Seyval MCP は事前確認と観察（`list_computes`、
+`check_byo_availability`、`get_run`、`tail_run_logs`、`get_analysis`）に使う。
 最初の 2 つが以降の判断のほぼ全てを決める。
 
 ## 目次
@@ -37,26 +39,26 @@ AIRAS の実験を RIKYU（BYO Slurm / GB200 / **aarch64**）で回すための�
 ## フロー
 
 ```
-list_computes             → 実行先の compute_id と run_profile を確認
+list_computes             → 実行先の compute_id と run_profile を確認（check_byo_availability も）
 （コードを書く）           → aarch64 wheel の実在を確認、Dockerfile を用意
-register_repository       → pull_repository → get_analysis（未解析なら start_analysis）
-start_run                 → 返る run_id を控える（step 5 で必須）
-get_run                   → 終了まで追う
-import_run_outputs        → execution_id に上の run_id、branch_name に staging ref(verify)を渡す
+dispatch_experiment       → backend="seyval"。登録・pull・解析・start_run を代行し execution_id を返す
+get_experiment_run_status → 終了まで追う（実行中のログは Seyval MCP の tail_run_logs）
+import_run_outputs        → backend="seyval"、execution_id、branch_name に staging ref(verify)
 fetch_experiment_results  → リポジトリを読む
 ```
 
 **ランは評価まで走らせること。** 契約 CLI（`src.main`）が書くのは
 `eval_inputs/` だけで、provenance がバイト比較するのは `metrics.json` である。
 `src.main` だけを投げると「実験は全ラン成功、検証だけ失敗」という、原因に
-辿り着きにくい形で落ちる。1 本の run の中で
+辿り着きにくい形で落ちる。`dispatch_experiment` の既定の `command_args` は
+1 本の run の中で
 
 ```
 src.main && make evaluate RUN_ID=<run_id> && src.evaluate
 ```
 
-まで通すか、既存ランを `inputs_from_runs` でステージした評価用の run を
-別に立てる。run ごとに作業ディレクトリは新品なので、別々に投げても後続は
+まで通す。`command_args` を自分で渡すときもこの連鎖を保つか、既存ランを
+`inputs_from_runs` でステージした評価用の run を別に立てる。run ごとに作業ディレクトリは新品なので、別々に投げても後続は
 先行の出力を見られない。
 
 最後の 2 つの順序が重要で、`fetch_experiment_results` は**リポジトリしか見ない**。
@@ -118,10 +120,10 @@ ECR への push で数時間かかることがあり、その間 Kaniko のロ�
 
 ## 3. 実行環境を Dockerfile で固定する
 
-AIRAS は**必ず自前の Dockerfile を使う**。`start_run(user_dockerfile_path=
-"Dockerfile")` を渡すと、そのファイルがそのままビルドされる。渡さないと Seyval は
-リポジトリの Dockerfile を無視して LLM に環境を再生成させ、それを抑止する手段は
-無いので、**この引数は省略しない**。
+AIRAS は**必ず自前の Dockerfile を使う**。`dispatch_experiment` は既定で
+`user_dockerfile_path="Dockerfile"` を渡し、そのファイルがそのままビルドされる。
+渡さないと Seyval はリポジトリの Dockerfile を無視して LLM に環境を再生成させ、
+それを抑止する手段は無いので、**`None` にしない**。
 
 ビルドコンテキストは常にリポジトリ root（`docker build -f <path> .` と同じ）。
 ファイルが無い、または検証に落ちた場合は**黙って生成にフォールバックせず**
@@ -130,8 +132,9 @@ user 起因のエラーで落ちる。環境の定義がコミットと一緒に
 セットで初めて成立する。
 
 代償が 1 つある。**持ち込んだ Dockerfile の CMD はそのまま実行される**ので、
-`parameters` による上書きが効かない（解析時の既定と違う値を渡すと 400）。
-run と mode の切り替えは `command_args` で argv を自分で書く。
+`parameters` による上書きが効かない。run と mode は `command_args`（argv）で
+決まり、`dispatch_experiment` が `run_id` / `run_stage` から既定の連鎖を組む。
+自分で渡すのは、その連鎖を変えたいときだけ。
 
 **`command_args` は executor 側で先に展開される。** `$(...)` や `$var` は
 bash に届く前に置換されるので使えない。`for f in $(find ...)` は展開済みの
@@ -150,10 +153,11 @@ BYO Slurm ではログインノードで `apptainer pull` が走り、SIF を共
 キャッシュ済みなので、そのまま再投入すれば通る。
 
 ```python
-command_args=[
-    "uv", "run", "--no-sync", "python", "-u", "-m", "src.main",
-    f"run={run_id}", "results_dir=.research/results", f"mode={mode}",
-]
+# 既定（dispatch_experiment が組む）。変えるならこの形で command_args に渡す
+command_args=["bash", "-c",
+    f"uv run python -u -m src.main run={run_id} results_dir=.research/results mode={mode}"
+    f" && make evaluate RUN_ID={run_id}"
+    f" && uv run python -u -m src.evaluate results_dir=.research/results run_ids='[\"{run_id}\"]'"]
 ```
 
 ### コンテナ内で出来ないこと
@@ -177,28 +181,21 @@ command_args=[
 
 ## 4. 起動する
 
-`register_repository` は冪等で、**登録と同時にデフォルトブランチ HEAD の解析が
-自動で始まる**。直後に `start_analysis` を呼ばないこと。押したコミットが別ブランチ
-だったり、自動解析が失敗した場合にだけ明示的に呼ぶ。新しく push した内容を反映
-するには `pull_repository` を挟む。
-
-**コミットを変えるたびに解析からやり直し**になる。`get_analysis` が 404 なら
-未解析という意味なので `start_analysis` を呼ぶ（3〜5 分）。
-
-`start_run` に渡すのは **`analysis_id` と、`get_analysis` が返した `experiments`
-の要素の `id`** の 2 つだけ。実験の定義そのものを送り返してはいけない（サーバが
-解析結果から読む）。別コミットや過去の解析の id を使い回すと、UI に出ない
-orphaned run になる。
-
 ```python
-start_run(
-    repository_id=..., commit_hash=..., analysis_id=..., experiment_id=...,
+dispatch_experiment(
+    github_owner=..., repository_name=..., branch_name=..., run_id=..., run_stage="sanity",
+    backend="seyval",
     compute_id="byo:<uuid>",          # 省略すると managed compute に飛ぶ
-    compute_type=..., resource_count=..., time_limit=...,
-    user_dockerfile_path="Dockerfile",
-    command_args=[...],               # §3 参照
+    compute_type=..., resource_count=..., time_limit=...,   # 値は run_profile から
+    workspace_id="<uuid>",            # ワークスペースが複数あるときは必須
 )
 ```
+
+返る `execution_id` を控える（step 5 で必須）。登録は冪等で、解析の開始も
+`dispatch_experiment` が代行する。**解析（3〜5 分）が終わるまで `dispatch_experiment` は
+「still analyzing」で返る**ので、数分おいて同じ引数で呼び直す。**コミットを変えるたびに
+解析からやり直し**になる。解析が失敗したときだけ Seyval MCP の `get_analysis` /
+`start_analysis` で調べる。
 
 - **`compute_id` を省略すると managed compute に飛ぶ。** BYO で回したいなら明示する
 - 解析器が返す `required_env_vars` は**警告どまりで run を止めない**。足りない鍵が
@@ -211,14 +208,16 @@ W&B を使う場合、**entity 名は当てずっぽうだと通らない。** `
 
 ## 5. 追跡して回収する
 
-`get_run` で追う。Temporal から状態を更新するので、生の REST が返す古い `status`
-（`running` のまま固まることがある）に引きずられない。`close_time` が入っていれば
-終了している。
+`get_experiment_run_status(execution_id, backend="seyval")` で追う。終了後の
+stdout / stderr の末尾も返る。Seyval MCP の `get_run` は Temporal から状態を更新する
+ので、生の REST が返す古い `status`（`running` のまま固まることがある）に
+引きずられない。`close_time` が入っていれば終了している。
 
-終了したら `import_run_outputs` で成果物をリポジトリへ取り込む。**`execution_id` に
-`start_run` が返した `run_id` を必ず渡す。** 省略すると AIRAS は自分が dispatch した
-ときの命名規則で run を探しに行き、直接起動した run は見つからず
-"No completed Seyval run found" で落ちる。`run_stage` は実行した mode と揃える。
+終了したら `import_run_outputs(backend="seyval", execution_id=...)` で成果物を
+リポジトリへ取り込む。`execution_id` は `dispatch_experiment` が返した値、
+`run_stage` は実行した mode と揃える。取り込みは `.provenance.json` に backend、
+execution_id、commit、dispatch の引数、各ファイルの sha256 を書き、CI の
+record gate はそれを Seyval の保存コピーと突き合わせる。
 
 **`branch_name` には staging ref(`verify`)を渡す。`main` ではない。** このツールは
 GitHub API で remote のブランチに直接 commit する。`main` は保護されていて、
@@ -319,6 +318,7 @@ worker のローリングデプロイだった。run ごとの上限なら終了
 
 | 見るもの | ツール |
 |---|---|
+| 状態と終了後のログ末尾 | `get_experiment_run_status`（airas） |
 | 状態・失敗の由来・終了時刻 | `get_run` |
 | 実行中のログ | `tail_run_logs`（`since_id` に前回の `last_id` を渡して追尾） |
 | 終了後の完全なログ | `get_run` が返す `stdout_url` / `stderr_url` を直接 GET |

@@ -1,9 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from airas.core.types.experiment_history import RunStage
-from airas.core.types.runner import EphemeralCloudRunnerConfig, StaticRunnerConfig
+from airas.core.types.runner import StaticRunnerConfig
 from airas.dashboard.api.dependencies import get_github_client, get_litellm_client
 from airas.dashboard.api.schemas.experiments import (
     AnalyzeExperimentRequestBody,
@@ -28,11 +28,8 @@ from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
     AnalyzeExperimentSubgraph,
 )
-from airas.usecases.executors.dispatch_experiment_on_ephemeral_cloud_subgraph.dispatch_experiment_on_ephemeral_cloud_subgraph import (
-    DispatchExperimentOnEphemeralCloudSubgraph,
-)
-from airas.usecases.executors.dispatch_experiment_on_static_runner_subgraph.dispatch_experiment_on_static_runner_subgraph import (
-    DispatchExperimentOnStaticRunnerSubgraph,
+from airas.usecases.executors.dispatch_experiment_subgraph.dispatch_experiment_subgraph import (
+    DispatchExperimentSubgraph,
 )
 from airas.usecases.executors.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
     DispatchExperimentValidationSubgraph,
@@ -90,24 +87,16 @@ async def dispatch_sanity_check(
     request: DispatchSanityCheckRequestBody,
     github_client: Annotated[GithubClient, Depends(get_github_client)],
 ) -> DispatchSanityCheckResponseBody:
-    if isinstance(request.runner_config, StaticRunnerConfig):
-        subgraph = DispatchExperimentOnStaticRunnerSubgraph(
-            github_client=github_client,
-            runner_label=request.runner_config.runner_label,
-            run_stage=RunStage.SANITY,
+    if not isinstance(request.runner_config, StaticRunnerConfig):
+        raise HTTPException(
+            status_code=400, detail="ephemeral cloud runners are no longer supported"
         )
-    elif isinstance(request.runner_config, EphemeralCloudRunnerConfig):
-        subgraph = DispatchExperimentOnEphemeralCloudSubgraph(
-            github_client=github_client,
-            run_stage=RunStage.SANITY,
-            cloud_provider=request.runner_config.cloud_provider,
-            gpu_instance_type=request.runner_config.gpu_instance_type,
-            max_instance_hours=request.runner_config.max_instance_hours,
-        )
-    else:
-        raise TypeError(
-            f"Unsupported runner config type: {type(request.runner_config)}"
-        )
+    subgraph = DispatchExperimentSubgraph(
+        backend="github_actions",
+        github_client=github_client,
+        runner_label=request.runner_config.runner_label,
+        run_stage=RunStage.SANITY,
+    )
 
     result = await subgraph.build_graph().ainvoke(
         {"github_config": request.github_config, "run_id": request.run_id},
@@ -144,24 +133,16 @@ async def dispatch_main_experiment(
     request: DispatchMainExperimentRequestBody,
     github_client: Annotated[GithubClient, Depends(get_github_client)],
 ) -> DispatchMainExperimentResponseBody:
-    if isinstance(request.runner_config, StaticRunnerConfig):
-        subgraph = DispatchExperimentOnStaticRunnerSubgraph(
-            github_client=github_client,
-            runner_label=request.runner_config.runner_label,
-            run_stage=RunStage.FULL,
+    if not isinstance(request.runner_config, StaticRunnerConfig):
+        raise HTTPException(
+            status_code=400, detail="ephemeral cloud runners are no longer supported"
         )
-    elif isinstance(request.runner_config, EphemeralCloudRunnerConfig):
-        subgraph = DispatchExperimentOnEphemeralCloudSubgraph(
-            github_client=github_client,
-            run_stage=RunStage.FULL,
-            cloud_provider=request.runner_config.cloud_provider,
-            gpu_instance_type=request.runner_config.gpu_instance_type,
-            max_instance_hours=request.runner_config.max_instance_hours,
-        )
-    else:
-        raise TypeError(
-            f"Unsupported runner config type: {type(request.runner_config)}"
-        )
+    subgraph = DispatchExperimentSubgraph(
+        backend="github_actions",
+        github_client=github_client,
+        runner_label=request.runner_config.runner_label,
+        run_stage=RunStage.FULL,
+    )
 
     result = await subgraph.build_graph().ainvoke(
         {"github_config": request.github_config, "run_id": request.run_id},

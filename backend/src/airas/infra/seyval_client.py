@@ -1,6 +1,7 @@
 import asyncio
 import atexit
 import os
+import shlex
 from logging import getLogger
 from typing import Any
 
@@ -18,6 +19,7 @@ SEYVAL_RETRY = make_retry_policy()
 # (api.dev.seyval.dev), which SEYVAL_BASE_URL can point at to try endpoints
 # that have not been released to main yet.
 DEFAULT_SEYVAL_BASE_URL = "https://api.seyval.dev"
+WORKSPACE_HEADER = "X-Seyval-Workspace-Id"
 
 
 class SeyvalClient(BaseHTTPClient):
@@ -52,13 +54,22 @@ class SeyvalClient(BaseHTTPClient):
 
     # --- repositories ---
 
-    async def aregister_repository(self, git_url: str) -> dict[str, Any]:
+    async def aregister_repository(
+        self, git_url: str, workspace_id: str | None = None
+    ) -> dict[str, Any]:
         """Register a repository (idempotent: an existing one is returned).
 
-        Cloning happens server-side, so allow a generous timeout.
+        Cloning happens server-side, so allow a generous timeout. A repository
+        lands in one workspace for good, so `workspace_id` must be given when
+        the key can see several.
         """
         path = "v1/repositories"
-        resp = await self.apost(path=path, json={"git_url": git_url}, timeout=180.0)
+        resp = await self.apost(
+            path=path,
+            json={"git_url": git_url},
+            headers={WORKSPACE_HEADER: workspace_id} if workspace_id else None,
+            timeout=180.0,
+        )
         raise_for_status(resp, path=path)
         return self._parser.parse(resp, as_="json")
 
@@ -154,47 +165,50 @@ class SeyvalClient(BaseHTTPClient):
         raise_for_status(resp, path=path)
         return self._parser.parse(resp, as_="json")
 
+    @SEYVAL_RETRY
+    async def aget_analysis(
+        self, repository_id: str, commit_hash: str
+    ) -> dict[str, Any]:
+        """The latest analysis of a commit: `status`, `analysis_id`, `experiments`,
+        `primary_ids`. 404 when the commit was never analyzed."""
+        path = f"v1/repositories/{repository_id}/analysis/{commit_hash}"
+        resp = await self.aget(path=path, timeout=30.0)
+        raise_for_status(resp, path=path)
+        return self._parser.parse(resp, as_="json")
+
     async def astart_run(
         self,
         repository_id: str,
         commit_hash: str,
-        analyzed_experiment: dict[str, Any],
+        experiment_id: str,
+        analysis_id: str,
         compute_type: str = "cpu-general",
         compute_id: str | None = None,
-        analysis_id: str | None = None,
         inputs_from_runs: list[str] | None = None,
         time_limit: str | None = None,
         resource_count: int | None = None,
+        user_dockerfile_path: str | None = None,
+        command_args: list[str] | None = None,
     ) -> dict[str, Any]:
         """Start a code-execution run. Not retried: a duplicate submission
         would double the compute cost.
 
-        `compute_id` selects the machine (`"byo:<uuid>"` for a registered
-        cluster); `compute_type` still applies on top of it, because a
-        registered cluster resolves it to the resources the job asks for.
-
-        `inputs_from_runs` restores earlier runs' outputs into this run's
-        working directory at their original relative paths, so a run can
-        read what a previous one wrote (measurement run -> visualization
-        run, or comparing several runs). Only completed runs of the same
-        repository qualify; on a path collision the last id listed wins.
-
-        `time_limit` (e.g. "24:00:00") and `resource_count` are per-run
-        requests honoured by registered clusters — the accepted values come
-        from that cluster's `run_profile` in the compute catalog. Managed
-        compute takes neither, since `compute_type` fixes its shape.
+        `experiment_id` is one of the analysis's `experiments[].id`; the
+        server reads the definition from `analysis_id`. `user_dockerfile_path`
+        builds the committed Dockerfile as-is; its CMD then runs verbatim, so
+        the command is set per run with `command_args` (argv, replaces CMD).
+        `time_limit` / `resource_count` are honoured by registered clusters
+        (`compute_id="byo:<uuid>"`) only.
         """
         path = f"v1/repositories/{repository_id}/{commit_hash}/runs"
         body: dict[str, Any] = {
-            "analyzed_experiment": analyzed_experiment,
+            "experiment_id": experiment_id,
+            "analysis_id": analysis_id,
             "compute_type": compute_type,
         }
         if compute_id is not None:
             body["compute_id"] = compute_id
-        if analysis_id is not None:
-            body["analysis_id"] = analysis_id
-        # Seyval rejects an empty list, and "no inputs" is expressed by
-        # omitting the field entirely.
+        # Seyval rejects an empty list; "no inputs" is the field's absence.
         if inputs_from_runs:
             body["inputs_from_runs"] = inputs_from_runs
         if (time_limit is not None or resource_count is not None) and not (
@@ -203,11 +217,14 @@ class SeyvalClient(BaseHTTPClient):
             raise ValueError(
                 'time_limit/resource_count require compute_id="byo:<uuid>"'
             )
-
         if time_limit is not None:
             body["time_limit"] = time_limit
         if resource_count is not None:
             body["resource_count"] = resource_count
+        if user_dockerfile_path is not None:
+            body["user_dockerfile_path"] = user_dockerfile_path
+        if command_args is not None:
+            body["command_args"] = command_args
 
         resp = await self.apost(path=path, json=body, timeout=60.0)
         raise_for_status(resp, path=path)
@@ -303,8 +320,13 @@ def parse_overrides(command_args: Any) -> dict[str, str]:
     knowing which form the dispatch used.
     """
     overrides: dict[str, str] = {}
-    for token in command_args or []:
-        text = str(token)
+    tokens = [
+        word
+        for token in command_args or []
+        # `bash -c "<chain>"` carries the overrides inside one argv element.
+        for word in (shlex.split(str(token)) if " " in str(token) else [str(token)])
+    ]
+    for text in tokens:
         key, separator, value = text.partition("=")
         if not separator or key.startswith("-") or "/" in key:
             continue

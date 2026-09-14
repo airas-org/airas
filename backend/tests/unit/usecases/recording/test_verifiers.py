@@ -281,8 +281,8 @@ def test_a_lean_only_record_passes_with_provenance_required(tmp_path: Path) -> N
     """No metrics files exist, so Seyval provenance cannot apply — requiring
     it must not fail a record whose runs Seyval never executed."""
 
-    def _no_seyval() -> None:
-        raise RuntimeError("no Seyval credentials in this environment")
+    def _no_store(backend: str, git_url: str) -> None:
+        raise RuntimeError("no backend credentials in this environment")
 
     _lean_repo(tmp_path)
     report = asyncio.run(
@@ -291,7 +291,7 @@ def test_a_lean_only_record_passes_with_provenance_required(tmp_path: Path) -> N
             check_provenance=True,
             require_provenance=True,
             require_history=False,
-            seyval_client_factory=_no_seyval,
+            store_factory=_no_store,
         )
     )
     assert report.ok, report.problems

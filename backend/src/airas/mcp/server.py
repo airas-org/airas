@@ -72,6 +72,7 @@ from airas.infra.local_git import (
 )
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
+from airas.infra.run_output_store import RunOutputStore, build_store
 from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.infra.seyval_client import SeyvalClient
 from airas.mcp.prompt_registry import build_generation_prompt, get_input_json_schema
@@ -80,11 +81,8 @@ from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_sub
     AnalyzeExperimentLLMMapping,
     AnalyzeExperimentSubgraph,
 )
-from airas.usecases.executors.dispatch_experiment_on_seyval_subgraph.dispatch_experiment_on_seyval_subgraph import (
-    DispatchExperimentOnSeyvalSubgraph,
-)
-from airas.usecases.executors.dispatch_experiment_on_static_runner_subgraph.dispatch_experiment_on_static_runner_subgraph import (
-    DispatchExperimentOnStaticRunnerSubgraph,
+from airas.usecases.executors.dispatch_experiment_subgraph.dispatch_experiment_subgraph import (
+    DispatchExperimentSubgraph,
 )
 from airas.usecases.executors.dispatch_paper_reproduction_run_subgraph.dispatch_paper_reproduction_run_subgraph import (
     DispatchPaperReproductionRunSubgraph,
@@ -241,6 +239,12 @@ def _seyval_client() -> SeyvalClient:
     if not os.getenv("SEYVAL_API_KEY"):
         raise RuntimeError(f"SEYVAL_API_KEY is not configured. {SETUP_INSTRUCTIONS}")
     return SeyvalClient(sync_session=_sync_session, async_session=_async_session)
+
+
+def _output_store(backend: str, git_url: str) -> RunOutputStore:
+    return build_store(
+        backend, git_url, seyval_client=_seyval_client, github_client=_github_client
+    )
 
 
 def _kroki_client() -> KrokiClient:
@@ -1125,7 +1129,9 @@ async def dispatch_experiment(
     inputs_from_runs: list[str] | None = None,
     time_limit: str | None = None,
     resource_count: int | None = None,
-    required_env_vars: list[str] | None = None,
+    user_dockerfile_path: str | None = "Dockerfile",
+    command_args: list[str] | None = None,
+    workspace_id: str | None = None,
 ) -> dict[str, Any]:
     """Start an experiment run (asynchronous). The code must already be pushed.
 
@@ -1133,28 +1139,31 @@ async def dispatch_experiment(
     correctness run, "pilot" for a small preliminary one, "full" for the real
     experiment. `run_id` identifies the experiment run defined by the
     experiment code (one config/run/{run_id}.yaml). Pass the same stage to
-    `import_run_outputs` to collect a Seyval run's results afterwards.
+    `import_run_outputs` to collect the run's results afterwards.
 
-    `backend` selects where the run executes:
-    - "github_actions" (default): dispatches a workflow in the experiment
-      repository. `runner_label` picks the runner. Track progress with
-      `get_workflow_runs` and collect outputs with `fetch_experiment_results`.
-      Requires GH_PERSONAL_ACCESS_TOKEN.
-    - "seyval": executes on the Seyval compute platform (GPU without GitHub
-      Actions limits). `compute_id` picks the machine — normally a cluster
-      you registered, "byo:<uuid>" from the Seyval MCP server's
-      `list_computes`; it defaults to SEYVAL_COMPUTE_ID, and without either the
-      run goes to Seyval-managed compute. `compute_type` sets the resource
-      request in both cases (e.g. "cpu-general", "gpu-a10"). Seyval keeps the run's
-      results on its own side, so call `import_run_outputs` once the run
-      finishes — before `fetch_experiment_results`, which reads the
-      repository.
+    `backend` selects where the run executes; either way the run's outputs
+    stay on the backend's side until `import_run_outputs` copies them into
+    the repository with their provenance, and the returned `execution_id` is
+    what that call and `get_experiment_run_status` take.
+    - "github_actions" (default): dispatches run_experiment.yml in the
+      experiment repository; `runner_label` picks the runner. Requires
+      GH_PERSONAL_ACCESS_TOKEN.
+    - "seyval": executes on the Seyval compute platform. `compute_id` picks
+      the machine — normally a cluster you registered, "byo:<uuid>" from the
+      Seyval MCP server's `list_computes`; it defaults to SEYVAL_COMPUTE_ID,
+      and without either the run goes to Seyval-managed compute.
+      `compute_type` sets the resource request in both cases (e.g.
+      "cpu-general", "gpu-a10"). `workspace_id` (default SEYVAL_WORKSPACE_ID)
+      is required when your key sees several workspaces: a repository is
+      registered into one for good.
 
-    `required_env_vars` lists the env vars Seyval must have registered before
-    it will start the run, and defaults to `["WANDB_API_KEY"]`. Seyval
-    rejects the run outright when one is missing, so pass `[]` for an
-    experiment that does not use Weights & Biases rather than registering a
-    dummy key.
+    `user_dockerfile_path` (default "Dockerfile") makes Seyval build the
+    committed Dockerfile as-is instead of generating an environment; pass
+    None to let it generate one. Its CMD then runs verbatim, so the run's
+    command is `command_args` (argv), which defaults to the full chain
+    `src.main && make evaluate && src.evaluate` for `run_id` and `run_stage`
+    — a run that stops after `src.main` writes no metrics.json and fails
+    verification. GitHub Actions runs the same chain from the workflow.
 
     `inputs_from_runs`, `time_limit` and `resource_count` apply to "seyval"
     only. `inputs_from_runs` takes `execution_id`s of earlier completed runs
@@ -1163,57 +1172,31 @@ async def dispatch_experiment(
     `time_limit` (e.g. "24:00:00") and `resource_count` request per-run
     resources from a registered cluster; accepted values are in its
     `run_profile` from `list_computes`.
-
-    Track progress and fetch execution errors with
-    `get_experiment_run_status`. For "seyval" the returned `execution_id` is
-    passed directly; for "github_actions" the workflow-dispatch API returns
-    no id, so discover the run id with `get_workflow_runs` first.
     """
-    # Both backends record the stage: Seyval in the run's experiment id, GitHub
-    # Actions as run_experiment.yml's `mode` input.
     stage = RunStage(run_stage)
-
+    seyval_client = None
+    resolved_compute_id = None
     if backend == "seyval":
         # Resolve the client first: it is what loads the stored credentials
         # into the environment that SEYVAL_COMPUTE_ID is read from.
-        client = _seyval_client()
+        seyval_client = _seyval_client()
         resolved_compute_id = compute_id or os.getenv("SEYVAL_COMPUTE_ID") or None
-        seyval_result = (
-            await DispatchExperimentOnSeyvalSubgraph(
-                seyval_client=client,
-                compute_id=resolved_compute_id,
-                run_stage=stage,
-                compute_type=compute_type,
-                inputs_from_runs=inputs_from_runs,
-                time_limit=time_limit,
-                resource_count=resource_count,
-                required_env_vars=required_env_vars,
-            )
-            .build_graph()
-            .ainvoke(
-                {
-                    "github_config": GitHubConfig(
-                        github_owner=github_owner,
-                        repository_name=repository_name,
-                        branch_name=branch_name,
-                    ),
-                    "run_id": run_id,
-                }
-            )
-        )
-        return {
-            "dispatched": seyval_result["dispatched"],
-            "backend": "seyval",
-            "compute_id": resolved_compute_id,
-            "execution_id": seyval_result["seyval_run_id"],
-            "execution_url": seyval_result["seyval_run_url"],
-        }
 
     result = (
-        await DispatchExperimentOnStaticRunnerSubgraph(
+        await DispatchExperimentSubgraph(
+            backend=backend,
             github_client=_github_client(),
-            runner_label=runner_label or ["ubuntu-latest"],
+            seyval_client=seyval_client,
             run_stage=stage,
+            runner_label=runner_label,
+            compute_id=resolved_compute_id,
+            compute_type=compute_type,
+            inputs_from_runs=inputs_from_runs,
+            time_limit=time_limit,
+            resource_count=resource_count,
+            user_dockerfile_path=user_dockerfile_path,
+            command_args=command_args,
+            workspace_id=workspace_id or os.getenv("SEYVAL_WORKSPACE_ID") or None,
         )
         .build_graph()
         .ainvoke(
@@ -1227,7 +1210,13 @@ async def dispatch_experiment(
             }
         )
     )
-    return {"dispatched": result["dispatched"], "backend": "github_actions"}
+    return {
+        "dispatched": result["dispatched"],
+        "backend": backend,
+        "compute_id": resolved_compute_id,
+        "execution_id": result["execution_id"],
+        "execution_url": result["execution_url"],
+    }
 
 
 @mcp.tool()
@@ -1396,45 +1385,34 @@ async def import_run_outputs(
     repository_name: str,
     branch_name: str,
     run_id: str,
+    execution_id: str,
     run_stage: Literal["sanity", "pilot", "full", "visualization"] = "full",
-    execution_id: str | None = None,
+    backend: Literal["github_actions", "seyval"] = "github_actions",
     confirm_overwrite: bool = False,
 ) -> dict[str, Any]:
-    """Copy a Seyval run's result files into the experiment repository.
+    """Copy a finished run's result files from the backend's store into the repository.
 
-    Only needed for `backend="seyval"`: Seyval pulls the repository to run it but
-    never pushes back, so its results and figures stay in Seyval's storage.
-    This commits everything the run wrote under `.research/results/` to
-    `branch_name` at the same paths, after which `fetch_experiment_results`,
-    `analyze_experiment` and `compile_latex` work as they do for
-    "github_actions". A "github_actions" run needs none of this.
+    Neither backend pushes results back: Seyval keeps them in its storage and
+    a GitHub Actions run uploads them as a workflow artifact. This downloads
+    everything the run wrote under `.research/results/` and commits it to
+    `branch_name` at the same paths, together with
+    `.research/results/.provenance.json` declaring, per results directory,
+    the backend, `execution_id`, commit, dispatch parameters and each file's
+    sha256. `verify_record` pins its cross-check to that declaration, so
+    results that arrive any other way, or are edited afterwards, fail.
 
-    Call it once the run has finished — `get_experiment_run_status` must
-    report a terminal status, since outputs are collected at the end.
-
-    `run_id` and `run_stage` identify which run to import, and are the same
-    values `dispatch_experiment` was called with.
+    `execution_id` is what `dispatch_experiment` returned and `backend` the
+    one it ran on. Call it once `get_experiment_run_status` reports a
+    terminal status.
 
     A repository path holds one run's results regardless of stage, so
     importing a provisional stage ("sanity" or "pilot") replaces the full
     run's results at the paths they share, and requires
-    `confirm_overwrite=True`. "full" is therefore the default, and
-    "visualization" needs no confirmation because such a run adds figures
-    derived from an earlier run rather than re-running the experiment.
+    `confirm_overwrite=True`. "visualization" needs no confirmation because
+    such a run adds figures derived from an earlier run.
 
-    Pass `execution_id` (the id `dispatch_experiment` returned) to import one
-    specific run instead — necessary for older runs, which age out of the
-    lookup.
-
-    The same commit records, in `.research/results/.provenance.json`, which
-    Seyval run produced each results directory; `verify_paper_values` pins
-    its provenance cross-check to that declaration, so results imported any
-    other way (or edited afterwards) fail verification. The returned
-    `import_commit_sha` identifies the commit holding exactly the imported
-    bytes — keep it with the run's records for auditing.
-
-    File contents are downloaded and committed inside airas and are never
-    returned. Requires SEYVAL_API_KEY and GH_PERSONAL_ACCESS_TOKEN.
+    File contents never leave airas. Requires GH_PERSONAL_ACCESS_TOKEN, and
+    SEYVAL_API_KEY for `backend="seyval"`.
     """
     stage = RunStage(run_stage)
     if stage in _PROVISIONAL_RUN_STAGES and not confirm_overwrite:
@@ -1447,7 +1425,9 @@ async def import_run_outputs(
 
     result = (
         await ImportRunOutputsSubgraph(
-            seyval_client=_seyval_client(),
+            store=_output_store(
+                backend, f"https://github.com/{github_owner}/{repository_name}"
+            ),
             github_client=_github_client(),
             run_stage=stage,
             execution_id=execution_id,
@@ -2090,7 +2070,7 @@ async def _verify_paper(
     pdf_path: str | None,
     check_provenance: bool,
 ) -> PaperVerification:
-    # The same verification CI runs, with this server's Seyval client.
+    # The same verification CI runs, with this server's clients.
     # Unavailable provenance or history is surfaced here, not failed: only
     # CI requires the guarantee.
     return await verify_paper(
@@ -2101,7 +2081,7 @@ async def _verify_paper(
         require_record=False,
         require_provenance=False,
         require_history=False,
-        seyval_client_factory=_seyval_client,
+        store_factory=_output_store,
     )
 
 

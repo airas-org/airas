@@ -1,7 +1,9 @@
-"""Guards around importing Seyval run outputs into the repository."""
+"""Guards around importing run outputs into the repository."""
 
 import base64
+import hashlib
 import json
+from typing import cast
 
 import httpx
 import pytest
@@ -9,6 +11,8 @@ import pytest
 from airas.core.types.experiment_history import RunStage
 from airas.core.types.github import GitHubConfig
 from airas.infra.github_client import GithubClient
+from airas.infra.run_output_store import SeyvalOutputStore
+from airas.infra.seyval_client import SeyvalClient
 from airas.usecases.executors.import_run_outputs_subgraph.import_run_outputs_subgraph import (
     ImportRunOutputsSubgraph,
 )
@@ -17,36 +21,33 @@ from airas.usecases.executors.import_run_outputs_subgraph.nodes.collect_run_outp
     _is_importable,
     collect_run_outputs,
 )
-from airas.usecases.executors.import_run_outputs_subgraph.nodes.resolve_execution_id import (
-    resolve_execution_id,
-)
 
 GITHUB_CONFIG = GitHubConfig(
     github_owner="airas-org",
     repository_name="experiment-repo",
     branch_name="main",
 )
+GIT_URL = "https://github.com/airas-org/experiment-repo"
 
 FIGURE = ".research/results/run-1/figure.pdf"
 METRICS = ".research/results/run-1/metrics.json"
 
-
 SEYVAL_RUN_COMMIT = "a" * 40
-# What Seyval records for the dispatch: the interpreter and module path
-# followed by the Hydra overrides that were applied at launch.
 SEYVAL_COMMAND_ARGS = ["python", "src/train.py", "mode=full", "+seed=7"]
-# Everything the run resolved, including what it took from the commit's
-# defaults — which the argv above never restates.
 SEYVAL_PARAMETERS = {"mode": "full", "seed": 7, "batch_size": 128}
 
 
 class FakeSeyvalClient:
-    """Stands in for SeyvalClient; records what was downloaded."""
-
     def __init__(self, outputs: dict | None = None, runs: list | None = None):
         self._outputs = outputs or {}
         self._runs = runs or []
         self.downloaded: list[str] = []
+
+    async def alist_repositories(self) -> list[dict]:
+        return [{"id": "repo-uuid", "git_url": GIT_URL + ".git"}]
+
+    async def alist_runs(self, repository_id: str) -> list:
+        return self._runs
 
     async def aget_run_outputs(self, run_id: str) -> dict:
         return self._outputs
@@ -55,20 +56,9 @@ class FakeSeyvalClient:
         self.downloaded.append(url)
         return f"content-of:{url}".encode()
 
-    async def aregister_repository(self, git_url: str) -> dict:
-        return {"id": "repo-uuid"}
 
-    async def alist_runs(self, repository_id: str) -> list:
-        return self._runs
-
-    async def aget_run(self, run_id: str) -> dict:
-        return {
-            "run_id": run_id,
-            "status": "completed",
-            "commit_hash": SEYVAL_RUN_COMMIT,
-            "command_args": SEYVAL_COMMAND_ARGS,
-            "resolved_parameters": SEYVAL_PARAMETERS,
-        }
+def _store(client: FakeSeyvalClient) -> SeyvalOutputStore:
+    return SeyvalOutputStore(cast(SeyvalClient, client), GIT_URL)
 
 
 def _output(path: str, size_bytes: int = 10) -> dict:
@@ -77,6 +67,20 @@ def _output(path: str, size_bytes: int = 10) -> dict:
         "size_bytes": size_bytes,
         "last_modified": "2026-08-04T00:00:00Z",
         "download_url": f"https://s3.example/{path}?sig=abc",
+    }
+
+
+def _content(path: str) -> bytes:
+    return f"content-of:https://s3.example/{path}?sig=abc".encode()
+
+
+def _completed_run(run_id: str) -> dict:
+    return {
+        "run_id": run_id,
+        "status": "completed",
+        "commit_hash": SEYVAL_RUN_COMMIT,
+        "command_args": SEYVAL_COMMAND_ARGS,
+        "resolved_parameters": SEYVAL_PARAMETERS,
     }
 
 
@@ -136,13 +140,11 @@ async def test_collect_downloads_only_results_files():
         }
     )
 
-    collected = await collect_run_outputs(client, "run-uuid")
+    collected = await collect_run_outputs(_store(client), "run-uuid")
 
     assert set(collected) == {METRICS, FIGURE}
     assert len(client.downloaded) == 2
-    assert (
-        collected[FIGURE] == f"content-of:https://s3.example/{FIGURE}?sig=abc".encode()
-    )
+    assert collected[FIGURE] == _content(FIGURE)
 
 
 async def test_collect_fails_when_listing_truncated():
@@ -151,7 +153,7 @@ async def test_collect_fails_when_listing_truncated():
     )
 
     with pytest.raises(ValueError, match="truncated"):
-        await collect_run_outputs(client, "run-uuid")
+        await collect_run_outputs(_store(client), "run-uuid")
 
     # Nothing is imported from a partial listing.
     assert client.downloaded == []
@@ -163,7 +165,7 @@ async def test_collect_fails_when_no_results_files():
     )
 
     with pytest.raises(ValueError, match="no files under"):
-        await collect_run_outputs(client, "run-uuid")
+        await collect_run_outputs(_store(client), "run-uuid")
 
 
 async def test_collect_fails_when_download_url_missing():
@@ -173,7 +175,7 @@ async def test_collect_fails_when_download_url_missing():
 
     # Names the file rather than surfacing a bare KeyError from the gather.
     with pytest.raises(ValueError, match=r"figure\.pdf.*download_url"):
-        await collect_run_outputs(client, "run-uuid")
+        await collect_run_outputs(_store(client), "run-uuid")
 
 
 async def test_collect_fails_when_batch_too_large():
@@ -185,46 +187,7 @@ async def test_collect_fails_when_batch_too_large():
     )
 
     with pytest.raises(ValueError, match="import limit"):
-        await collect_run_outputs(client, "run-uuid")
-
-
-# --------------------------------------------------
-# resolve_execution_id
-# --------------------------------------------------
-
-
-def _run(experiment_id: str, run_id: str, status: str = "completed") -> dict:
-    return {"experiment_id": experiment_id, "run_id": run_id, "status": status}
-
-
-async def test_resolve_picks_newest_completed_run_for_the_mode():
-    client = FakeSeyvalClient(
-        runs=[
-            # Newest first, as Seyval lists them.
-            _run("run_1_full", "newest", status="running"),
-            _run("run_1_full", "wanted"),
-            _run("run_1_full", "older"),
-            _run("run_1_sanity", "sanity-run"),
-        ]
-    )
-
-    execution_id = await resolve_execution_id(client, GITHUB_CONFIG, "run-1", "full")
-
-    assert execution_id == "wanted"
-
-
-async def test_resolve_does_not_cross_modes():
-    client = FakeSeyvalClient(runs=[_run("run_1_sanity", "sanity-run")])
-
-    with pytest.raises(ValueError, match="run_1_full"):
-        await resolve_execution_id(client, GITHUB_CONFIG, "run-1", "full")
-
-
-async def test_resolve_error_points_at_execution_id():
-    client = FakeSeyvalClient(runs=[])
-
-    with pytest.raises(ValueError, match="execution_id"):
-        await resolve_execution_id(client, GITHUB_CONFIG, "run-1", "full")
+        await collect_run_outputs(_store(client), "run-uuid")
 
 
 # --------------------------------------------------
@@ -268,14 +231,15 @@ async def test_subgraph_commits_downloaded_outputs_as_binary():
             "outputs": [_output(METRICS), _output(FIGURE), _output("wandb/debug.log")],
             "truncated": False,
         },
-        runs=[_run("run_1_full", "seyval-run-uuid")],
+        runs=[_completed_run("seyval-run-uuid")],
     )
     blobs: list[dict] = []
 
     result = await (
         ImportRunOutputsSubgraph(
-            seyval_client=seyval_client,
+            store=_store(seyval_client),
             github_client=_github_client_capturing(blobs),
+            execution_id="seyval-run-uuid",
             run_stage=RunStage.FULL,
         )
         .build_graph()
@@ -293,60 +257,45 @@ async def test_subgraph_commits_downloaded_outputs_as_binary():
     binary_blobs = [b for b in blobs if b["encoding"] == "base64"]
     assert len(binary_blobs) == 2
     committed = {base64.b64decode(blob["content"]) for blob in binary_blobs}
-    assert f"content-of:https://s3.example/{FIGURE}?sig=abc".encode() in committed
+    assert _content(FIGURE) in committed
 
     text_blobs = [b for b in blobs if b["encoding"] == "utf-8"]
     assert len(text_blobs) == 1
     manifest = json.loads(text_blobs[0]["content"])
     assert manifest["dirs"]["run-1"] == {
         "execution_id": "seyval-run-uuid",
+        "backend": "seyval",
         "commit_hash": SEYVAL_RUN_COMMIT,
         # Lifted from the recorded argv, which the experiment code cannot
         # write — this is what makes a declared override checkable against
         # the parameters the run was actually dispatched with.
         "overrides": {"mode": "full", "seed": "7"},
-        # The platform's full report, which also covers the parameters the
-        # dispatch left at their defaults.
         "parameters": {"mode": "full", "seed": "7", "batch_size": "128"},
+        # What the gate falls back to once the backend drops the run.
+        "files": {
+            METRICS: hashlib.sha256(_content(METRICS)).hexdigest(),
+            FIGURE: hashlib.sha256(_content(FIGURE)).hexdigest(),
+        },
     }
-
-
-async def test_subgraph_uses_explicit_execution_id_without_lookup():
-    seyval_client = FakeSeyvalClient(
-        outputs={"outputs": [_output(METRICS)], "truncated": False},
-        runs=[],  # a lookup would fail
-    )
-
-    result = await (
-        ImportRunOutputsSubgraph(
-            seyval_client=seyval_client,
-            github_client=_github_client_capturing([]),
-            execution_id="explicit-run-uuid",
-        )
-        .build_graph()
-        .ainvoke({"github_config": GITHUB_CONFIG, "run_id": "run-1"})
-    )
-
-    assert result["execution_id"] == "explicit-run-uuid"
 
 
 async def test_subgraph_imports_even_when_run_metadata_fetch_fails():
     """The commit hash in the manifest is reader convenience, not a gate."""
     seyval_client = FakeSeyvalClient(
         outputs={"outputs": [_output(METRICS)], "truncated": False},
-        runs=[_run("run_1_full", "seyval-run-uuid")],
     )
 
-    async def broken_aget_run(run_id: str) -> dict:
+    async def broken_alist_runs(repository_id: str) -> list:
         raise RuntimeError("seyval metadata endpoint down")
 
-    seyval_client.aget_run = broken_aget_run
+    seyval_client.alist_runs = broken_alist_runs
     blobs: list[dict] = []
 
     result = await (
         ImportRunOutputsSubgraph(
-            seyval_client=seyval_client,
+            store=_store(seyval_client),
             github_client=_github_client_capturing(blobs),
+            execution_id="seyval-run-uuid",
             run_stage=RunStage.FULL,
         )
         .build_graph()
