@@ -12,21 +12,23 @@ inconclusive）。
 
 ## 手順（実験の流れのどこで何をするか）
 
-Lean が動くのは仮説と実験設計が決まった後だけ。順序はこう。
+実験とまったく同じ流れで、Lean が動くのは実装フェーズから。preregister の前に
+Lean を実行することはない。
 
-| 段階 | すること | ローカルの `lake build` |
+| 段階 | 実験 | Lean |
 | --- | --- | --- |
-| hypothesize-and-design | 定理を決める。`lean/Airas/<Module>.lean` に **statement だけ**（証明は `sorry`）を書き、型検査して `#check @decl` が印字する型を得る。それが record に凍結する `params.statement` | する。宣言が well-formed か確かめ、凍結する文字列を機械の出力にするため |
-| preregister-paper | `preregister_record` で statement を凍結する（freeze commit） | しない |
-| 証明を書く | `sorry` を証明に置き換える。freeze commit の上に commit して push | する。反復のため。結果は証拠にならない |
-| run-experiments | `dispatch_experiment(run_stage="full")` → `get_experiment_run_status` → `import_run_outputs` → `update_record` | しない |
+| hypothesize-and-design | run_id と metric 名を決める | module・decl・定理の型（statement）を決める |
+| preregister-paper | claim を凍結 | claim を凍結。statement は仕様として Lean の構文で手で書く（§1） |
+| write-experiment-code | `src/` を書く。手元の sanity は反復のため | `lean/Airas/<Module>.lean` に statement と証明を書く（§2）。手元の `lake build` は反復のためで証拠にならない |
+| run-experiments | backend で走らせ、`import_run_outputs` | 同じ（§3、§4） |
+| publish-paper | `update_record` → 論文 | 同じ |
 
 証拠になるのは backend（GitHub Actions か Seyval）の run が `make run` で書き、
 `import_run_outputs` が provenance 付きで取り込んだ `lean.json` だけ。ローカルで
 作った `lean.json` は commit しない（manifest も store も無いので gate で落ちる）。
-push 後に statement を変えると凍結との不一致で inconclusive、証明を変えると
-freeze commit の子孫で走り直すことになる。手元で確かめてから push し、push 後は
-隔離された環境の結果だけを使う、が原則。
+push 後に statement を変えると凍結との不一致で inconclusive になり、証明を変えるなら
+freeze commit の子孫で走り直す。手元で確かめてから push し、push 後は隔離された
+環境の結果だけを使う、が原則。
 
 ## 1. record に宣言する
 
@@ -41,8 +43,13 @@ freeze commit の子孫で走り直すことになる。手元で確かめてか
 
 - `toolchain` は `lean/lean-toolchain`、`mathlib_rev` は `lean/lake-manifest.json` の
   `mathlib` の `rev` をそのまま写す。report と一致しなければ error になる。
-- `statement` は `#check @thm1` が出す型。空白の違いは無視されるが、記法の違い
-  （`Nat` と `ℕ`）は違う型として扱われる。mathlib を import するなら `ℕ` で書く。
+- `statement` は `#check @thm1` が出す型を、Lean が印字する形で書く。照合は空白を
+  無視した文字列比較なので、印字形式に合わせる: 引数は `∀ (n : ℕ), ...` の束縛子に
+  展開される、mathlib の記法で書く（`Nat` ではなく `ℕ`、`Finset.sum (Finset.range n) f`
+  ではなく `∑ i ∈ Finset.range n, f i`）、`id` のような関数適用は `id i` と印字される。
+  ずれると full run は inconclusive になり、同じ id で append して凍結し直す。
+  意味で比較する `statement_matches` 方式（report ツールが宣言を elaborate して比較）は
+  後続 issue。
 - `allowed_axioms` の既定は標準 3 公理。`sorryAx` は常に error。
 
 ## 2. 証明を書く
@@ -98,6 +105,5 @@ statement 不一致、module / decl / toolchain / mathlib_rev の不一致、許
 gate（`verify_record.yml`）は今のところ `lean.json` と record の一致と、artifact との
 バイト比較まで。gate 自身が再ビルドして report を導き直すのは airas-org/airas#1020。
 
-sanity stage は必須ではない。statement を凍結する前に手元でビルドできないとき
-（ローカルに toolchain が無い等）に、`sorry` のまま `run_stage="sanity"` を 1 回回して
-`lean.json` の `statement` を読む、という使い方をする。
+sanity stage は必須ではない。実装フェーズで、証明を書く前に statement だけを backend で
+型検査したいときに使う（`sorry` のまま `run_stage="sanity"`）。結果は record に入らない。
