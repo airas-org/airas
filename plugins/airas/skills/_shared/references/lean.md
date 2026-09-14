@@ -10,6 +10,24 @@
 **statement は preregister で凍結される**（証明は後から書く。型が変わればその run は
 inconclusive）。
 
+## 手順（実験の流れのどこで何をするか）
+
+Lean が動くのは仮説と実験設計が決まった後だけ。順序はこう。
+
+| 段階 | すること | ローカルの `lake build` |
+| --- | --- | --- |
+| hypothesize-and-design | 定理を決める。`lean/Airas/<Module>.lean` に **statement だけ**（証明は `sorry`）を書き、型検査して `#check @decl` が印字する型を得る。それが record に凍結する `params.statement` | する。宣言が well-formed か確かめ、凍結する文字列を機械の出力にするため |
+| preregister-paper | `preregister_record` で statement を凍結する（freeze commit） | しない |
+| 証明を書く | `sorry` を証明に置き換える。freeze commit の上に commit して push | する。反復のため。結果は証拠にならない |
+| run-experiments | `dispatch_experiment(run_stage="full")` → `get_experiment_run_status` → `import_run_outputs` → `update_record` | しない |
+
+証拠になるのは backend（GitHub Actions か Seyval）の run が `make run` で書き、
+`import_run_outputs` が provenance 付きで取り込んだ `lean.json` だけ。ローカルで
+作った `lean.json` は commit しない（manifest も store も無いので gate で落ちる）。
+push 後に statement を変えると凍結との不一致で inconclusive、証明を変えると
+freeze commit の子孫で走り直すことになる。手元で確かめてから push し、push 後は
+隔離された環境の結果だけを使う、が原則。
+
 ## 1. record に宣言する
 
 ```
@@ -79,3 +97,7 @@ statement 不一致、module / decl / toolchain / mathlib_rev の不一致、許
 
 gate（`verify_record.yml`）は今のところ `lean.json` と record の一致と、artifact との
 バイト比較まで。gate 自身が再ビルドして report を導き直すのは airas-org/airas#1020。
+
+sanity stage は必須ではない。statement を凍結する前に手元でビルドできないとき
+（ローカルに toolchain が無い等）に、`sorry` のまま `run_stage="sanity"` を 1 回回して
+`lean.json` の `statement` を読む、という使い方をする。
