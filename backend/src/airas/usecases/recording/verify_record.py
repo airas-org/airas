@@ -81,9 +81,9 @@ async def verify_record(
     except ValueError:
         metrics_data = {}
 
-    present = runs_with_reports(root, record)
+    reported_run_ids = runs_with_reports(root, record)
     stage: Literal["prereg", "results"] = (
-        "results" if metrics_data or present else "prereg"
+        "results" if metrics_data or reported_run_ids else "prereg"
     )
 
     problems = await asyncio.to_thread(_verify_consistency, record)
@@ -95,7 +95,7 @@ async def verify_record(
         root,
         record,
         metrics_data,
-        present,
+        reported_run_ids,
         stage,
         check_provenance=check_provenance,
         # Turning the check off is a decision not to require it.
@@ -326,7 +326,7 @@ async def _verify_additions(
     root: Path,
     record: ResearchRecord,
     metrics_data: dict[str, Any],
-    present: set[str],
+    reported_run_ids: set[str],
     stage: Literal["prereg", "results"],
     *,
     check_provenance: bool,
@@ -361,7 +361,9 @@ async def _verify_additions(
                 "results directories no declared run accounts for: "
                 + ", ".join(undeclared)
             )
-        drifted = _verified_problems(record, compute_claim_statuses(record, present))
+        drifted = _verified_problems(
+            record, compute_claim_statuses(record, reported_run_ids)
+        )
         if drifted:
             problems.append(
                 "claims stored as verified, or with a verdict, that the recomputation finds otherwise "
@@ -373,11 +375,11 @@ async def _verify_additions(
 
     provenance: _ProvenanceCheckResult | None = None
     if check_provenance:
-        scope = _provenance_scope(record, metrics_data)
+        scope = _provenance_scope(record, metrics_data, reported_run_ids)
         if scope:
             provenance = await verify_run_provenance(str(root), scope, store_factory)
 
-    if metrics_data:
+    if reported_run_ids:
         problems += _provenance_problems(provenance, require_provenance)
     return problems
 
@@ -387,7 +389,9 @@ def _params_problems(run: AnyRun, manifest: RunProvenanceManifest | None) -> lis
     declared = manifest.dirs.get(run.run_id) if manifest else None
     if declared is None or not run.params:
         return problems
-    resolved = declared.parameters or declared.overrides
+    resolved = declared.parameters or {
+        k.lower(): v for k, v in declared.overrides.items()
+    }
     complete = bool(declared.parameters)
     for key, wanted in run.params.items():
         if key not in resolved:
@@ -530,8 +534,13 @@ def _provenance_problems(
     return []
 
 
-def _provenance_scope(record: ResearchRecord, metrics_data: dict[str, Any]) -> set[str]:
-    dirs = {run_id for run_id in record.run_index() if run_id in metrics_data}
+def _provenance_scope(
+    record: ResearchRecord, metrics_data: dict[str, Any], reported_run_ids: set[str]
+) -> set[str]:
+    # Every declared run whose outputs are in: experiments by their metrics,
+    # proofs and judgments by their report. All of them arrived through
+    # import_run_outputs, so all of them have a store to be checked against.
+    dirs = {run_id for run_id in record.run_index() if run_id in reported_run_ids}
     dirs |= {
         row.run_id
         for spec in record.active_tables()

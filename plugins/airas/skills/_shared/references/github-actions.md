@@ -27,9 +27,11 @@ dispatch_experiment(
 )
 ```
 
-workflow は `src.main && make evaluate && src.evaluate` を 1 つのジョブで通し、
-`.research/results/<run_id>/` を `<mode>-<run id>-<run_id>` という名前の artifact に
-上げる。実行に必要な API キーは `set_github_actions_secrets` で repository secret に
+workflow は `make run RUN_ID=<run_id> MODE=<mode>` を 1 つのジョブで通し
+（実験なら `src.main && make evaluate && src.evaluate`、`kind: lean` の run なら
+`lake build` と `lake exe airas-report`。分岐は Makefile が `config/run/<run_id>.yaml`
+で行う）、`.research/results/<run_id>/` を `<mode>-<run id>-<run_id>` という名前の
+artifact に上げる。実行に必要な API キーは `set_github_actions_secrets` で repository secret に
 入れておく（workflow が `-e` で渡す名前は `run_experiment.yml` を見る）。
 
 `ubuntu-latest` の上限はジョブ 6 時間、ディスク約 14 GB。sanity と pilot 向けで、

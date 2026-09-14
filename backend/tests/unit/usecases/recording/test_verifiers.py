@@ -40,9 +40,13 @@ LEAN_REPORT = {
     "commit": "a" * 40,
     "toolchain": "leanprover/lean4:v4.12.0",
     "mathlib_rev": "b" * 40,
+    "module": "Airas.Thm1",
+    "decl": "thm1",
+    "mode": "full",
     "statement": "∀ (n : Nat), n + 0 = n",
     "axioms": ["propext"],
     "errors": [],
+    "warnings": [],
 }
 
 
@@ -82,7 +86,11 @@ def _lean_claim() -> LeanClaim:
             "id": "c1",
             "statement": "Zero is a right identity.",
             "rationale": "The identity is the hypothesis's first case.",
-            "verifier": {"kind": "lean", "toolchain": "leanprover/lean4:v4.12.0"},
+            "verifier": {
+                "kind": "lean",
+                "toolchain": "leanprover/lean4:v4.12.0",
+                "mathlib_rev": "b" * 40,
+            },
             "designs": [
                 {
                     "id": "d1",
@@ -218,6 +226,10 @@ def test_a_sorry_free_build_supports_the_claim(tmp_path: Path) -> None:
     result = claim.designs[0].runs[0].results[0]
     assert isinstance(result, LeanResult)
     assert result.errors == [] and result.statement == LEAN_REPORT["statement"]
+    assert (result.toolchain, result.mathlib_rev) == (
+        LEAN_REPORT["toolchain"],
+        LEAN_REPORT["mathlib_rev"],
+    )
     assert claim.verified and claim.verdict == "supported"
     report = _verify(str(tmp_path))
     assert report.ok, report.problems
@@ -230,6 +242,12 @@ def test_a_sorry_free_build_supports_the_claim(tmp_path: Path) -> None:
         ({"axioms": ["propext", "sorryAx"]}, "sorry"),
         ({"statement": "∀ (n : Nat), n = n"}, "statement differs"),
         ({"axioms": ["myAxiom"]}, "outside allowed_axioms"),
+        ({"module": "Airas.Other"}, "module differs"),
+        ({"decl": "thm1'"}, "decl differs"),
+        ({"toolchain": "leanprover/lean4:v4.13.0"}, "toolchain differs"),
+        ({"mathlib_rev": "c" * 40}, "mathlib_rev differs"),
+        ({"mathlib_rev": ""}, "mathlib_rev differs"),
+        ({"decl": None}, "decl differs"),
         (
             {"statement": "", "errors": ["error: unknown identifier 'thm1'"]},
             "unknown identifier",
@@ -244,6 +262,23 @@ def test_a_sorry_a_drifted_statement_a_foreign_axiom_or_a_failed_build_is_inconc
     assert claim.verified and claim.verdict == "inconclusive"
     assert any(error in e for e in claim.designs[0].runs[0].results[0].errors)
     assert _verify(str(tmp_path)).ok
+
+
+def test_an_unreadable_lean_report_leaves_the_claim_unverified(tmp_path: Path) -> None:
+    _init(tmp_path)
+    record = _record(_lean_claim())
+    save_record(str(tmp_path), record)
+    _commit(tmp_path, "prereg")
+    out = tmp_path / RESULTS_DIR / "thm1"
+    out.mkdir(parents=True)
+    (out / "lean.json").write_text("{not json")
+    _commit(tmp_path, "broken report")
+    statuses, appended = update_record_with_results(tmp_path, record, {}, None)
+    claim = _c1(record)
+    assert appended == 0 and claim.designs[0].runs[0].results == []
+    assert not claim.verified and claim.verdict is None
+    assert statuses[0].verified is False
+    assert _verify(str(tmp_path)).stage == "prereg"
 
 
 def test_a_tampered_lean_report_fails(tmp_path: Path) -> None:
@@ -277,9 +312,12 @@ def test_a_judgment_is_read_into_the_record(tmp_path: Path) -> None:
     assert _verify(str(tmp_path)).ok
 
 
-def test_a_lean_only_record_passes_with_provenance_required(tmp_path: Path) -> None:
-    """No metrics files exist, so Seyval provenance cannot apply — requiring
-    it must not fail a record whose runs Seyval never executed."""
+def test_a_lean_only_record_needs_provenance_like_an_experiment(
+    tmp_path: Path,
+) -> None:
+    """A lean run arrives through import_run_outputs like any other, so a
+    lean.json with no manifest and no backend to check against is not
+    verified when provenance is required."""
 
     def _no_store(backend: str, git_url: str) -> None:
         raise RuntimeError("no backend credentials in this environment")
@@ -294,4 +332,5 @@ def test_a_lean_only_record_passes_with_provenance_required(tmp_path: Path) -> N
             store_factory=_no_store,
         )
     )
-    assert report.ok, report.problems
+    assert not report.ok
+    assert any("provenance" in m for m in report.problems), report.problems

@@ -140,6 +140,12 @@ _VERIFIER_REPORT_FILENAME = {
     VerifierKind.LEAN: "lean.json",
     VerifierKind.LLM_JUDGE: "judgment.json",
 }
+# The reports that are not metrics.json, for code that only has a directory.
+VERIFIER_REPORT_FILENAMES = tuple(
+    name
+    for kind, name in _VERIFIER_REPORT_FILENAME.items()
+    if kind != VerifierKind.SEYVAL
+)
 
 
 def load_metrics_data(local_repo_path: str) -> dict[str, Any]:
@@ -170,11 +176,17 @@ def load_provenance_manifest(root: Path) -> RunProvenanceManifest | None:
 
 
 def runs_with_reports(root: Path, record: ResearchRecord) -> set[str]:
+    """The declared runs whose verifier report is on disk and readable. A
+    file that does not parse is no report: the run stays unexecuted rather
+    than verified with nothing to check."""
     return {
         run.run_id
         for _, claim in record.active_claims()
         for _, run in claim.runs()
-        if _verifier_report_path(root, claim.verifier.kind, run.run_id).is_file()
+        if isinstance(
+            _read_json(_verifier_report_path(root, claim.verifier.kind, run.run_id)),
+            dict,
+        )
     }
 
 
@@ -241,6 +253,8 @@ def derive_result(
         if isinstance(claim, LeanClaim):
             return LeanResult(
                 commit=payload.get("commit"),
+                toolchain=payload.get("toolchain", ""),
+                mathlib_rev=payload.get("mathlib_rev", ""),
                 statement=payload.get("statement", ""),
                 axioms=payload.get("axioms", []),
                 errors=_lean_errors(claim, run, payload),
@@ -302,6 +316,19 @@ def _claim_verdict(
 
 def _lean_errors(claim: LeanClaim, run: LeanRun, payload: dict[str, Any]) -> list[str]:
     errors = list(payload.get("errors", []))
+    if errors:
+        return errors
+    # The report names what it built; each must be what the record declared,
+    # or the statement below was checked against the wrong thing.
+    for key, wanted in (
+        ("module", run.params.module),
+        ("decl", run.params.decl),
+        ("toolchain", claim.verifier.toolchain),
+        ("mathlib_rev", claim.verifier.mathlib_rev),
+    ):
+        built_value = payload.get(key)
+        if wanted and built_value != wanted:
+            errors.append(f"{key} differs from the declaration: built {built_value!r}")
     if errors:
         return errors
     built = _normalize_statement(payload.get("statement", ""))

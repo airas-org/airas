@@ -47,18 +47,21 @@ import_run_outputs        → backend="seyval"、execution_id、branch_name に 
 fetch_experiment_results  → リポジトリを読む
 ```
 
-**ランは評価まで走らせること。** 契約 CLI（`src.main`）が書くのは
-`eval_inputs/` だけで、provenance がバイト比較するのは `metrics.json` である。
-`src.main` だけを投げると「実験は全ラン成功、検証だけ失敗」という、原因に
-辿り着きにくい形で落ちる。`dispatch_experiment` の既定の `command_args` は
-1 本の run の中で
+**ランは評価まで走らせること。** `dispatch_experiment` の既定の `command_args` は
+リポジトリの唯一の入口
 
 ```
-src.main && make evaluate RUN_ID=<run_id> && src.evaluate
+make run RUN_ID=<run_id> MODE=<mode>
 ```
 
-まで通す。`command_args` を自分で渡すときもこの連鎖を保つか、既存ランを
-`inputs_from_runs` でステージした評価用の run を別に立てる。run ごとに作業ディレクトリは新品なので、別々に投げても後続は
+で、Makefile が `config/run/<run_id>.yaml` の `kind` を見て、実験なら
+`src.main && make evaluate && src.evaluate` を 1 本の run の中で通し、`kind: lean`
+なら `lake build` と `lake exe airas-report` を走らせる。契約 CLI（`src.main`）が
+書くのは `eval_inputs/` だけで、provenance がバイト比較するのは `metrics.json`
+（Lean なら `lean.json`）である。`src.main` だけを投げると「実験は全ラン成功、
+検証だけ失敗」という、原因に辿り着きにくい形で落ちる。`command_args` を自分で
+渡すときも `make run` か同じ連鎖を保つか、既存ランを `inputs_from_runs` で
+ステージした評価用の run を別に立てる。run ごとに作業ディレクトリは新品なので、別々に投げても後続は
 先行の出力を見られない。
 
 最後の 2 つの順序が重要で、`fetch_experiment_results` は**リポジトリしか見ない**。
@@ -154,11 +157,11 @@ BYO Slurm ではログインノードで `apptainer pull` が走り、SIF を共
 
 ```python
 # 既定（dispatch_experiment が組む）。変えるならこの形で command_args に渡す
-command_args=["bash", "-c",
-    f"uv run python -u -m src.main run={run_id} results_dir=.research/results mode={mode}"
-    f" && make evaluate RUN_ID={run_id}"
-    f" && uv run python -u -m src.evaluate results_dir=.research/results run_ids='[\"{run_id}\"]'"]
+command_args=["bash", "-c", f"make run RUN_ID={run_id} MODE={mode}"]
 ```
+
+provenance の照合は argv の `KEY=value` を小文字にして record の `params`
+（例 `{"mode": "full"}`）と突き合わせるので、`MODE` を省いたり別名にしたりしない。
 
 ### コンテナ内で出来ないこと
 

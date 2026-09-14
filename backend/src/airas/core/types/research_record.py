@@ -269,6 +269,8 @@ class LeanParams(BaseModel):
 
 class LeanResult(BaseModel):
     commit: Optional[str] = None
+    toolchain: str = Field(default="", description="What built it, per the report")
+    mathlib_rev: str = ""
     statement: str = Field(default="", description="The built declaration's type")
     axioms: list[str] = Field(default_factory=list)
     # A failed build is a result too. Any entry here makes the verdict

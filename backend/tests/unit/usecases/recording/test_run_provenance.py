@@ -529,3 +529,75 @@ async def test_an_expired_store_without_hashes_is_a_mismatch(tmp_path: Path) -> 
     result = await verify_run_provenance(str(tmp_path), {"run-1"}, lambda b, u: store)
     assert result.status == "mismatch"
     assert "re-import" in result.checks[0].detail
+
+
+async def test_a_lean_results_directory_is_anchored_by_its_report(
+    tmp_path: Path,
+) -> None:
+    """A proof's run holds lean.json and no metrics.json; the cross-check
+    still pins the directory to the declared run and byte-compares it."""
+    report = json.dumps({"statement": "∀ (n : ℕ), n + 0 = n", "axioms": ["propext"]})
+    lean_path = tmp_path / ".research" / "results" / "thm1" / "lean.json"
+    lean_path.parent.mkdir(parents=True)
+    lean_path.write_text(report)
+    (tmp_path / PROVENANCE_MANIFEST_PATH).parent.mkdir(parents=True, exist_ok=True)
+    (tmp_path / PROVENANCE_MANIFEST_PATH).write_text(
+        json.dumps({"dirs": {"thm1": {"execution_id": DECLARED_RUN}}})
+    )
+    _git(tmp_path, "init", "-q")
+    _git(tmp_path, "config", "user.email", "test@example.com")
+    _git(tmp_path, "config", "user.name", "test")
+    _git(tmp_path, "remote", "add", "origin", GIT_URL + ".git")
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-q", "-m", "proof")
+    commit_hash = _git(tmp_path, "rev-parse", "HEAD")
+
+    class LeanClient(FakeSeyvalClient):
+        async def aget_run_outputs(self, run_id: str) -> dict[str, Any]:
+            return {
+                "outputs": [
+                    {
+                        "path": ".research/results/thm1/lean.json",
+                        "download_url": f"https://example.test/{run_id}",
+                    }
+                ]
+            }
+
+    fake = LeanClient(
+        runs=[_completed(DECLARED_RUN, commit_hash)],
+        stored={DECLARED_RUN: report.encode()},
+    )
+    result = await _verify(fake, str(tmp_path), {"thm1"})
+    assert result.status == "verified", result.checks
+    assert result.checks[0].files_checked == [".research/results/thm1/lean.json"]
+
+    lean_path.write_text(json.dumps({"statement": "False", "axioms": []}))
+    result = await _verify(fake, str(tmp_path), {"thm1"})
+    assert result.status == "mismatch"
+    assert "differs from the bytes" in result.checks[0].detail
+
+
+async def test_a_manifest_imported_before_keys_were_lower_cased_still_matches(
+    tmp_path: Path,
+) -> None:
+    _, metrics_bytes, commit_hash = _make_repo(tmp_path, declared_run=None)
+    (tmp_path / PROVENANCE_MANIFEST_PATH).write_text(
+        json.dumps(
+            {
+                "dirs": {
+                    "run-1": {
+                        "execution_id": DECLARED_RUN,
+                        "overrides": {"RUN_ID": "run-1", "mode": "full"},
+                    }
+                }
+            }
+        )
+    )
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-q", "-m", "manifest")
+    run = _completed(DECLARED_RUN, commit_hash)
+    run["command_args"] = ["bash", "-c", "make run RUN_ID=run-1 MODE=full"]
+    fake = FakeSeyvalClient(runs=[run], stored={DECLARED_RUN: metrics_bytes})
+    result = await _verify(fake, str(tmp_path), {"run-1"})
+    assert result.status == "verified", result.checks
+    assert result.checks[0].parameters_match is True

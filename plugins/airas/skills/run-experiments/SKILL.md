@@ -31,26 +31,31 @@ verification, and a claim is verified once every run under it has results — bu
    ends: the platform's **run identifier** and the **commit hash it
    executed**. Step 3 cannot be done without them.
 
-3. **Make the run produce what verification reads.** The contract CLI
-   (`src.main`) writes only `eval_inputs/` — the raw predictions. The
-   numbers the record is checked against live in `metrics.json`, which
-   the evaluation step writes, and provenance byte-compares *that* file
-   against the platform's stored copy. A run that stops after `src.main`
-   therefore succeeds and still fails verification, with nothing in the
-   error pointing at the cause.
+3. **Make the run produce what verification reads.** Every run starts
+   through the repository's one entry point, `make run RUN_ID=<run_id>
+   MODE=<stage>` — both platforms call it, and `dispatch_experiment`
+   builds it for you. The Makefile reads the run's kind from
+   `config/run/<run_id>.yaml`:
 
-   So a run must carry the chain through to the end:
-
-   ```
-   src.main  &&  make evaluate RUN_ID=<run_id>  &&  src.evaluate
-   ```
+   - **An experiment** (no `kind`): the contract CLI (`src.main`) writes
+     only `eval_inputs/` — the raw predictions. The numbers the record is
+     checked against live in `metrics.json`, which the evaluation step
+     writes, and provenance byte-compares *that* file against the
+     platform's stored copy. So `make run` carries the chain through to
+     the end — `src.main`, `make evaluate`, `src.evaluate` — and a
+     `command_args` of your own must too. Keep `eval_inputs/` in the
+     results: it is what the metrics can be re-derived from, and the
+     record anchors it by hash.
+   - **A proof** (`kind: lean`): `lake build` of the named module, then
+     `lake exe airas-report` writes `lean.json` — the file the record is
+     checked against. Stages are `sanity` (the statement type-checks,
+     `sorry` allowed) and `full` (a sorry-free proof); there is no pilot.
+     See `_shared/references/lean.md`.
 
    On a platform that gives each run a fresh working directory, a later
-   run cannot see an earlier one's output, so either chain the three in
+   run cannot see an earlier one's output, so either chain the steps in
    one dispatch or stage the earlier runs into it (Seyval:
-   `inputs_from_runs`). Keep `eval_inputs/` in the results too: it is
-   what the metrics can be re-derived from, and the record anchors it by
-   hash.
+   `inputs_from_runs`).
 
 4. **Bring the results back** under `.research/results/`, committed,
    with `.research/results/.provenance.json` declaring per results
@@ -62,4 +67,5 @@ verification, and a claim is verified once every run under it has results — bu
    others exist (the selection is reviewable at verification).
 
 **Output**: committed results under `.research/results/` — `eval_inputs/`,
-`metrics.json` and the evaluation report — with their provenance manifest.
+`metrics.json` and the evaluation report for an experiment, `lean.json` and
+the build log for a proof — with their provenance manifest.

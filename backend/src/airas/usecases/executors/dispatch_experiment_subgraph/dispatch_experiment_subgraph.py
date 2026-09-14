@@ -1,5 +1,7 @@
 import json
 import logging
+import re
+import shlex
 from typing import Literal
 
 from langgraph.graph import END, START, StateGraph
@@ -7,7 +9,6 @@ from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.logging_utils import setup_logging
-from airas.core.research_paths import RESULTS_DIR
 from airas.core.types.experiment_history import RunStage
 from airas.core.types.github import GitHubConfig
 from airas.infra.github_client import GithubClient
@@ -20,21 +21,28 @@ Backend = Literal["github_actions", "seyval"]
 
 EXPERIMENT_WORKFLOW_FILE = "run_experiment.yml"
 
-ENTRY_POINT_TEMPLATE = (
-    "uv run python -u -m src.main run={run_id} "
-    f"results_dir={RESULTS_DIR} " + "mode={mode}"
-)
-# The whole chain in one run: a run that stops after src.main leaves no
-# metrics.json for the record gate to compare. Same chain as run_experiment.yml.
-# `run_ids` uses Hydra's quote-free list syntax: the argv crosses more than one
-# shell on the way to the job, and nested quotes do not survive that.
-RUN_COMMAND_TEMPLATE = (
-    "set -f; "
-    + ENTRY_POINT_TEMPLATE
-    + " && make evaluate RUN_ID={run_id}"
-    + f" && uv run python -u -m src.evaluate results_dir={RESULTS_DIR} "
-    + "run_ids=[{run_id}]"
-)
+RUN_COMMAND_TEMPLATE = "make run RUN_ID={run_id} MODE={mode}"
+# What the Makefile accepts for RUN_ID (it names a results directory and a
+# config file): letters, digits, '_', '.' and '-', not starting with '.'.
+RUN_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9_.-]*$")
+
+
+def check_run_id(run_id: str) -> str:
+    if not RUN_ID_PATTERN.match(run_id):
+        raise ValueError(
+            f"run_id {run_id!r} may hold only letters, digits, '_', '.' and '-', "
+            "and may not start with '.'"
+        )
+    return run_id
+
+
+def run_command(run_id: str, mode: str) -> str:
+    """The argv element `bash -c` executes on Seyval. The run id is checked
+    above and quoted here, so a value cannot carry a second command."""
+    return RUN_COMMAND_TEMPLATE.format(
+        run_id=shlex.quote(check_run_id(run_id)), mode=shlex.quote(mode)
+    )
+
 
 ANALYSIS_ACTIVE = ("pending", "running")
 
@@ -108,7 +116,7 @@ class DispatchExperimentSubgraph:
         self, state: DispatchExperimentSubgraphState
     ) -> dict[str, bool | str | None]:
         github_config = state["github_config"]
-        run_id = state["run_id"]
+        run_id = check_run_id(state["run_id"])
         if self.backend == "seyval":
             return await self._on_seyval(github_config, run_id)
         return await self._on_github_actions(github_config, run_id)
@@ -195,8 +203,7 @@ class DispatchExperimentSubgraph:
             time_limit=self.time_limit,
             resource_count=self.resource_count,
             user_dockerfile_path=self.user_dockerfile_path,
-            command_args=self.command_args
-            or ["bash", "-c", RUN_COMMAND_TEMPLATE.format(run_id=run_id, mode=mode)],
+            command_args=self.command_args or ["bash", "-c", run_command(run_id, mode)],
         )
         return {
             "dispatched": True,

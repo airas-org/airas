@@ -317,7 +317,8 @@ def parse_overrides(command_args: Any) -> dict[str, str]:
     Only `key=value` tokens are overrides; the rest of the argv is the
     interpreter and module path. Hydra's `+key=` / `~key=` prefixes are
     stripped so a declaration can be compared against what ran without
-    knowing which form the dispatch used.
+    knowing which form the dispatch used, and keys are lower-cased: the
+    Makefile takes `MODE=full`, the record declares `{"mode": "full"}`.
     """
     overrides: dict[str, str] = {}
     tokens = [
@@ -330,7 +331,7 @@ def parse_overrides(command_args: Any) -> dict[str, str]:
         key, separator, value = text.partition("=")
         if not separator or key.startswith("-") or "/" in key:
             continue
-        overrides[key.strip().lstrip("+~")] = value.strip()
+        overrides[key.strip().lstrip("+~").lower()] = value.strip()
     return overrides
 
 

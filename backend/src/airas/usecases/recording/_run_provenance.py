@@ -24,7 +24,10 @@ from airas.infra.run_output_store import (
     StoredRun,
     default_store,
 )
-from airas.usecases.recording.update_or_load_record import load_provenance_manifest
+from airas.usecases.recording.update_or_load_record import (
+    VERIFIER_REPORT_FILENAMES,
+    load_provenance_manifest,
+)
 
 StoreFactory = Callable[[str, str], RunOutputStore]
 
@@ -187,7 +190,7 @@ async def _check_dir(
             dir=dir_name, matched=False, detail=detail, **{"backend": backend, **fields}
         )
 
-    repo_path = _metrics_repo_path(dir_name)
+    repo_path = _report_repo_path(root, dir_name)
     if not (root / repo_path).is_file():
         return fail(f"local file missing: {repo_path}", run_id=execution_id)
 
@@ -217,8 +220,11 @@ async def _check_dir(
 
     parameters_match: bool | None = None
     if run.overrides is not None or run.parameters is not None:
+        # parse_overrides lower-cases keys; a manifest imported before it did
+        # still holds `RUN_ID`, so compare on the same footing.
+        declared_overrides = {k.lower(): v for k, v in declared.overrides.items()}
         parameters_match = (
-            run.overrides is None or dict(declared.overrides) == run.overrides
+            run.overrides is None or declared_overrides == run.overrides
         ) and (run.parameters is None or dict(declared.parameters) == run.parameters)
         if not parameters_match:
             return fail(
@@ -383,8 +389,14 @@ def _unavailable(detail: str) -> _ProvenanceCheckResult:
     return _ProvenanceCheckResult(source="none", status="unavailable", detail=detail)
 
 
-def _metrics_repo_path(dir_name: str) -> str:
-    filename = (
-        COMPARISON_METRICS_FILENAME if dir_name == COMPARISON_KEY else METRICS_FILENAME
-    )
-    return f"{RESULTS_DIR}/{dir_name}/{filename}"
+def _report_repo_path(root: Path, dir_name: str) -> str:
+    """The file that says the run executed: metrics.json for an experiment,
+    the verifier's report (lean.json, judgment.json) otherwise. Every file in
+    the directory is byte-compared regardless; this one must exist."""
+    if dir_name == COMPARISON_KEY:
+        return f"{RESULTS_DIR}/{dir_name}/{COMPARISON_METRICS_FILENAME}"
+    candidates = [METRICS_FILENAME, *VERIFIER_REPORT_FILENAMES]
+    for filename in candidates:
+        if (root / RESULTS_DIR / dir_name / filename).is_file():
+            return f"{RESULTS_DIR}/{dir_name}/{filename}"
+    return f"{RESULTS_DIR}/{dir_name}/{METRICS_FILENAME}"
