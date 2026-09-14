@@ -82,6 +82,15 @@ changes *when* the paper is written and how Results are stated.
    before its runs executed is not modelled yet (TODO). A second
    hypothesis is a second entry in `hypotheses`.
 
+   A claim proved in Lean has `"verifier": {"kind": "lean", "toolchain":
+   ..., "mathlib_rev": ..., "allowed_axioms": [...]}` — the toolchain and
+   mathlib revision are the repository's `lean/lean-toolchain` and
+   `lean/lake-manifest.json` — and no criterion or prediction; its run's
+   `params` are `{"module": ..., "decl": ..., "statement": ...}`, the
+   statement being what `#check @decl` prints. The statement is what gets
+   frozen: the proof is written afterwards, and a built declaration whose
+   type differs from it is inconclusive. See `_shared/references/lean.md`.
+
    The claims are meant to imply the hypothesis together: c1 ∧ … ∧ cn
    ⇒ h1. `rationale` (required on every claim) says why the claim is a
    member of that set — which part of the hypothesis it carries and why

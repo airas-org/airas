@@ -189,11 +189,12 @@ classDiagram
         - **runs[]** 1 run = 1 宣言
           - `run_id` / `description`
           - `params` `{module, decl, statement}`。statement は `#check @decl` が出す型
-          - **results[]** lean.json から
+          - **results[]** lean.json から（`make run` が `lake exe airas-report` で書く）
             - `commit`
+            - `toolchain` / `mathlib_rev` 実際にビルドした版。verifier の宣言と一致しなければ error
             - `statement` 実際にビルドされた宣言の型
-            - `axioms[]` `#print axioms` の結果
-            - `errors[]` ビルド失敗 / sorry / statement 不一致 / 許可外公理
+            - `axioms[]` 宣言が依存する公理（`sorryAx` を含む）
+            - `errors[]` ビルド失敗 / sorry / statement 不一致 / module・decl・toolchain・mathlib_rev の不一致 / 許可外公理
             - `warnings[]`
     - **[kind = llm_judge]** 判定
       - `verifier` `{kind: "llm_judge", model, rubric, temperature, samples}`

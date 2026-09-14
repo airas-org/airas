@@ -40,9 +40,13 @@ LEAN_REPORT = {
     "commit": "a" * 40,
     "toolchain": "leanprover/lean4:v4.12.0",
     "mathlib_rev": "b" * 40,
+    "module": "Airas.Thm1",
+    "decl": "thm1",
+    "mode": "full",
     "statement": "∀ (n : Nat), n + 0 = n",
     "axioms": ["propext"],
     "errors": [],
+    "warnings": [],
 }
 
 
@@ -82,7 +86,11 @@ def _lean_claim() -> LeanClaim:
             "id": "c1",
             "statement": "Zero is a right identity.",
             "rationale": "The identity is the hypothesis's first case.",
-            "verifier": {"kind": "lean", "toolchain": "leanprover/lean4:v4.12.0"},
+            "verifier": {
+                "kind": "lean",
+                "toolchain": "leanprover/lean4:v4.12.0",
+                "mathlib_rev": "b" * 40,
+            },
             "designs": [
                 {
                     "id": "d1",
@@ -218,6 +226,10 @@ def test_a_sorry_free_build_supports_the_claim(tmp_path: Path) -> None:
     result = claim.designs[0].runs[0].results[0]
     assert isinstance(result, LeanResult)
     assert result.errors == [] and result.statement == LEAN_REPORT["statement"]
+    assert (result.toolchain, result.mathlib_rev) == (
+        LEAN_REPORT["toolchain"],
+        LEAN_REPORT["mathlib_rev"],
+    )
     assert claim.verified and claim.verdict == "supported"
     report = _verify(str(tmp_path))
     assert report.ok, report.problems
@@ -230,6 +242,10 @@ def test_a_sorry_free_build_supports_the_claim(tmp_path: Path) -> None:
         ({"axioms": ["propext", "sorryAx"]}, "sorry"),
         ({"statement": "∀ (n : Nat), n = n"}, "statement differs"),
         ({"axioms": ["myAxiom"]}, "outside allowed_axioms"),
+        ({"module": "Airas.Other"}, "module differs"),
+        ({"decl": "thm1'"}, "decl differs"),
+        ({"toolchain": "leanprover/lean4:v4.13.0"}, "toolchain differs"),
+        ({"mathlib_rev": "c" * 40}, "mathlib_rev differs"),
         (
             {"statement": "", "errors": ["error: unknown identifier 'thm1'"]},
             "unknown identifier",
@@ -277,9 +293,12 @@ def test_a_judgment_is_read_into_the_record(tmp_path: Path) -> None:
     assert _verify(str(tmp_path)).ok
 
 
-def test_a_lean_only_record_passes_with_provenance_required(tmp_path: Path) -> None:
-    """No metrics files exist, so Seyval provenance cannot apply — requiring
-    it must not fail a record whose runs Seyval never executed."""
+def test_a_lean_only_record_needs_provenance_like_an_experiment(
+    tmp_path: Path,
+) -> None:
+    """A lean run arrives through import_run_outputs like any other, so a
+    lean.json with no manifest and no backend to check against is not
+    verified when provenance is required."""
 
     def _no_store(backend: str, git_url: str) -> None:
         raise RuntimeError("no backend credentials in this environment")
@@ -294,4 +313,5 @@ def test_a_lean_only_record_passes_with_provenance_required(tmp_path: Path) -> N
             store_factory=_no_store,
         )
     )
-    assert report.ok, report.problems
+    assert not report.ok
+    assert any("provenance" in m for m in report.problems), report.problems

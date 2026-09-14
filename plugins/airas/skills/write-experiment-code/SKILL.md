@@ -14,6 +14,11 @@ However the code is produced — authored here or by an external
 code-generation tool — the contract below is what the repository holds
 it to; swapping the producer changes nothing else.
 
+This contract is for experiment runs (a claim with `verifier.kind =
+seyval`). A claim proved in Lean is written under `lean/` instead, to the
+contract in `_shared/references/lean.md`; both kinds start through the same
+`make run` and can live in one repository.
+
 1. **The execution contract.** The experiment repository ships empty
    source files; this is what they must become. Run ids and output metric
    paths must match `.research/record.json` exactly — verification rejects

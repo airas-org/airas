@@ -1160,10 +1160,14 @@ async def dispatch_experiment(
     `user_dockerfile_path` (default "Dockerfile") makes Seyval build the
     committed Dockerfile as-is instead of generating an environment; pass
     None to let it generate one. Its CMD then runs verbatim, so the run's
-    command is `command_args` (argv), which defaults to the full chain
-    `src.main && make evaluate && src.evaluate` for `run_id` and `run_stage`
-    — a run that stops after `src.main` writes no metrics.json and fails
-    verification. GitHub Actions runs the same chain from the workflow.
+    command is `command_args` (argv), which defaults to
+    `make run RUN_ID=<run_id> MODE=<run_stage>` — the repository's one entry
+    point, the same one run_experiment.yml calls. The Makefile reads the
+    run's kind from `config/run/<run_id>.yaml`: an experiment runs
+    `src.main`, airas-eval and `src.evaluate` (a run that stops after
+    `src.main` writes no metrics.json and fails verification); a `lean` run
+    builds the module and writes `lean.json`. Lean has sanity and full
+    stages only.
 
     `inputs_from_runs`, `time_limit` and `resource_count` apply to "seyval"
     only. `inputs_from_runs` takes `execution_id`s of earlier completed runs
@@ -2196,12 +2200,17 @@ async def preregister_record(
                 supported/refuted by the criterion on the runs' metrics;
                 inconclusive when the metric cannot be resolved.
       lean      (theory) {"kind": "lean", "toolchain": "leanprover/lean4:
-                v4.12.0", "mathlib_rev": "...", "allowed_axioms": [...]};
+                v4.33.1", "mathlib_rev": "<sha>", "allowed_axioms": [...]};
                 params = {"module": "Airas.Thm1", "decl": "thm1",
-                "statement": "<the type `#check @thm1` prints>"}. The build
-                writes `lean.json` into the run's results directory.
+                "statement": "<the type `#check @thm1` prints>"}. The
+                toolchain and mathlib_rev are the repository's
+                `lean/lean-toolchain` and `lean/lake-manifest.json`. The run
+                is dispatched like an experiment (`dispatch_experiment` with
+                a `config/run/<run_id>.yaml` holding kind: lean, module,
+                decl) and writes `lean.json` into its results directory.
                 Verdict: supported iff the result has no errors (build
-                failed, sorry, statement drift, an axiom outside
+                failed, sorry, statement drift, module/decl/toolchain/
+                mathlib_rev other than declared, an axiom outside
                 allowed_axioms); else inconclusive — Lean cannot refute.
       llm_judge (qualitative) {"kind": "llm_judge", "model": "<dated id>",
                 "rubric": "<repo path>", "temperature": 0, "samples": 5};
@@ -2209,8 +2218,8 @@ async def preregister_record(
                 writes `judgment.json` into the run's results directory.
                 It verifies that the evidence presented supports the
                 claim, not that the evidence is true.
-    The tools that execute lean and llm_judge, and the gate's re-execution
-    of them, are not implemented yet.
+    The tool that executes llm_judge, and the gate's re-execution of lean
+    and llm_judge, are not implemented yet.
 
     Also renders `claims.tex` — the numbered claim list with each criterion,
     prediction and (pending) verdict — into `.research/latex/{template}/`

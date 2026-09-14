@@ -7,7 +7,6 @@ from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.logging_utils import setup_logging
-from airas.core.research_paths import RESULTS_DIR
 from airas.core.types.experiment_history import RunStage
 from airas.core.types.github import GitHubConfig
 from airas.infra.github_client import GithubClient
@@ -20,21 +19,7 @@ Backend = Literal["github_actions", "seyval"]
 
 EXPERIMENT_WORKFLOW_FILE = "run_experiment.yml"
 
-ENTRY_POINT_TEMPLATE = (
-    "uv run python -u -m src.main run={run_id} "
-    f"results_dir={RESULTS_DIR} " + "mode={mode}"
-)
-# The whole chain in one run: a run that stops after src.main leaves no
-# metrics.json for the record gate to compare. Same chain as run_experiment.yml.
-# `run_ids` uses Hydra's quote-free list syntax: the argv crosses more than one
-# shell on the way to the job, and nested quotes do not survive that.
-RUN_COMMAND_TEMPLATE = (
-    "set -f; "
-    + ENTRY_POINT_TEMPLATE
-    + " && make evaluate RUN_ID={run_id}"
-    + f" && uv run python -u -m src.evaluate results_dir={RESULTS_DIR} "
-    + "run_ids=[{run_id}]"
-)
+RUN_COMMAND_TEMPLATE = "make run RUN_ID={run_id} MODE={mode}"
 
 ANALYSIS_ACTIVE = ("pending", "running")
 

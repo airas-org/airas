@@ -34,17 +34,14 @@ def test_seyval_needs_its_client():
         )
 
 
-def test_the_default_command_carries_the_whole_chain_and_its_overrides():
+def test_the_default_command_is_the_repository_entry_point_and_carries_its_overrides():
     command = RUN_COMMAND_TEMPLATE.format(run_id="run-1", mode="full")
-    assert "src.main" in command and "make evaluate" in command
-    assert "src.evaluate" in command
-    # The provenance manifest is realized from the recorded argv.
+    assert command == "make run RUN_ID=run-1 MODE=full"
+    # The provenance manifest is realized from the recorded argv, with the
+    # Makefile's upper-case variables as the record's lower-case params.
     assert parse_overrides(["bash", "-c", command]) == {
-        "run": "run-1",
-        "results_dir": ".research/results",
+        "run_id": "run-1",
         "mode": "full",
-        "RUN_ID": "run-1",
-        "run_ids": "[run-1]",
     }
 
 
@@ -138,7 +135,7 @@ async def test_seyval_dispatch_starts_the_analyzed_experiment_with_the_chain() -
     assert (started["experiment_id"], started["analysis_id"]) == ("exp_b", "an-1")
     assert started["user_dockerfile_path"] == "Dockerfile"
     assert started["command_args"][:2] == ["bash", "-c"]
-    assert "make evaluate RUN_ID=run-1" in started["command_args"][2]
+    assert started["command_args"][2] == "make run RUN_ID=run-1 MODE=sanity"
 
 
 async def test_seyval_dispatch_asks_for_a_retry_while_the_analysis_runs() -> None:
