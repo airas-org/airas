@@ -7,8 +7,9 @@
 ![record.json のクラス図](images/record-json-schema.png)
 
 <!-- 下の mermaid を Kroki (https://kroki.io, output_format png,
-     diagram_options {"html-labels": "false"}) で描画したもの（白背景、1924 px 幅）。
-     箱の中は名前と型だけで、各フィールドの意味は「木構造」節にある。図を変えたら描画し直す。 -->
+     diagram_options {"html-labels": "false"}) で描画し、透明背景を白に合成したもの
+     （2449 px 幅）。箱の中は名前と型だけで、各フィールドの意味は「木構造」節にある。
+     図を変えたら描画し直す。 -->
 
 ```mermaid
 classDiagram
@@ -65,9 +66,11 @@ classDiagram
     }
     class LeanClaim {
         verifier.kind = lean
+        toolchain, mathlib_rev, allowed_axioms
     }
     class LlmJudgeClaim {
         verifier.kind = llm_judge
+        model, rubric, temperature, samples
     }
     class Criterion {
         metric: str
@@ -80,20 +83,58 @@ classDiagram
         low, high: float
         basis: str
     }
-    class Design {
+    class SeyvalDesign {
         id: "d1"
         summary: str
-        runs: Run[]
+        runs: SeyvalRun[]
         cites_passages: passage id[]
     }
-    class Run {
+    class SeyvalRun {
         run_id: str
-        params: by kind
+        params: dict
         cites_passages: passage id[]
-        results: Result[]
+        results: SeyvalResult[]
     }
-    class Result {
-        SeyvalResult | LeanResult | LlmJudgeResult
+    class SeyvalResult {
+        id, commit
+        metrics: any
+        eval_inputs: InputRef
+        eval_report: EvalReport
+    }
+    class LeanDesign {
+        id: "d1"
+        summary: str
+        runs: LeanRun[]
+        cites_passages: passage id[]
+    }
+    class LeanRun {
+        run_id: str
+        params: LeanParams
+        cites_passages: passage id[]
+        results: LeanResult[]
+    }
+    class LeanResult {
+        commit, statement
+        axioms: str[]
+        errors, warnings
+    }
+    class LlmJudgeDesign {
+        id: "d1"
+        summary: str
+        runs: LlmJudgeRun[]
+        cites_passages: passage id[]
+    }
+    class LlmJudgeRun {
+        run_id: str
+        params: LlmJudgeParams
+        cites_passages: passage id[]
+        results: LlmJudgeResult[]
+    }
+    class LlmJudgeResult {
+        id, commit
+        inputs_sha256: str
+        verdict: Verdict
+        errors, warnings
     }
 
     ResearchRecord "1" --> "*" LiteratureSource : literature
@@ -106,14 +147,24 @@ classDiagram
     ClaimBase <|-- LlmJudgeClaim
     SeyvalClaim --> Criterion
     SeyvalClaim --> Prediction
-    ClaimBase "1" --> "*" Design : designs
-    Design "1" --> "*" Run : runs
-    Run "1" --> "*" Result : results
+    SeyvalClaim "1" --> "*" SeyvalDesign : designs
+    SeyvalDesign "1" --> "*" SeyvalRun : runs
+    SeyvalRun "1" --> "*" SeyvalResult : results
+    LeanClaim "1" --> "*" LeanDesign : designs
+    LeanDesign "1" --> "*" LeanRun : runs
+    LeanRun "1" --> "*" LeanResult : results
+    LlmJudgeClaim "1" --> "*" LlmJudgeDesign : designs
+    LlmJudgeDesign "1" --> "*" LlmJudgeRun : runs
+    LlmJudgeRun "1" --> "*" LlmJudgeResult : results
     Hypothesis ..> QuotedPassage : grounded_on
     ClaimBase ..> QuotedPassage : cites_passages
-    Design ..> QuotedPassage : cites_passages
-    Run ..> QuotedPassage : cites_passages
     Criterion ..> QuotedPassage : reference_passage
+    SeyvalDesign ..> QuotedPassage : cites_passages
+    SeyvalRun ..> QuotedPassage : cites_passages
+    LeanDesign ..> QuotedPassage : cites_passages
+    LeanRun ..> QuotedPassage : cites_passages
+    LlmJudgeDesign ..> QuotedPassage : cites_passages
+    LlmJudgeRun ..> QuotedPassage : cites_passages
 ```
 
 ## 論理構造
