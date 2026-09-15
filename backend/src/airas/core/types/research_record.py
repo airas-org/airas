@@ -276,7 +276,8 @@ class LeanResult(BaseModel):
         default=None,
         description=(
             "Whether the declared statement, elaborated by the report tool, is "
-            "the built type as a term; None when the tool did not compare"
+            "the built type as a term; None when the report carried no "
+            "comparison, which is an error"
         ),
     )
     axioms: list[str] = Field(default_factory=list)
