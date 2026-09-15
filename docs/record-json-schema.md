@@ -4,11 +4,11 @@
 
 ## クラス図
 
-[![record.json のクラス図](images/record-json-schema.svg)](images/record-json-schema.svg)
+![record.json のクラス図](images/record-json-schema.png)
 
-<!-- 下の mermaid を Kroki (https://kroki.io, diagram_options {"html-labels": "false"})
-     で描画したもの。箱の中は名前と型だけで、各フィールドの意味は「木構造」節にある。
-     図を変えたら描画し直す。 -->
+<!-- 下の mermaid を Kroki (https://kroki.io, output_format png,
+     diagram_options {"html-labels": "false"}) で描画したもの（白背景、1924 px 幅）。
+     箱の中は名前と型だけで、各フィールドの意味は「木構造」節にある。図を変えたら描画し直す。 -->
 
 ```mermaid
 classDiagram
