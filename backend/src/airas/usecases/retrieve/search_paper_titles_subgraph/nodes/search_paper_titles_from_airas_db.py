@@ -105,6 +105,12 @@ class AirasDbPaperSearchIndex:
 
         logger.info(f"Search index built with {len(self._papers)} papers")
 
+    async def get(self, record_id: str) -> dict[str, Any] | None:
+        await self._ensure_loaded()
+        return next(
+            (p for p in self._papers or [] if str(p.get("id")) == record_id), None
+        )
+
     async def search(self, query: str, max_results: int) -> list[str]:
         return [
             paper.get("title", "")

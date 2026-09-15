@@ -30,10 +30,12 @@ from airas.usecases.recording._run_provenance import (
     _ProvenanceCheckResult,
     verify_run_provenance,
 )
+from airas.usecases.recording.sources import quote_in
 from airas.usecases.recording.update_or_load_record import (
     _ClaimStatus,
     compute_claim_statuses,
     derive_result,
+    file_sha256,
     load_eval_inputs_ref,
     load_eval_report,
     load_metrics_data,
@@ -87,6 +89,7 @@ async def verify_record(
     )
 
     problems = await asyncio.to_thread(_verify_consistency, record)
+    problems += await asyncio.to_thread(_verify_literature, root, record)
     problems += await asyncio.to_thread(
         _verify_append_only, root, record, require_history
     )
@@ -160,6 +163,87 @@ def _verify_consistency(record: ResearchRecord) -> list[str]:
         for row in spec.rows
         if row.run_id not in declared and row.run_id != "comparison"
     ]
+    return problems + _verify_passage_references(record)
+
+
+def _verify_passage_references(record: ResearchRecord) -> list[str]:
+    """Every passage a declaration names is one some source declares."""
+    known = set(record.passage_index())
+    unknown = " '%s', which no source declares"
+    problems: list[str] = []
+    for hypothesis in record.active_hypotheses():
+        problems += [
+            f"hypothesis {hypothesis.id}: grounded_on names passage" + unknown % pid
+            for pid in hypothesis.grounded_on
+            if pid not in known
+        ]
+    for _, claim in record.active_claims():
+        problems += [
+            f"claim {claim.id}: cites_passages names passage" + unknown % pid
+            for pid in claim.cites_passages
+            if pid not in known
+        ]
+        if isinstance(claim, SeyvalClaim) and (
+            ref := claim.criterion.reference_passage
+        ):
+            if ref not in known:
+                problems.append(
+                    f"claim {claim.id}: criterion's reference_passage '{ref}' is "
+                    "not a passage any source declares"
+                )
+        for design, run in claim.runs():
+            problems += [
+                f"design {design.id}: cites_passages names passage" + unknown % pid
+                for pid in design.cites_passages
+                if pid not in known
+            ]
+            problems += [
+                f"run '{run.run_id}': cites_passages names passage" + unknown % pid
+                for pid in run.cites_passages
+                if pid not in known
+            ]
+    return problems
+
+
+# --------------------------------------------------------- the literature
+def _verify_literature(root: Path, record: ResearchRecord) -> list[str]:
+    """A source is confirmed by a registry and every passage quoted from it
+    is verbatim in its snapshot — the same check whatever the source's
+    origin."""
+    # TODO: the agent finds papers by unconstrained web search; the record
+    # shows what it read, not whether it also found test data or answers.
+    problems: list[str] = []
+    for source in record.active_literature():
+        if not source.verified_by:
+            problems.append(
+                f"source {source.id}: no registry verified it (register_sources does)"
+            )
+        if source.fulltext is None:
+            if source.passages:
+                problems.append(
+                    f"source {source.id}: has no fulltext snapshot, so its "
+                    "passages cannot be checked"
+                )
+            continue
+        path = root / source.fulltext.path
+        if not path.is_file():
+            problems.append(
+                f"source {source.id}: {source.fulltext.path} is missing "
+                "(register_sources writes it)"
+            )
+            continue
+        if file_sha256(path) != source.fulltext.sha256:
+            problems.append(
+                f"source {source.id}: {source.fulltext.path} does not match the "
+                "sha256 the record holds"
+            )
+            continue
+        fulltext = path.read_text(encoding="utf-8")
+        problems += [
+            f"passage {p.id}: quote is not found verbatim in {source.fulltext.path}"
+            for p in source.passages
+            if not quote_in(fulltext, p.quote)
+        ]
     return problems
 
 
@@ -205,9 +289,16 @@ def _verify_append_only(
         except ValidationError:
             return [f"record.json at {commit_hash[:12]} is not a valid record"]
 
+    # A declaration may only name passages already in the record when it
+    # lands: a passage registered afterwards was not what it was grounded on.
+    problems = [
+        f"{commit_hash[:12]}: {problem}"
+        for commit_hash, version in versions.items()
+        for problem in _verify_passage_references(version)
+    ]
     # Each commit against each of its parents — not against its neighbour in
     # a linear list, which would set two sibling branches against each other.
-    problems = [
+    problems += [
         f"{parent[:12]} -> {commit[:12]}: {problem}"
         for commit, parents in edges
         for parent in parents

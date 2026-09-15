@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import os
+import shutil
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Literal
@@ -18,7 +20,7 @@ from airas.core.credentials import SETUP_INSTRUCTIONS, refresh_environment
 # LLM mapping classes + helper for building per-node model selection from a
 # single externally-supplied model name (no in-code default model exists).
 from airas.core.llm_config import uniform_llm_mapping
-from airas.core.research_paths import RECORD_PATH
+from airas.core.research_paths import RECORD_PATH, REFERENCES_BIB_FILENAME
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experiment_history import ExperimentHistory, RunStage
 from airas.core.types.experimental_design import (
@@ -40,6 +42,8 @@ from airas.core.types.research_record import (
     ChartDeclaration,
     ClaimDeclaration,
     Hypothesis,
+    LiteratureSource,
+    QuotedPassage,
     RenderedChart,
     ResearchRecord,
     active,
@@ -165,6 +169,16 @@ from airas.usecases.publication.verify_paper import (
     verify_latex_build,
     verify_paper,
 )
+from airas.usecases.recording.sources import (
+    airas_db_metadata,
+    next_passage_id,
+    next_source_id,
+    render_references_bib,
+    snapshot_repository,
+    unique_bibkey,
+    verify_existence,
+    write_fulltext,
+)
 from airas.usecases.recording.update_or_load_record import (
     load_metrics_data,
     load_provenance_manifest,
@@ -173,9 +187,15 @@ from airas.usecases.recording.update_or_load_record import (
     save_record,
     update_record_with_results,
 )
-from airas.usecases.recording.verify_record import _verify_consistency
+from airas.usecases.recording.verify_record import (
+    _verify_consistency,
+    _verify_literature,
+)
 from airas.usecases.retrieve.fetch_paper_fulltext_subgraph.fetch_paper_fulltext_subgraph import (
     FetchPaperFulltextSubgraph,
+)
+from airas.usecases.retrieve.fetch_paper_fulltext_subgraph.nodes.download_pdf_text import (
+    parser_version,
 )
 from airas.usecases.retrieve.retrieve_datasets_subgraph.retrieve_datasets_subgraph import (
     RetrieveDatasetsSubgraph,
@@ -1849,14 +1869,23 @@ async def render_diagram(
 
 
 @mcp.tool()
-async def generate_bibfile(research_study_list: list[dict[str, Any]]) -> str:
+async def generate_bibfile(
+    research_study_list: list[dict[str, Any]] | None = None,
+    local_path: str | None = None,
+) -> str:
     """Generate a BibTeX references file from research studies.
 
-    `research_study_list` should be the output of `retrieve_papers`. Returns
-    the .bib content used by `generate_paper` and `generate_latex`.
-    No API keys required.
+    With `local_path`, the .bib is rendered from the repository's registered
+    literature — the same bytes `register_sources` wrote and the gate
+    regenerates. Otherwise `research_study_list` should be the output of
+    `retrieve_papers`. Returns the .bib content used by `generate_paper` and
+    `generate_latex`. No API keys required.
     """
-    studies = [ResearchStudy.model_validate(study) for study in research_study_list]
+    if local_path:
+        return render_references_bib(load_record(local_path).active_literature())
+    studies = [
+        ResearchStudy.model_validate(study) for study in research_study_list or []
+    ]
     result = (
         await GenerateBibfileSubgraph()
         .build_graph()
@@ -2143,6 +2172,16 @@ def _write_claims_tex(local_path: str, template: str, record: ResearchRecord) ->
     return relpath
 
 
+def _write_references_bib(
+    local_path: str, template: str, record: ResearchRecord
+) -> str:
+    relpath = f".research/latex/{template}/{REFERENCES_BIB_FILENAME}"
+    path = Path(local_path).expanduser().resolve() / relpath
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(render_references_bib(record.active_literature()), encoding="utf-8")
+    return relpath
+
+
 def _hypothesis(record: ResearchRecord, hypothesis_id: str) -> Hypothesis:
     for hypothesis in record.hypotheses:
         if hypothesis.id == hypothesis_id:
@@ -2151,6 +2190,23 @@ def _hypothesis(record: ResearchRecord, hypothesis_id: str) -> Hypothesis:
         f"no hypothesis '{hypothesis_id}' in the record "
         f"(have: {', '.join(h.id for h in record.hypotheses) or 'none'})"
     )
+
+
+def _source(record: ResearchRecord, source_id: str) -> LiteratureSource:
+    for source in record.active_literature():
+        if source.id == source_id:
+            return source
+    raise ValueError(
+        f"no source '{source_id}' in the record "
+        f"(have: {', '.join(s.id for s in record.literature) or 'none'})"
+    )
+
+
+def _add_passages(source: LiteratureSource, passages: list[dict[str, Any]]) -> None:
+    for passage in passages:
+        source.passages.append(
+            QuotedPassage.model_validate({"id": next_passage_id(source), **passage})
+        )
 
 
 @mcp.tool()
@@ -2191,6 +2247,13 @@ async def preregister_record(
         }],
         "tables": [...], "charts": [...], "notes": [...]
       }]
+
+    A hypothesis's `grounded_on`, a claim's, design's or run's
+    `cites_passages` and a criterion's `reference_passage` name passages of
+    the literature registered earlier with `register_sources` (`"s1.p2"`):
+    what the declaration rests on, in the prior work's own words. The gate
+    refuses a passage no source declares, and one registered after the
+    declaration that names it.
 
     `run_id` names the results directory the run will produce and must be
     unique across the whole record — a run belongs to exactly one claim.
@@ -2269,7 +2332,8 @@ async def preregister_record(
                 "grows; add declarations with append_to_record"
             )
 
-        record = ResearchRecord(hypotheses=parsed)
+        record = load_record(local_path) if path.is_file() else ResearchRecord()
+        record.hypotheses = parsed
         problems = _verify_consistency(record)
         if problems:
             raise ValueError("; ".join(problems))
@@ -2311,6 +2375,8 @@ async def append_to_record(
     tables: list[dict[str, Any]] | None = None,
     charts: list[dict[str, Any]] | None = None,
     notes: list[str] | None = None,
+    source_id: str | None = None,
+    passages: list[dict[str, Any]] | None = None,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
 ) -> dict[str, Any]:
     """Add declarations to the record; nothing already in it ever changes.
@@ -2334,6 +2400,11 @@ async def append_to_record(
     unverified forever. A seyval claim appended here needs its criterion and
     prediction like one preregistered; `claims.tex` is re-rendered and
     committed alongside.
+
+    `passages` append under the source named by `source_id` (shape as in
+    `register_sources`: `{"node_type", "quote", "anchor"?}`); the
+    quote must be copied from that source's `fulltext.txt`, or the append is
+    refused.
     """
     new_hypotheses = _parse_hypotheses(hypotheses)
     scoped = any(x for x in (claims, tables, charts, notes))
@@ -2342,6 +2413,8 @@ async def append_to_record(
             "claims, tables, charts and notes append under a hypothesis — "
             "pass hypothesis_id"
         )
+    if passages and not source_id:
+        raise ValueError("passages append under a source — pass source_id")
 
     def _run() -> dict[str, Any]:
         record = load_record(local_path)
@@ -2362,7 +2435,11 @@ async def append_to_record(
                 charts=len(parsed_charts),
                 notes=len(notes or []),
             )
-        problems = _verify_consistency(record)
+        if source_id:
+            _add_passages(_source(record, source_id), passages or [])
+            counts["passages"] = len(passages or [])
+        root = Path(local_path).expanduser().resolve()
+        problems = _verify_consistency(record) + _verify_literature(root, record)
         if problems:
             raise ValueError("; ".join(problems))
         save_record(local_path, record)
@@ -2378,6 +2455,224 @@ async def append_to_record(
             "next": (
                 "the appended declarations are committed — any run they "
                 "should count for must execute this commit or a descendant"
+            ),
+        }
+
+    return await asyncio.to_thread(_run)
+
+
+@mcp.tool()
+async def register_sources(
+    local_path: str,
+    papers: list[dict[str, Any]] | None = None,
+    repositories: list[dict[str, Any]] | None = None,
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+) -> dict[str, Any]:
+    """Pin the papers and repositories the research draws on, so their
+    passages can be cited.
+
+    A source is an entry of `.research/record.json`'s `literature`, pinned
+    by a fulltext snapshot (`.research/sources/<id>/fulltext.txt`, pages
+    separated by a form feed) whose sha256 the record holds. Each
+    `papers[]` entry is one paper:
+
+      {"airas_db": "<id from search_papers>"}            metadata from the db
+      {"title", "authors", "year", "venue", "pdf_url",   what a web search found
+       "doi"?, "arxiv_id"?, "url"?}
+      + optional "passages": [{"node_type": "claim|result|method|setup|gap|
+        definition", "anchor": "text|table|figure", "quote": "..."}]
+
+    Whatever the origin, the same checks run: the paper must be confirmed
+    by the registry behind an identifier it carries (airas-papers-db for
+    `airas_db`, doi.org for `doi`, the arXiv API for `arxiv_id` — so a
+    paper with none of the three cannot be registered), and its PDF must
+    yield text (resolved from `arxiv_id`/`doi` the way `fetch_paper_fulltext`
+    does, or from `pdf_url`). The tool writes the snapshot, sets the bibkey
+    (`<surname>-<year>-<word>`, the key `\\cite` uses), renders
+    `.research/latex/<template>/references.bib` from the record's literature
+    (the gate regenerates it, so never edit it by hand) and commits record,
+    snapshots and bibliography together; a paper that fails a check is
+    refused and nothing is written. A paper already in the record (same DOI, arXiv id
+    or URL) is left as it is.
+
+    `repositories[]` pins code the research builds on: `{"url", "commit",
+    "files": ["src/model.py", ...], "passages"?}`. The files are read at
+    that commit into the snapshot (one page per file, headed `==> path <==`)
+    and the fetch succeeding is the existence check (`verified_by: "git"`);
+    a passage of a repository quotes lines of a file, with `"anchor":
+    "code"`.
+
+    Quotes are copied from the snapshot, not from the PDF: the gate checks
+    that every passage's `quote` is verbatim in `fulltext.txt` (ligatures,
+    line breaks and soft hyphens aside). Read the snapshot, declare
+    passages here or with
+    `append_to_record(source_id=..., passages=[...])`, then name them in a
+    hypothesis's `grounded_on`, a claim's, design's or run's
+    `cites_passages`, or a criterion's `reference_passage`.
+    """
+    if not (papers or repositories):
+        raise ValueError("nothing to register: pass papers and/or repositories")
+    refresh_environment()
+    root = Path(local_path).expanduser().resolve()
+    record = (
+        load_record(local_path)
+        if record_path(local_path).is_file()
+        else ResearchRecord()
+    )
+    registered: dict[str, Any] = {}
+    snapshots: list[str] = []
+
+    def _register(source: LiteratureSource, entry: dict[str, Any]) -> None:
+        _add_passages(source, entry.get("passages") or [])
+        registered[source.id] = {
+            "bibkey": source.bibkey,
+            "title": source.title,
+            "fulltext": source.fulltext.path if source.fulltext else None,
+            "passages": [p.id for p in source.passages],
+            "verified_by": source.verified_by,
+        }
+
+    for entry in repositories or []:
+        url, commit = (
+            (entry.get("url") or "").strip(),
+            (entry.get("commit") or "").strip(),
+        )
+        if not (url and commit and entry.get("files")):
+            raise ValueError("a repository needs url, commit and files")
+        source = next(
+            (
+                s
+                for s in record.active_literature()
+                if s.url == url and s.commit == commit
+            ),
+            None,
+        )
+        if source is None:
+            metadata, pages = await asyncio.to_thread(
+                snapshot_repository, url, commit, list(entry["files"])
+            )
+            source_id = next_source_id(record)
+            source = LiteratureSource(
+                id=source_id,
+                kind="repository",
+                bibkey=unique_bibkey(
+                    metadata["title"].rsplit("/", 1)[-1],
+                    metadata["authors"],
+                    metadata["year"],
+                    {s.bibkey for s in record.literature},
+                ),
+                verified_by="git",
+                verified_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                fulltext=write_fulltext(root, source_id, pages),
+                parser="git show",
+                **metadata,
+            )
+            record.literature.append(source)
+            snapshots.append(source.fulltext.path)
+        _register(source, entry)
+
+    for entry in papers or []:
+        db_id = str(entry.get("airas_db") or "") or None
+        db_record = await _search_index.get(db_id) if db_id else None
+        metadata = airas_db_metadata(db_record) if db_record else {}
+        title = metadata.get("title") or (entry.get("title") or "").strip()
+        doi = (entry.get("doi") or "").strip() or None
+        arxiv_id = (entry.get("arxiv_id") or "").strip() or None
+        label = title or db_id or doi or arxiv_id
+        if not (db_id or doi or arxiv_id):
+            raise ValueError(
+                f"'{label}': a paper needs an airas_db id, a doi or an arxiv_id "
+                "so that its existence can be checked"
+            )
+        registries, verified_at = await verify_existence(
+            airas_db_record={} if db_id and db_record is None else db_record,
+            doi=doi,
+            arxiv_id=arxiv_id,
+            arxiv=_arxiv_client(),
+            http=_async_session,
+        )
+        verified_by = next((r for r, s in registries.items() if s == "found"), "")
+        if not verified_by:
+            raise ValueError(f"'{label}': no registry verified it ({registries})")
+
+        url = entry.get("url") or metadata.get("url")
+        source = next(
+            (
+                s
+                for s in record.active_literature()
+                if (doi and s.doi == doi)
+                or (arxiv_id and s.arxiv_id == arxiv_id)
+                or (url and s.url == url)
+            ),
+            None,
+        )
+        if source is None:
+            pdf_url = entry.get("pdf_url") or metadata.get("url")
+            fetched = (
+                await FetchPaperFulltextSubgraph(
+                    semantic_scholar_client=_semantic_scholar_client()
+                )
+                .build_graph()
+                .ainvoke(
+                    {
+                        "arxiv_id": arxiv_id,
+                        "doi": doi,
+                        "pdf_url": pdf_url,
+                        "max_chars": None,
+                    }
+                )
+            )
+            if fetched["status"] != "fulltext":
+                raise ValueError(
+                    f"'{label}': no PDF yielded text ({fetched['status']}) — pass pdf_url"
+                )
+            source_id = next_source_id(record)
+            authors = metadata.get("authors") or entry.get("authors") or []
+            year = metadata.get("year") or entry.get("year")
+            source = LiteratureSource(
+                id=source_id,
+                title=title,
+                authors=authors,
+                year=year,
+                venue=metadata.get("venue") or entry.get("venue") or "",
+                doi=doi,
+                arxiv_id=arxiv_id,
+                url=url or fetched["pdf_url"],
+                bibkey=unique_bibkey(
+                    title, authors, year, {s.bibkey for s in record.literature}
+                ),
+                verified_by=verified_by,
+                verified_at=verified_at,
+                fulltext=write_fulltext(root, source_id, fetched["pages"]),
+                parser=parser_version(),
+            )
+            record.literature.append(source)
+            snapshots.append(source.fulltext.path)
+        _register(source, entry)
+
+    def _run() -> dict[str, Any]:
+        problems = _verify_consistency(record) + _verify_literature(root, record)
+        if problems:
+            for relpath in snapshots:
+                shutil.rmtree((root / relpath).parent, ignore_errors=True)
+            raise ValueError("; ".join(problems))
+        save_record(local_path, record)
+        claims_tex = _write_claims_tex(local_path, latex_template_name, record)
+        references_bib = _write_references_bib(local_path, latex_template_name, record)
+        commit = _commit_record_paths(
+            local_path,
+            [RECORD_PATH, claims_tex, references_bib, *snapshots],
+            "record: register sources",
+        )
+        return {
+            "record_path": str(record_path(local_path)),
+            "references_bib_path": references_bib,
+            "sources": registered,
+            "commit": commit,
+            "next": (
+                "read each fulltext.txt and copy the passages the research "
+                "rests on into append_to_record(source_id=..., passages=[...]); "
+                "name them in grounded_on / cites_passages when declaring"
             ),
         }
 

@@ -76,6 +76,10 @@ class Run(BaseModel, Generic[ParamsT, ResultT]):
     description: str = ""
     params: ParamsT
     results: list[ResultT] = Field(default_factory=list)
+    cites_passages: list[str] = Field(
+        default_factory=list,
+        description="Passage ids this run reproduces or follows, e.g. 's1.p2'",
+    )
 
     def latest_result(self) -> ResultT | None:
         return self.results[-1] if self.results else None
@@ -88,6 +92,9 @@ class Design(BaseModel, Generic[RunT]):
     id: str = Field(pattern=DESIGN_ID_PATTERN)
     summary: str = ""
     runs: list[RunT] = Field(default_factory=list)
+    cites_passages: list[str] = Field(
+        default_factory=list, description="Passage ids the design follows"
+    )
 
 
 DesignT = TypeVar("DesignT", bound=Design[Any])
@@ -105,6 +112,9 @@ class ClaimBase(BaseModel, Generic[VerifierT, DesignT]):
     )
     verifier: VerifierT
     designs: list[DesignT] = Field(default_factory=list)
+    cites_passages: list[str] = Field(
+        default_factory=list, description="Passage ids the claim rests on"
+    )
     verified: bool = Field(
         default=False,
         description="Every run under this claim has its verifier's report",
@@ -127,6 +137,68 @@ class ClaimBase(BaseModel, Generic[VerifierT, DesignT]):
 class InputRef(BaseModel):
     path: str = Field(description="Repository-relative path of the inputs file")
     sha256: str
+
+
+# --------------------------------------------------------------- literature
+
+SOURCE_ID_PATTERN = r"^s[1-9][0-9]*$"
+PASSAGE_ID_PATTERN = r"^s[1-9][0-9]*\.p[1-9][0-9]*$"
+# What the passage states — the role a graph walk filters on. Where it
+# appears (prose, a table, a figure caption) is the anchor, kept apart.
+PassageNodeType = Literal["claim", "result", "method", "setup", "gap", "definition"]
+PassageAnchor = Literal["text", "table", "figure", "code"]
+
+
+class QuotedPassage(BaseModel):
+    """A verbatim passage of a source, the unit a hypothesis or claim cites."""
+
+    # TODO: a table's locator (page, table index, row) and a figure's (bbox,
+    # image hash). Today a table passage quotes the row text and a figure
+    # passage its caption, both found in the fulltext snapshot.
+    id: str = Field(pattern=PASSAGE_ID_PATTERN)
+    node_type: PassageNodeType
+    anchor: PassageAnchor = "text"
+    quote: str = Field(
+        min_length=1, description="Verbatim, copied from the fulltext snapshot"
+    )
+
+
+class LiteratureSource(BaseModel):
+    """A paper, or a repository at a commit, the research drew on; pinned by
+    its fulltext snapshot (pages, or the registered files)."""
+
+    id: str = Field(pattern=SOURCE_ID_PATTERN)
+    kind: Literal["paper", "repository"] = "paper"
+    title: str
+    authors: list[str] = Field(default_factory=list)
+    year: Optional[int] = None
+    venue: str = ""
+    doi: Optional[str] = None
+    arxiv_id: Optional[str] = None
+    url: Optional[str] = None
+    commit: Optional[str] = Field(
+        default=None, description="repository: the commit read"
+    )
+    bibkey: str
+    verified_by: str = Field(
+        default="",
+        description="Registry that confirmed the source exists at registration: "
+        "airas_db | doi.org | arxiv | git",
+    )
+    verified_at: str = Field(default="", description="ISO-8601 UTC")
+    fulltext: Optional[InputRef] = None
+    parser: str = Field(default="", description="e.g. 'pymupdf 1.26.0'")
+    passages: list[QuotedPassage] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _passages_belong_to_this_source(self) -> LiteratureSource:
+        foreign = [p.id for p in self.passages if not p.id.startswith(f"{self.id}.")]
+        if foreign:
+            raise ValueError(
+                f"source {self.id}: passages {', '.join(foreign)} carry another "
+                "source's id"
+            )
+        return self
 
 
 class EvalReport(BaseModel):
@@ -208,6 +280,10 @@ class Criterion(BaseModel):
     )
     op: CriterionOp
     margin: float = 0.0
+    reference_passage: Optional[str] = Field(
+        default=None,
+        description="Passage id a constant reference was read from, e.g. 's1.p2'",
+    )
 
     @model_validator(mode="after")
     def _subject_is_not_the_reference(self) -> Criterion:
@@ -380,6 +456,11 @@ class Hypothesis(BaseModel):
         "claims it concerns. Every claim supported leaves exactly these "
         "unverified",
     )
+    grounded_on: list[str] = Field(
+        default_factory=list,
+        description="Passage ids that motivated the hypothesis — the gap it "
+        "answers, in the prior work's own words",
+    )
     claims: list[ClaimDeclaration] = Field(default_factory=list)
     tables: list[TableSpec] = Field(default_factory=list)
     charts: list[ChartDeclaration] = Field(default_factory=list)
@@ -387,7 +468,18 @@ class Hypothesis(BaseModel):
 
 
 class ResearchRecord(BaseModel):
+    literature: list[LiteratureSource] = Field(default_factory=list)
     hypotheses: list[Hypothesis] = Field(default_factory=list)
+
+    def active_literature(self) -> list[LiteratureSource]:
+        return active(self.literature, "id")
+
+    def passage_index(self) -> dict[str, tuple[LiteratureSource, QuotedPassage]]:
+        return {
+            passage.id: (source, passage)
+            for source in self.active_literature()
+            for passage in active(source.passages, "id")
+        }
 
     def active_hypotheses(self) -> list[Hypothesis]:
         return active(self.hypotheses, "id")

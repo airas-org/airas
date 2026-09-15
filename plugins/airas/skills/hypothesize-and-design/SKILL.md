@@ -5,7 +5,12 @@ description: Author a falsifiable research hypothesis and an experimental design
 
 # Hypothesize & design
 
-Needs a `research_study_list` (prior work to build on).
+Needs a `research_study_list` (prior work to build on) and, for the
+record, the passage ids (`s1.p2`) registered by `discover-papers`: note
+which passages the hypothesis answers (its gap) and which the design
+follows, so `preregister-paper` can declare them as `grounded_on` and
+`cites_passages` — the gate refuses a passage registered after the
+declaration that names it.
 
 1. **Author the hypothesis** via `get_generation_prompt("hypothesis",
    ...)` with the study list. Write the prose in Japanese;

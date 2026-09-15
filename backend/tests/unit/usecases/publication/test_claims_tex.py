@@ -8,7 +8,9 @@ runs are in.
 from airas.core.types.research_record import (
     Criterion,
     Hypothesis,
+    LiteratureSource,
     Prediction,
+    QuotedPassage,
     ResearchRecord,
     SeyvalClaim,
     SeyvalDesign,
@@ -151,3 +153,34 @@ def test_a_lean_claim_names_the_run_it_rests_on() -> None:
     assert "execution \\texttt{\\detokenize{34941959631}}" in realized
     assert "commit \\texttt{\\detokenize{aaaaaaaaaaaa}}" in realized
     assert "axioms: \\texttt{\\detokenize{propext}}" in realized
+
+
+def test_grounds_cited_passages_and_quoted_sources_are_listed() -> None:
+    record = _record()
+    record.literature.append(
+        LiteratureSource(
+            id="s1",
+            title="Attention Is All You Need",
+            year=2017,
+            bibkey="vaswani-2017-attention",
+            passages=[
+                QuotedPassage(
+                    id="s1.p1",
+                    node_type="result",
+                    anchor="table",
+                    quote="We apply dropout & more.",
+                )
+            ],
+        )
+    )
+    record.hypotheses[0].grounded_on = ["s1.p1"]
+    record.hypotheses[0].claims[0].cites_passages = ["s1.p1"]
+    tex = render_claims_tex(record, {})
+    assert r"\emph{Grounded on:} \texttt{\detokenize{s1.p1}}." in tex
+    assert r"\emph{Cites:} \texttt{\detokenize{s1.p1}}." in tex
+    assert r"\textbf{S1} \texttt{\detokenize{vaswani-2017-attention}}" in tex
+    assert "(result table) ``We apply dropout \\& more.''" in tex
+
+
+def test_a_record_without_literature_has_no_sources_block() -> None:
+    assert "Sources" not in render_claims_tex(_record(), {})

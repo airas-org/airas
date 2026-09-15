@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from airas.core.research_paths import DERIVED_FROM_PATH, STEPS_PATH
+from airas.core.research_paths import DERIVED_FROM_PATH, SOURCES_DIR, STEPS_PATH
 from airas.core.types.agent_state import SessionPointer
 from airas.core.types.research_trace import DerivedFromRepository, ResearchTraceEvent
 from airas.infra.local_git import commit_paths, head_commit
@@ -104,6 +104,33 @@ def record_step(
         step=step,
         iteration=sum(1 for e in trace if e.kind == "step" and e.step == step) + 1,
         intervention=_intervention(local_path, pointer, trace),
+    )
+    _append(local_path, event)
+    return event
+
+
+def record_access(
+    local_path: str, pointer: SessionPointer, paths: list[str]
+) -> ResearchTraceEvent | None:
+    """Which registered source files a tool call touched; None when none."""
+    root = _root(local_path)
+    touched = []
+    for raw in paths:
+        path = Path(raw) if Path(raw).is_absolute() else root / raw
+        try:
+            relative = path.resolve().relative_to(root)
+        except ValueError:
+            continue
+        if relative.parts[: len(Path(SOURCES_DIR).parts)] == Path(SOURCES_DIR).parts:
+            touched.append(str(relative))
+    if not touched:
+        return None
+    event = ResearchTraceEvent(
+        kind="access",
+        timestamp=_now(),
+        session_id=pointer.session_id,
+        head=head_commit(root),
+        paths=sorted(set(touched)),
     )
     _append(local_path, event)
     return event

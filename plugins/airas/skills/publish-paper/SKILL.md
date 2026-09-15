@@ -57,8 +57,15 @@ local stage.
    declaration with `append_to_record` and re-run — never type the
    number. A number no declaration can produce (e.g. quoted from a
    cited paper) must be wrapped as `\unverified{...}`.
-   Bibliography: `generate_bibfile` →
-   `.research/latex/{template}/references.bib`.
+   Citations: every `\cite` key must be a source registered with
+   `register_sources`; a sentence that rests on a registered passage
+   cites it as `\cite[s1.p2]{key}` (the writer's `[@key, s1.p2]`), and
+   the gate checks the passage belongs to that source. Registered
+   sources the paper never cites are listed in `uncited_sources` for
+   you to judge, not failed. Bibliography: `register_sources` wrote
+   `.research/latex/{template}/references.bib` from the record and the
+   gate regenerates it — never edit it; only a repository without
+   registered sources uses `generate_bibfile`.
 
 2. **Check that it builds**: `verify_latex` with `local_path`
    (working tree; no push). Use it for what a local run can honestly

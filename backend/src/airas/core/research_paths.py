@@ -15,6 +15,14 @@ METRICS_FILENAME = "metrics.json"
 COMPARISON_KEY = "comparison"
 COMPARISON_METRICS_FILENAME = "aggregated_metrics.json"
 
+# The literature the research drew on: one directory per source holding
+# the fulltext snapshot its quoted passages are checked against. Pages are
+# separated by a form feed, as pdftotext does.
+SOURCES_DIR = ".research/sources"
+FULLTEXT_FILENAME = "fulltext.txt"
+PAGE_SEPARATOR = "\f"
+REFERENCES_BIB_FILENAME = "references.bib"
+
 # The fork point: what an agent needs to resume the research from a commit.
 # One directory per harness session holding the raw transcript, its neutral
 # rendering and the harness configuration; one JSONL of step boundaries.

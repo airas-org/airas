@@ -33,6 +33,7 @@ commit the fork points:
 |---|---|---|
 | `SessionStart` | `airas hook session-start` | Where the live session is (a pointer under `~/.airas/sessions/`) |
 | `PostToolUse` on `Skill` (Claude Code) | `airas hook step` | Which step skill the agent entered, and how many times |
+| `PostToolUse` on `Read` / `Bash` (Claude Code) | `airas hook access` | Which registered source files under `.research/sources/` the agent read |
 | `Stop` (end of every turn) | `airas hook capture` | The session and harness into `.research/sessions/`, then a commit of the whole tree |
 
 Hooks only act in a clone that has a `.research/` directory. Every turn

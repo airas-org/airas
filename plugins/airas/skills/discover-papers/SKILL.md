@@ -20,5 +20,18 @@ description: Author search queries, search and read papers with the AIRAS MCP to
    `citations`, `arxiv_id` go under `meta_data`; only `title` is
    required, so `{"title", "abstract"}` is valid for a paper you did
    not fully read. Call `get_input_schema` before building by hand.
+5. **Register what the research will rest on** with `register_sources`
+   (needs the local clone). Pass an `airas_db` id from the search row,
+   or `doi` / `arxiv_id` with the title, authors, year, venue and
+   `pdf_url` you found — a paper with none of the three identifiers
+   cannot be registered, because nothing can confirm it exists. The
+   tool pins each paper by a fulltext snapshot
+   (`.research/sources/<id>/fulltext.txt`) and writes
+   `references.bib`. Then read the snapshot and declare the passages
+   the research draws on — `append_to_record(source_id="s1",
+   passages=[{"node_type": "gap|claim|result|method|setup|definition",
+   "quote": "<copied verbatim from fulltext.txt>"}])`. The gate checks
+   every quote against the snapshot, so copy, never retype.
 
-**Output**: a `research_study_list`.
+**Output**: a `research_study_list`, and registered sources with
+passage ids (`s1.p2`) for `hypothesize-and-design` to name.

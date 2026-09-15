@@ -20,7 +20,9 @@ from airas.core.types.research_record import (
     ClaimDeclaration,
     Criterion,
     Hypothesis,
+    LiteratureSource,
     Prediction,
+    QuotedPassage,
     ResearchRecord,
     SeyvalClaim,
     SeyvalDesign,
@@ -264,3 +266,41 @@ def test_active_keeps_order_and_takes_the_last_entry_per_id() -> None:
         ("a", "revised"),
         ("b", ""),
     ]
+
+
+def _source() -> LiteratureSource:
+    return LiteratureSource(
+        id="s1",
+        title="Attention Is All You Need",
+        bibkey="vaswani-2017-attention",
+        verified_by="doi.org",
+        verified_at="2026-09-15T00:00:00+00:00",
+    )
+
+
+def test_appending_a_passage_to_a_source_is_allowed() -> None:
+    older = ResearchRecord(literature=[_source()])
+    newer = ResearchRecord(literature=[_source()])
+    newer.literature[0].passages.append(
+        QuotedPassage(id="s1.p1", node_type="claim", quote="q")
+    )
+    assert record_append_violations(older, newer) == []
+
+
+def test_who_verified_a_source_cannot_be_edited_in_place() -> None:
+    older = ResearchRecord(literature=[_source()])
+    newer = ResearchRecord(literature=[_source()])
+    newer.literature[0].verified_by = "arxiv"
+    assert record_append_violations(older, newer)
+
+
+def test_a_passage_carrying_another_sources_id_is_rejected() -> None:
+    with pytest.raises(ValueError, match="another source's id"):
+        LiteratureSource.model_validate(
+            {
+                "id": "s1",
+                "title": "t",
+                "bibkey": "k",
+                "passages": [{"id": "s2.p1", "node_type": "claim", "quote": "q"}],
+            }
+        )
