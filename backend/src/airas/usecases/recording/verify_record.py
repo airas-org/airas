@@ -6,7 +6,13 @@ from typing import Any, Literal
 
 from pydantic import ValidationError
 
-from airas.core.research_paths import COMPARISON_KEY, RECORD_PATH, RESULTS_DIR
+from airas.core.research_paths import (
+    COMPARISON_KEY,
+    FULLTEXT_FILENAME,
+    RECORD_PATH,
+    RESULTS_DIR,
+    SOURCES_DIR,
+)
 from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import (
     AnyRun,
@@ -163,7 +169,28 @@ def _verify_consistency(record: ResearchRecord) -> list[str]:
         for row in spec.rows
         if row.run_id not in declared and row.run_id != "comparison"
     ]
-    return problems + _verify_passage_references(record)
+    return problems + _verify_pinned_once(record) + _verify_passage_references(record)
+
+
+def _verify_pinned_once(record: ResearchRecord) -> list[str]:
+    """A source or a passage is declared once: re-appending its id would put
+    a different snapshot or quote behind the same reference."""
+    problems: list[str] = []
+    seen_sources: set[str] = set()
+    for source in record.literature:
+        if source.id in seen_sources:
+            problems.append(
+                f"source {source.id}: declared twice — a source is pinned once"
+            )
+        seen_sources.add(source.id)
+        seen_passages: set[str] = set()
+        for passage in source.passages:
+            if passage.id in seen_passages:
+                problems.append(
+                    f"passage {passage.id}: declared twice — a quote is pinned once"
+                )
+            seen_passages.add(passage.id)
+    return problems
 
 
 def _verify_passage_references(record: ResearchRecord) -> list[str]:
@@ -218,14 +245,19 @@ def _verify_literature(root: Path, record: ResearchRecord) -> list[str]:
             problems.append(
                 f"source {source.id}: no registry verified it (register_sources does)"
             )
-        if source.fulltext is None:
-            if source.passages:
-                problems.append(
-                    f"source {source.id}: has no fulltext snapshot, so its "
-                    "passages cannot be checked"
-                )
+        expected = f"{SOURCES_DIR}/{source.id}/{FULLTEXT_FILENAME}"
+        if source.fulltext is None or source.fulltext.path != expected:
+            problems.append(
+                f"source {source.id}: fulltext snapshot must be {expected} "
+                "(register_sources writes it)"
+            )
             continue
         path = root / source.fulltext.path
+        if not path.resolve().is_relative_to(root.resolve()):
+            problems.append(
+                f"source {source.id}: {expected} resolves outside the repository"
+            )
+            continue
         if not path.is_file():
             problems.append(
                 f"source {source.id}: {source.fulltext.path} is missing "

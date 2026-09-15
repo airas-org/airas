@@ -159,10 +159,12 @@ async def verify_existence(
 
     if doi:
         try:
-            response = await http.head(f"https://doi.org/{doi}", timeout=30.0)
+            response = await http.head(
+                f"https://doi.org/{doi}", timeout=30.0, follow_redirects=False
+            )
             registries["doi.org"] = (
                 "found"
-                if response.is_redirect
+                if response.is_redirect or response.is_success
                 else "not_found"
                 if response.status_code == 404
                 else f"error: {response.status_code}"

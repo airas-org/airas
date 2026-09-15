@@ -303,6 +303,8 @@ def _passages(ids: list[str]) -> str:
 
 def _cited_passages_line(claim: Any) -> str | None:
     parts = [_passages(claim.cites_passages)] if claim.cites_passages else []
+    if isinstance(claim, SeyvalClaim) and claim.criterion.reference_passage:
+        parts.append(f"criterion: {_tt(claim.criterion.reference_passage)}")
     for design, run in claim.runs():
         if design.cites_passages:
             parts.append(f"{_tt(design.id)}: {_passages(design.cites_passages)}")

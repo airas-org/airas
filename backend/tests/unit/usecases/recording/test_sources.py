@@ -230,6 +230,17 @@ async def test_an_unknown_identifier_is_not_found_and_an_outage_is_an_error() ->
     assert "found" not in registries.values()
 
 
+async def test_a_doi_answered_with_a_final_page_is_found_too() -> None:
+    registries, _ = await verify_existence(
+        airas_db_record=None,
+        doi="10.5555/3295222.3295349",
+        arxiv_id=None,
+        arxiv=_Arxiv(EMPTY_ATOM),
+        http=_doi_org(200),
+    )
+    assert registries == {"doi.org": "found"}
+
+
 async def test_a_doi_that_does_not_resolve_is_not_found() -> None:
     registries, _ = await verify_existence(
         airas_db_record=None,

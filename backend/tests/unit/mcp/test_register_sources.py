@@ -337,3 +337,28 @@ async def test_the_same_repository_and_commit_is_registered_once(
 async def test_nothing_to_register_is_refused(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="nothing to register"):
         await server.register_sources(str(_repo(tmp_path)))
+
+
+async def test_a_passage_id_cannot_be_passed_in(tmp_path: Path) -> None:
+    repo = _repo(tmp_path)
+    await server.register_sources(str(repo), [{"airas_db": "e369"}])
+    with pytest.raises(ValueError, match="assigned by its source"):
+        await server.append_to_record(
+            str(repo),
+            source_id="s1",
+            passages=[
+                {"id": "s2.p1", "node_type": "setup", "quote": "The rate is 0.1."}
+            ],
+        )
+
+
+async def test_a_failure_on_a_later_paper_leaves_no_snapshot_behind(
+    tmp_path: Path,
+) -> None:
+    repo = _repo(tmp_path)
+    with pytest.raises(ValueError, match="no registry verified it"):
+        await server.register_sources(
+            str(repo), [{"airas_db": "e369"}, {"doi": "10.1/nope", "title": "t"}]
+        )
+    assert not (repo / ".research" / "sources").exists()
+    assert _git(repo, "status", "--porcelain") == ""

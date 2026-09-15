@@ -360,16 +360,13 @@ _CITE = re.compile(r"\\cite[pt]?\*?(?:\[([^\]]*)\])?\{([^}]*)\}")
 
 def scan_citations(main_tex: str) -> list[tuple[str | None, list[str]]]:
     """(locator, keys) of every \\cite, comments stripped."""
-    citations = []
-    for raw_line in main_tex.splitlines():
-        for locator, keys in _CITE.findall(_strip_comment(raw_line)):
-            citations.append(
-                (
-                    locator.strip() or None,
-                    [k.strip() for k in keys.split(",") if k.strip()],
-                )
-            )
-    return citations
+    # Comments go line by line; the scan runs over the whole text, since a
+    # \\cite may span lines.
+    text = "\n".join(_strip_comment(line) for line in main_tex.splitlines())
+    return [
+        (locator.strip() or None, [k.strip() for k in keys.split(",") if k.strip()])
+        for locator, keys in _CITE.findall(text)
+    ]
 
 
 def _verify_citations(

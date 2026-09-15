@@ -971,3 +971,38 @@ def test_sources_never_cited_are_reported_not_failed(tmp_path: Path) -> None:
     result = _verify_paper(str(repo))
     assert result.ok, result.record.problems + result.problems
     assert result.uncited_sources == ["vaswani-2017-attention"]
+
+
+def test_a_source_declared_twice_fails(tmp_path: Path) -> None:
+    repo, record = _grounded_repo(tmp_path)
+    record.literature.append(record.literature[0].model_copy(deep=True))
+    save_record(str(repo), record)
+    result = _verify(str(repo))
+    assert any("source s1: declared twice" in p for p in result.problems)
+
+
+def test_a_source_without_a_snapshot_fails(tmp_path: Path) -> None:
+    repo, record = _grounded_repo(tmp_path)
+    record.literature[0].fulltext = None
+    record.literature[0].passages.clear()
+    record.hypotheses[0].grounded_on.clear()
+    _c1(record).cites_passages.clear()
+    save_record(str(repo), record)
+    result = _verify(str(repo))
+    assert any("fulltext snapshot must be" in p for p in result.problems)
+
+
+def test_a_snapshot_outside_its_own_directory_fails(tmp_path: Path) -> None:
+    repo, record = _grounded_repo(tmp_path)
+    (repo / "elsewhere.txt").write_text(PAGES[1])
+    record.literature[0].fulltext.path = "elsewhere.txt"
+    save_record(str(repo), record)
+    result = _verify(str(repo))
+    assert any("fulltext snapshot must be" in p for p in result.problems)
+
+
+def test_a_citation_spanning_lines_is_still_checked(tmp_path: Path) -> None:
+    repo, _ = _grounded_repo(tmp_path)
+    _write_cited_paper(repo, "See \\cite[s1.p1]{\n  made-up-2020-key\n}.")
+    result = _verify_paper(str(repo))
+    assert any("'made-up-2020-key'" in p for p in result.problems)

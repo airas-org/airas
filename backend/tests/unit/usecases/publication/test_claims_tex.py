@@ -175,9 +175,13 @@ def test_grounds_cited_passages_and_quoted_sources_are_listed() -> None:
     )
     record.hypotheses[0].grounded_on = ["s1.p1"]
     record.hypotheses[0].claims[0].cites_passages = ["s1.p1"]
+    record.hypotheses[0].claims[0].criterion.reference_passage = "s1.p1"
     tex = render_claims_tex(record, {})
     assert r"\emph{Grounded on:} \texttt{\detokenize{s1.p1}}." in tex
-    assert r"\emph{Cites:} \texttt{\detokenize{s1.p1}}." in tex
+    assert (
+        r"\emph{Cites:} \texttt{\detokenize{s1.p1}}; criterion: \texttt{\detokenize{s1.p1}}."
+        in tex
+    )
     assert r"\textbf{S1} \texttt{\detokenize{vaswani-2017-attention}}" in tex
     assert "(result table) ``We apply dropout \\& more.''" in tex
 

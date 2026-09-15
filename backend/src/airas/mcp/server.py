@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 import os
 import shutil
@@ -20,7 +21,11 @@ from airas.core.credentials import SETUP_INSTRUCTIONS, refresh_environment
 # LLM mapping classes + helper for building per-node model selection from a
 # single externally-supplied model name (no in-code default model exists).
 from airas.core.llm_config import uniform_llm_mapping
-from airas.core.research_paths import RECORD_PATH, REFERENCES_BIB_FILENAME
+from airas.core.research_paths import (
+    RECORD_PATH,
+    REFERENCES_BIB_FILENAME,
+    SOURCES_DIR,
+)
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experiment_history import ExperimentHistory, RunStage
 from airas.core.types.experimental_design import (
@@ -2204,8 +2209,10 @@ def _source(record: ResearchRecord, source_id: str) -> LiteratureSource:
 
 def _add_passages(source: LiteratureSource, passages: list[dict[str, Any]]) -> None:
     for passage in passages:
+        if "id" in passage:
+            raise ValueError("a passage id is assigned by its source, not passed in")
         source.passages.append(
-            QuotedPassage.model_validate({"id": next_passage_id(source), **passage})
+            QuotedPassage.model_validate({**passage, "id": next_passage_id(source)})
         )
 
 
@@ -2522,6 +2529,12 @@ async def register_sources(
     registered: dict[str, Any] = {}
     snapshots: list[str] = []
 
+    def _discard_snapshots() -> None:
+        for relpath in snapshots:
+            shutil.rmtree((root / relpath).parent, ignore_errors=True)
+        with contextlib.suppress(OSError):
+            (root / SOURCES_DIR).rmdir()  # only when nothing else is left in it
+
     def _register(source: LiteratureSource, entry: dict[str, Any]) -> None:
         _add_passages(source, entry.get("passages") or [])
         registered[source.id] = {
@@ -2532,129 +2545,134 @@ async def register_sources(
             "verified_by": source.verified_by,
         }
 
-    for entry in repositories or []:
-        url, commit = (
-            (entry.get("url") or "").strip(),
-            (entry.get("commit") or "").strip(),
-        )
-        if not (url and commit and entry.get("files")):
-            raise ValueError("a repository needs url, commit and files")
-        source = next(
-            (
-                s
-                for s in record.active_literature()
-                if s.url == url and s.commit == commit
-            ),
-            None,
-        )
-        if source is None:
-            metadata, pages = await asyncio.to_thread(
-                snapshot_repository, url, commit, list(entry["files"])
+    try:
+        for entry in repositories or []:
+            url, commit = (
+                (entry.get("url") or "").strip(),
+                (entry.get("commit") or "").strip(),
             )
-            source_id = next_source_id(record)
-            source = LiteratureSource(
-                id=source_id,
-                kind="repository",
-                bibkey=unique_bibkey(
-                    metadata["title"].rsplit("/", 1)[-1],
-                    metadata["authors"],
-                    metadata["year"],
-                    {s.bibkey for s in record.literature},
+            if not (url and commit and entry.get("files")):
+                raise ValueError("a repository needs url, commit and files")
+            source = next(
+                (
+                    s
+                    for s in record.active_literature()
+                    if s.url == url and s.commit == commit
                 ),
-                verified_by="git",
-                verified_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                fulltext=write_fulltext(root, source_id, pages),
-                parser="git show",
-                **metadata,
+                None,
             )
-            record.literature.append(source)
-            snapshots.append(source.fulltext.path)
-        _register(source, entry)
-
-    for entry in papers or []:
-        db_id = str(entry.get("airas_db") or "") or None
-        db_record = await _search_index.get(db_id) if db_id else None
-        metadata = airas_db_metadata(db_record) if db_record else {}
-        title = metadata.get("title") or (entry.get("title") or "").strip()
-        doi = (entry.get("doi") or "").strip() or None
-        arxiv_id = (entry.get("arxiv_id") or "").strip() or None
-        label = title or db_id or doi or arxiv_id
-        if not (db_id or doi or arxiv_id):
-            raise ValueError(
-                f"'{label}': a paper needs an airas_db id, a doi or an arxiv_id "
-                "so that its existence can be checked"
-            )
-        registries, verified_at = await verify_existence(
-            airas_db_record={} if db_id and db_record is None else db_record,
-            doi=doi,
-            arxiv_id=arxiv_id,
-            arxiv=_arxiv_client(),
-            http=_async_session,
-        )
-        verified_by = next((r for r, s in registries.items() if s == "found"), "")
-        if not verified_by:
-            raise ValueError(f"'{label}': no registry verified it ({registries})")
-
-        url = entry.get("url") or metadata.get("url")
-        source = next(
-            (
-                s
-                for s in record.active_literature()
-                if (doi and s.doi == doi)
-                or (arxiv_id and s.arxiv_id == arxiv_id)
-                or (url and s.url == url)
-            ),
-            None,
-        )
-        if source is None:
-            pdf_url = entry.get("pdf_url") or metadata.get("url")
-            fetched = (
-                await FetchPaperFulltextSubgraph(
-                    semantic_scholar_client=_semantic_scholar_client()
+            if source is None:
+                metadata, pages = await asyncio.to_thread(
+                    snapshot_repository, url, commit, list(entry["files"])
                 )
-                .build_graph()
-                .ainvoke(
-                    {
-                        "arxiv_id": arxiv_id,
-                        "doi": doi,
-                        "pdf_url": pdf_url,
-                        "max_chars": None,
-                    }
+                source_id = next_source_id(record)
+                source = LiteratureSource(
+                    id=source_id,
+                    kind="repository",
+                    bibkey=unique_bibkey(
+                        metadata["title"].rsplit("/", 1)[-1],
+                        metadata["authors"],
+                        metadata["year"],
+                        {s.bibkey for s in record.literature},
+                    ),
+                    verified_by="git",
+                    verified_at=datetime.now(timezone.utc).isoformat(
+                        timespec="seconds"
+                    ),
+                    fulltext=write_fulltext(root, source_id, pages),
+                    parser="git show",
+                    **metadata,
                 )
-            )
-            if fetched["status"] != "fulltext":
+                record.literature.append(source)
+                snapshots.append(source.fulltext.path)
+            _register(source, entry)
+
+        for entry in papers or []:
+            db_id = str(entry.get("airas_db") or "") or None
+            db_record = await _search_index.get(db_id) if db_id else None
+            metadata = airas_db_metadata(db_record) if db_record else {}
+            title = metadata.get("title") or (entry.get("title") or "").strip()
+            doi = (entry.get("doi") or "").strip() or None
+            arxiv_id = (entry.get("arxiv_id") or "").strip() or None
+            label = title or db_id or doi or arxiv_id
+            if not (db_id or doi or arxiv_id):
                 raise ValueError(
-                    f"'{label}': no PDF yielded text ({fetched['status']}) — pass pdf_url"
+                    f"'{label}': a paper needs an airas_db id, a doi or an arxiv_id "
+                    "so that its existence can be checked"
                 )
-            source_id = next_source_id(record)
-            authors = metadata.get("authors") or entry.get("authors") or []
-            year = metadata.get("year") or entry.get("year")
-            source = LiteratureSource(
-                id=source_id,
-                title=title,
-                authors=authors,
-                year=year,
-                venue=metadata.get("venue") or entry.get("venue") or "",
+            registries, verified_at = await verify_existence(
+                airas_db_record={} if db_id and db_record is None else db_record,
                 doi=doi,
                 arxiv_id=arxiv_id,
-                url=url or fetched["pdf_url"],
-                bibkey=unique_bibkey(
-                    title, authors, year, {s.bibkey for s in record.literature}
-                ),
-                verified_by=verified_by,
-                verified_at=verified_at,
-                fulltext=write_fulltext(root, source_id, fetched["pages"]),
-                parser=parser_version(),
+                arxiv=_arxiv_client(),
+                http=_async_session,
             )
-            record.literature.append(source)
-            snapshots.append(source.fulltext.path)
-        _register(source, entry)
+            verified_by = next((r for r, s in registries.items() if s == "found"), "")
+            if not verified_by:
+                raise ValueError(f"'{label}': no registry verified it ({registries})")
+
+            url = entry.get("url") or metadata.get("url")
+            source = next(
+                (
+                    s
+                    for s in record.active_literature()
+                    if (doi and s.doi == doi)
+                    or (arxiv_id and s.arxiv_id == arxiv_id)
+                    or (url and s.url == url)
+                ),
+                None,
+            )
+            if source is None:
+                pdf_url = entry.get("pdf_url") or metadata.get("url")
+                fetched = (
+                    await FetchPaperFulltextSubgraph(
+                        semantic_scholar_client=_semantic_scholar_client()
+                    )
+                    .build_graph()
+                    .ainvoke(
+                        {
+                            "arxiv_id": arxiv_id,
+                            "doi": doi,
+                            "pdf_url": pdf_url,
+                            "max_chars": None,
+                        }
+                    )
+                )
+                if fetched["status"] != "fulltext":
+                    raise ValueError(
+                        f"'{label}': no PDF yielded text ({fetched['status']}) — pass pdf_url"
+                    )
+                source_id = next_source_id(record)
+                authors = metadata.get("authors") or entry.get("authors") or []
+                year = metadata.get("year") or entry.get("year")
+                source = LiteratureSource(
+                    id=source_id,
+                    title=title,
+                    authors=authors,
+                    year=year,
+                    venue=metadata.get("venue") or entry.get("venue") or "",
+                    doi=doi,
+                    arxiv_id=arxiv_id,
+                    url=url or fetched["pdf_url"],
+                    bibkey=unique_bibkey(
+                        title, authors, year, {s.bibkey for s in record.literature}
+                    ),
+                    verified_by=verified_by,
+                    verified_at=verified_at,
+                    fulltext=write_fulltext(root, source_id, fetched["pages"]),
+                    parser=parser_version(),
+                )
+                record.literature.append(source)
+                snapshots.append(source.fulltext.path)
+            _register(source, entry)
+
+    except Exception:
+        _discard_snapshots()
+        raise
 
     def _run() -> dict[str, Any]:
         problems = _verify_consistency(record) + _verify_literature(root, record)
         if problems:
-            for relpath in snapshots:
-                shutil.rmtree((root / relpath).parent, ignore_errors=True)
             raise ValueError("; ".join(problems))
         save_record(local_path, record)
         claims_tex = _write_claims_tex(local_path, latex_template_name, record)
@@ -2676,7 +2694,11 @@ async def register_sources(
             ),
         }
 
-    return await asyncio.to_thread(_run)
+    try:
+        return await asyncio.to_thread(_run)
+    except Exception:
+        _discard_snapshots()
+        raise
 
 
 @mcp.tool()
