@@ -44,6 +44,7 @@ LEAN_REPORT = {
     "decl": "thm1",
     "mode": "full",
     "statement": "∀ (n : Nat), n + 0 = n",
+    "statement_matches": True,
     "axioms": ["propext"],
     "errors": [],
     "warnings": [],
@@ -240,7 +241,10 @@ def test_a_sorry_free_build_supports_the_claim(tmp_path: Path) -> None:
     ("change", "error"),
     [
         ({"axioms": ["propext", "sorryAx"]}, "sorry"),
-        ({"statement": "∀ (n : Nat), n = n"}, "statement differs"),
+        ({"statement_matches": False}, "statement differs"),
+        ({"statement_matches": None}, "did not compare"),
+        ({"statement_matches": 1}, "must be true or false"),
+        ({"statement_matches": "false"}, "must be true or false"),
         ({"axioms": ["myAxiom"]}, "outside allowed_axioms"),
         ({"module": "Airas.Other"}, "module differs"),
         ({"decl": "thm1'"}, "decl differs"),
@@ -279,6 +283,20 @@ def test_an_unreadable_lean_report_leaves_the_claim_unverified(tmp_path: Path) -
     assert not claim.verified and claim.verdict is None
     assert statuses[0].verified is False
     assert _verify(str(tmp_path)).stage == "prereg"
+
+
+def test_the_record_may_spell_the_statement_any_way_lean_accepts(
+    tmp_path: Path,
+) -> None:
+    """The report tool compared the terms, so the printed form is not what
+    the record has to match."""
+    record = _lean_repo(
+        tmp_path,
+        {**LEAN_REPORT, "statement": "∀ (n : ℕ), n + 0 = n", "statement_matches": True},
+    )
+    claim = _c1(record)
+    assert claim.verdict == "supported"
+    assert claim.designs[0].runs[0].results[0].statement_matches is True
 
 
 def test_a_tampered_lean_report_fails(tmp_path: Path) -> None:

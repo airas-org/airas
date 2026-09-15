@@ -436,3 +436,12 @@ def test_record_link_commit_is_the_last_record_commit_not_head(tmp_path: Path) -
 def test_record_link_commit_is_none_without_a_record_commit(tmp_path: Path) -> None:
     _git(tmp_path, "init", "-q")
     assert record_link_commit(tmp_path) is None
+
+
+def test_unverified_with_nested_braces_is_one_argument() -> None:
+    unverified, keys = scan_main_tex(
+        r"commit \unverified{\texttt{b3f04fa7}} and run \unverified{34870248086}; "
+        r"\airasval{run_1.accuracy} % \unverified{in a comment}"
+    )
+    assert unverified == [r"\texttt{b3f04fa7}", "34870248086"]
+    assert keys == ["run_1.accuracy"]

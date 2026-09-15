@@ -27,6 +27,17 @@ class ResponseParserProtocol(Protocol):
     def parse(self, response: httpx.Response, *, as_: str) -> Any: ...
 
 
+def _github_error_message(response: httpx.Response) -> str:
+    """The `message` GitHub puts in an error body, or "" when there is none."""
+    try:
+        payload = response.json()
+    except ValueError:
+        return ""
+    if isinstance(payload, dict) and isinstance(payload.get("message"), str):
+        return payload["message"].strip()
+    return ""
+
+
 class GithubClientError(RuntimeError): ...
 
 
@@ -336,7 +347,7 @@ class GithubClient(BaseHTTPClient):
         repository_name: str,
         template_owner: str,
         template_repo: str,
-        include_all_branches: bool = True,
+        include_all_branches: bool = False,
         private: bool = False,
     ) -> dict | None:
         # https://docs.github.com/ja/rest/repos/repos?apiVersion=2022-11-28#create-a-repository-using-a-template
@@ -1116,14 +1127,44 @@ class GithubClient(BaseHTTPClient):
                 logger.info(f"Branch protection updated (200): {branch_name}")
                 return True
             case 403:
-                logger.error(f"Admin rights are required to protect (403): {path}")
+                # GitHub says why — admin rights, or a plan that has no
+                # branch protection for private repositories — so repeat it
+                # rather than guess.
+                reason = _github_error_message(response) or (
+                    "admin rights on the repository are required"
+                )
+                logger.error(f"Branch protection refused (403): {reason}: {path}")
                 raise GithubClientFatalError(
-                    "branch protection requires admin rights on the repository "
-                    f"(403): {path}"
+                    f"GitHub refused to protect the branch (403): {reason} [{path}]"
                 )
             case 404:
                 logger.error(f"Repository or branch not found (404): {path}")
                 raise GithubClientFatalError(f"Not found (404): {path}")
+            case _:
+                self._raise_for_status(response, path)
+                return False
+
+    async def aenable_pages_from_actions(
+        self, github_owner: str, repository_name: str
+    ) -> bool:
+        path = f"/repos/{github_owner}/{repository_name}/pages"
+        payload = {"build_type": "workflow"}
+        response = await self.apost(path=path, json=payload)
+        if response.status_code == 409:  # the site exists: change its source
+            response = await self.aput(path=path, json=payload)
+
+        match response.status_code:
+            case 201 | 204:
+                logger.info(
+                    f"Pages served from Actions ({response.status_code}): {path}"
+                )
+                return True
+            case 403 | 404 | 422:
+                reason = _github_error_message(response) or response.text
+                raise GithubClientFatalError(
+                    f"GitHub refused to enable Pages ({response.status_code}): "
+                    f"{reason} [{path}]"
+                )
             case _:
                 self._raise_for_status(response, path)
                 return False

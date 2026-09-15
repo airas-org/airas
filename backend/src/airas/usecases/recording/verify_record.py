@@ -91,7 +91,7 @@ async def verify_record(
         _verify_append_only, root, record, require_history
     )
     problems += await asyncio.to_thread(_verify_manifest_history, root, require_history)
-    problems += await _verify_additions(
+    added, provenance = await _verify_additions(
         root,
         record,
         metrics_data,
@@ -102,7 +102,13 @@ async def verify_record(
         require_provenance=require_provenance and check_provenance,
         store_factory=store_factory,
     )
-    return RecordVerification(ok=not problems, stage=stage, problems=problems)
+    problems += added
+    return RecordVerification(
+        ok=not problems,
+        stage=stage,
+        problems=problems,
+        provenance=provenance.model_dump() if provenance else None,
+    )
 
 
 # ------------------------------------------------------ the record alone
@@ -332,7 +338,7 @@ async def _verify_additions(
     check_provenance: bool,
     require_provenance: bool,
     store_factory: StoreFactory,
-) -> list[str]:
+) -> tuple[list[str], _ProvenanceCheckResult | None]:
     if stage == "prereg":
         # Nothing measured yet, so nothing realized may exist.
         realized = [run.run_id for run in record.run_index().values() if run.results]
@@ -341,8 +347,8 @@ async def _verify_additions(
             return [
                 "record.json holds results but no run outputs exist "
                 f"({', '.join(sorted(set(realized)))})"
-            ]
-        return []
+            ], None
+        return [], None
 
     def _data_checks() -> list[str]:
         manifest = load_provenance_manifest(root)
@@ -381,7 +387,7 @@ async def _verify_additions(
 
     if reported_run_ids:
         problems += _provenance_problems(provenance, require_provenance)
-    return problems
+    return problems, provenance
 
 
 def _params_problems(run: AnyRun, manifest: RunProvenanceManifest | None) -> list[str]:

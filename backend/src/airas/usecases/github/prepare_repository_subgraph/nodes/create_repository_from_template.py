@@ -12,7 +12,7 @@ def create_repository_from_template(
     github_client: GithubClient,
     template_owner: str,
     template_repo: str,
-    include_all_branches: bool = True,
+    include_all_branches: bool = False,
     is_github_repo_private: bool = False,
 ) -> Literal[True]:
     try:

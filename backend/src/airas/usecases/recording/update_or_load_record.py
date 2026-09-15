@@ -256,6 +256,13 @@ def derive_result(
                 toolchain=payload.get("toolchain", ""),
                 mathlib_rev=payload.get("mathlib_rev", ""),
                 statement=payload.get("statement", ""),
+                # Stored only as the tool wrote it: a coerced 1 or "false"
+                # would look like a verdict the tool never gave.
+                statement_matches=(
+                    payload["statement_matches"]
+                    if isinstance(payload.get("statement_matches"), bool)
+                    else None
+                ),
                 axioms=payload.get("axioms", []),
                 errors=_lean_errors(claim, run, payload),
                 warnings=payload.get("warnings", []),
@@ -331,9 +338,21 @@ def _lean_errors(claim: LeanClaim, run: LeanRun, payload: dict[str, Any]) -> lis
             errors.append(f"{key} differs from the declaration: built {built_value!r}")
     if errors:
         return errors
-    built = _normalize_statement(payload.get("statement", ""))
-    if built != _normalize_statement(run.params.statement):
-        errors.append(f"statement differs from the declaration: built '{built}'")
+    # The report tool compares the declared statement with the built type as
+    # Lean terms; a report without that verdict has not checked the claim's
+    # statement at all, so it proves nothing about it.
+    match payload.get("statement_matches"):
+        case True:
+            pass
+        case False:
+            errors.append(
+                "statement differs from the declaration: built "
+                f"'{payload.get('statement', '')}'"
+            )
+        case None:
+            errors.append("the report did not compare the declared statement")
+        case other:
+            errors.append(f"statement_matches must be true or false, not {other!r}")
     axioms = set(payload.get("axioms", []))
     if _SORRY_AXIOM in axioms:
         errors.append("the proof uses sorry")
@@ -341,7 +360,3 @@ def _lean_errors(claim: LeanClaim, run: LeanRun, payload: dict[str, Any]) -> lis
     if foreign:
         errors.append(f"depends on axioms outside allowed_axioms: {', '.join(foreign)}")
     return errors
-
-
-def _normalize_statement(text: str) -> str:
-    return " ".join(text.split())
