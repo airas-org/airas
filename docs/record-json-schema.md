@@ -4,9 +4,9 @@
 
 ## クラス図
 
-[![record.json のクラス図](images/record-json-schema.png)](images/record-json-schema.png?raw=true)
+[![record.json のクラス図](images/record-json-schema.png)](images/record-json-schema.png)
 
-<!-- クリックで原寸表示。画像は下の mermaid を描画したもの（GitHub 上では mermaid 側もズーム可）。図を変えたら描画し直す。 -->
+<!-- クリックで画像単体のページが開く（GitHub 上では下の mermaid もズーム・パン可）。画像は mermaid を描画したもの。図を変えたら描画し直す。 -->
 
 ```mermaid
 classDiagram
