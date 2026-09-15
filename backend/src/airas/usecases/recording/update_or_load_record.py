@@ -249,9 +249,12 @@ def derive_result(
     payload = _read_json(_verifier_report_path(root, claim.verifier.kind, run.run_id))
     if not isinstance(payload, dict):
         return None
+
+    declared = manifest.dirs.get(run.run_id) if manifest else None
     try:
         if isinstance(claim, LeanClaim):
             return LeanResult(
+                id=declared.execution_id if declared else "",
                 commit=payload.get("commit"),
                 toolchain=payload.get("toolchain", ""),
                 mathlib_rev=payload.get("mathlib_rev", ""),

@@ -108,3 +108,46 @@ def test_record_text_is_escaped_for_pdflatex() -> None:
         [PaperValue(ref="t.params.statement", display="∀ n, n ≤ n")], None
     )
     assert "∀" not in tex and r"$\forall$ n, n $\leq$ n" in tex
+
+
+def test_a_lean_claim_names_the_run_it_rests_on() -> None:
+    from airas.core.types.research_record import (
+        LeanClaim,
+        LeanDesign,
+        LeanParams,
+        LeanResult,
+        LeanRun,
+        LeanVerifier,
+    )
+
+    run = LeanRun(
+        run_id="gauss-sum",
+        params=LeanParams(
+            module="Airas.GaussSum", decl="gauss_sum_mul_two", statement="x"
+        ),
+    )
+    claim = LeanClaim(
+        id="c1",
+        statement="The Gauss sum holds.",
+        rationale="First instance.",
+        verifier=LeanVerifier(kind=VerifierKind.LEAN),
+        designs=[LeanDesign(id="d1", runs=[run])],
+    )
+    record = ResearchRecord(
+        hypotheses=[Hypothesis(id="h1", statement="H.", claims=[claim])]
+    )
+    pending = render_claims_tex(record, {})
+    assert r"\emph{Evidence:} run \texttt{\detokenize{gauss-sum}}, pending." in pending
+
+    run.results.append(
+        LeanResult(
+            id="34941959631",
+            commit="a" * 40,
+            axioms=["propext"],
+            statement_matches=True,
+        )
+    )
+    realized = render_claims_tex(record, {})
+    assert "execution \\texttt{\\detokenize{34941959631}}" in realized
+    assert "commit \\texttt{\\detokenize{aaaaaaaaaaaa}}" in realized
+    assert "axioms: \\texttt{\\detokenize{propext}}" in realized

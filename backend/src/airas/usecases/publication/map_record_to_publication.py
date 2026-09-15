@@ -18,6 +18,8 @@ from pydantic import BaseModel
 from airas.core.research_paths import RECORD_PATH
 from airas.core.types.map_record_to_publication import PaperValue, TableSpec
 from airas.core.types.research_record import (
+    LeanClaim,
+    LeanResult,
     ResearchRecord,
     SeyvalClaim,
     active,
@@ -272,6 +274,28 @@ def _tt(text: str) -> str:
     return rf"\texttt{{\detokenize{{{text}}}}}"
 
 
+def _lean_evidence_lines(claim: LeanClaim) -> list[str]:
+    lines: list[str] = []
+    for _, run in claim.runs():
+        result = run.latest_result()
+        if not isinstance(result, LeanResult):
+            lines.append(rf"  \emph{{Evidence:}} run {_tt(run.run_id)}, pending.")
+            continue
+        where = ", ".join(
+            part
+            for part in (
+                f"execution {_tt(result.id)}" if result.id else "",
+                f"commit {_tt(result.commit[:12])}" if result.commit else "",
+            )
+            if part
+        )
+        axioms = ", ".join(_tt(a) for a in result.axioms) or "none"
+        lines.append(
+            rf"  \emph{{Evidence:}} run {_tt(run.run_id)}, {where}; axioms: {axioms}."
+        )
+    return lines
+
+
 def render_claims_tex(record: ResearchRecord, metrics_data: dict[str, Any]) -> str:
     # Deterministic from (record, metrics) alone — no commit link — so the
     # freeze commit can carry it before any run exists.
@@ -309,6 +333,8 @@ def render_claims_tex(record: ResearchRecord, metrics_data: dict[str, Any]) -> s
                 except (KeyError, ValueError):
                     observed = "pending"
                 lines.append(rf"  \emph{{Observed:}} {observed}.")
+            if isinstance(claim, LeanClaim):
+                lines += _lean_evidence_lines(claim)
             lines.append(rf"  \emph{{Verdict:}} {claim.verdict or 'pending'}.")
         lines.append(r"\end{enumerate}")
         if hypothesis.assumptions:

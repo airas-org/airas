@@ -268,6 +268,9 @@ class LeanParams(BaseModel):
 
 
 class LeanResult(BaseModel):
+    id: str = Field(
+        default="", description="The backend's execution id, from the manifest"
+    )
     commit: Optional[str] = None
     toolchain: str = Field(default="", description="What built it, per the report")
     mathlib_rev: str = ""

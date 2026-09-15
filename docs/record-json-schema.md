@@ -190,6 +190,7 @@ classDiagram
           - `run_id` / `description`
           - `params` `{module, decl, statement}`。statement は `#check @decl` が出す型
           - **results[]** lean.json から（`make run` が `lake exe airas-report` で書く）
+            - `id` backend の実行 id（provenance manifest から）
             - `commit`
             - `toolchain` / `mathlib_rev` 実際にビルドした版。verifier の宣言と一致しなければ error
             - `statement` 実際にビルドされた宣言の型
