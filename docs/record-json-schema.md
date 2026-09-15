@@ -6,176 +6,114 @@
 
 [![record.json のクラス図](images/record-json-schema.svg)](images/record-json-schema.svg)
 
-<!-- SVG なので Raw で開けばブラウザのズームで文字まで読める。下の mermaid を Kroki
-     (https://kroki.io, diagram_options {"html-labels": "false"}) で描画したもの。
+<!-- 下の mermaid を Kroki (https://kroki.io, diagram_options {"html-labels": "false"})
+     で描画したもの。箱の中は名前と型だけで、各フィールドの意味は「木構造」節にある。
      図を変えたら描画し直す。 -->
 
 ```mermaid
 classDiagram
-    direction LR
+    direction TB
 
     class ResearchRecord {
-        literature: LiteratureSource[]  依拠した文献。register_sources が書く
-        hypotheses: Hypothesis[]  仮説の一覧
+        literature: LiteratureSource[]
+        hypotheses: Hypothesis[]
     }
-
     class LiteratureSource {
-        id: "s1"...
+        id: "s1"
         kind: paper | repository
-        title / authors / year / venue
-        doi / arxiv_id / url  識別子。repository は url + commit
-        commit: str  repository: 読んだコミット
-        bibkey: str  \cite の鍵。references.bib はここから再生成
-        verified_by: str  実在を確認したレジストリ。airas_db | doi.org | arxiv | git
-        verified_at: str  ISO-8601
-        fulltext: InputRef  .research/sources/s1/fulltext.txt と sha256
-        parser: str  抽出器。例 pymupdf 1.26
-        passages: QuotedPassage[]  引いた箇所。追記のみ
+        title, authors, year, venue
+        doi, arxiv_id, url, commit
+        bibkey: str
+        verified_by: Registry
+        verified_at: str
+        fulltext: InputRef
+        parser: str
+        passages: QuotedPassage[]
     }
     class QuotedPassage {
-        id: "s1.p1"...
-        node_type: claim | result | method | setup | gap | definition  何を述べる箇所か
-        anchor: text | table | figure | code  どこにあるか。既定 text
-        quote: str  fulltext.txt からの逐語コピー。gate が部分文字列として検査
+        id: "s1.p1"
+        node_type: PassageNodeType
+        anchor: text|table|figure|code
+        quote: str
     }
     class InputRef {
-        path: str  リポジトリ相対
+        path: str
         sha256: str
     }
-
     class Hypothesis {
-        id: "h1"...
-        statement: str  仮説そのもの（散文）
-        grounded_on: str[]  動機となった passage id。先行研究の gap を先行研究の言葉で
-        assumptions: str[]  c1∧…∧cn ⇒ H を成り立たせる公理。全 claim 支持後も残る未検証
-        claims: ClaimDeclaration[]  verifier.kind で型が決まる
-        tables: TableSpec[]  論文の表の宣言
-        charts: ChartDeclaration[]  図の宣言
-        notes: str[]  自由記述
+        id: "h1"
+        statement: str
+        grounded_on: passage id[]
+        assumptions: str[]
+        claims: ClaimDeclaration[]
+        tables, charts, notes
     }
-
     class ClaimBase {
-        id: "c1"...
-        statement: str  一文の主張。verdict が付く対象
-        rationale: str  この claim が H の証拠になる理由と、支える部分
-        verifier: Verifier  何が検証するか。claim に一つ
-        designs: Design[]  検証の構成。要素型は kind で決まる
-        cites_passages: str[]  依拠する passage id
-        verified: bool  全 run にレポートがあるか。false→true のみ
-        verdict: supported|refuted|inconclusive  一度だけ設定。反転は drift
+        id: "c1"
+        statement: str
+        rationale: str
+        verifier: Verifier
+        designs: Design[]
+        cites_passages: passage id[]
+        verified: bool
+        verdict: Verdict
     }
-
     class SeyvalClaim {
-        verifier: kind = seyval
-        criterion: Criterion  反証線。宣言時必須、凍結
-        prediction: Prediction  予測区間。宣言時必須、凍結
-        verdict  criterion を metrics に適用して導出
+        verifier.kind = seyval
+        criterion: Criterion
+        prediction: Prediction
     }
     class LeanClaim {
-        verifier: kind = lean, toolchain, mathlib_rev, allowed_axioms
-        verdict  supported か inconclusive。反証しない
+        verifier.kind = lean
     }
     class LlmJudgeClaim {
-        verifier: kind = llm_judge, model, rubric, temperature, samples
-        verdict  全票一致で supported
+        verifier.kind = llm_judge
     }
-
     class Criterion {
-        metric: str  metrics.json 内のパス
-        subject: run_id  判定対象
-        reference: run_id|float  比較対象（同じ metric）または定数
-        op: geq / leq / gt / lt
-        margin: float  既定 0。「subject − reference」op margin
-        reference_passage: str  reference が定数のとき、その出所の passage id
+        metric: str
+        subject: run_id
+        reference: run_id | float
+        op, margin
+        reference_passage: passage id
     }
     class Prediction {
-        low: float  low < high。点は不可
-        high: float
-        basis: str  根拠。prior work や pilot
+        low, high: float
+        basis: str
     }
-
-
-    class SeyvalDesign {
-        id: "d1"...
+    class Design {
+        id: "d1"
         summary: str
-        runs: SeyvalRun[]
-        cites_passages: str[]  踏襲した設定の passage id
+        runs: Run[]
+        cites_passages: passage id[]
     }
-    class SeyvalRun {
-        run_id: str  .research/results/run_id/ を生む
-        description: str
-        params: dict  dispatch 条件。例 mode = full。基盤の記録と照合
-        cites_passages: str[]  再現・踏襲した passage id
-        results: SeyvalResult[]  機械が追記
+    class Run {
+        run_id: str
+        params: by kind
+        cites_passages: passage id[]
+        results: Result[]
     }
-    class LeanDesign {
-        id: "d1"...
-        summary: str
-        runs: LeanRun[]
-    }
-    class LeanRun {
-        run_id: str  1 run = 1 宣言
-        description: str
-        params: LeanParams  module, decl, statement
-        results: LeanResult[]  lean.json から
-    }
-    class LlmJudgeDesign {
-        id: "d1"...
-        summary: str
-        runs: LlmJudgeRun[]
-    }
-    class LlmJudgeRun {
-        run_id: str  1 run = 1 判定
-        description: str
-        params: LlmJudgeParams  evidence[] リポジトリ内パス
-        results: LlmJudgeResult[]  judgment.json から
-    }
-
-    class SeyvalResult {
-        id: str  Seyval の実行 id
-        commit: str  実行したコミット
-        metrics: any  metrics.json そのまま
-        eval_inputs: InputRef  airas-eval への入力と sha256
-        eval_report: EvalReport  airas-eval の評価レポート
-    }
-    class LeanResult {
-        commit: str
-        statement: str  実際にビルドされた宣言の型
-        axioms: str[]  print axioms の結果
-        errors: str[]  ビルド失敗 / sorry / 不一致 / 許可外公理
-        warnings: str[]
-    }
-    class LlmJudgeResult {
-        id: str  provider 側の応答 id
-        commit: str
-        inputs_sha256: str  rubric+evidence+statement+model の hash
-        verdict: Verdict
-        errors: str[]
-        warnings: str[]
+    class Result {
+        SeyvalResult | LeanResult | LlmJudgeResult
     }
 
     ResearchRecord "1" --> "*" LiteratureSource : literature
+    ResearchRecord "1" --> "*" Hypothesis : hypotheses
     LiteratureSource "1" --> "*" QuotedPassage : passages
     LiteratureSource --> InputRef : fulltext
-    Hypothesis ..> QuotedPassage : grounded_on
-    ClaimBase ..> QuotedPassage : cites_passages
-    Criterion ..> QuotedPassage : reference_passage
-    ResearchRecord "1" --> "*" Hypothesis
     Hypothesis "1" --> "*" ClaimBase : claims
     ClaimBase <|-- SeyvalClaim
     ClaimBase <|-- LeanClaim
     ClaimBase <|-- LlmJudgeClaim
     SeyvalClaim --> Criterion
     SeyvalClaim --> Prediction
-    SeyvalClaim "1" --> "*" SeyvalDesign : designs
-    SeyvalDesign "1" --> "*" SeyvalRun : runs
-    SeyvalRun "1" --> "*" SeyvalResult : results
-    LeanClaim "1" --> "*" LeanDesign : designs
-    LeanDesign "1" --> "*" LeanRun : runs
-    LeanRun "1" --> "*" LeanResult : results
-    LlmJudgeClaim "1" --> "*" LlmJudgeDesign : designs
-    LlmJudgeDesign "1" --> "*" LlmJudgeRun : runs
-    LlmJudgeRun "1" --> "*" LlmJudgeResult : results
+    ClaimBase "1" --> "*" Design : designs
+    Design "1" --> "*" Run : runs
+    Run "1" --> "*" Result : results
+    Hypothesis ..> QuotedPassage : grounded_on
+    ClaimBase ..> QuotedPassage : cites_passages
+    Design ..> QuotedPassage : cites_passages
+    Run ..> QuotedPassage : cites_passages
+    Criterion ..> QuotedPassage : reference_passage
 ```
 
 ## 論理構造
