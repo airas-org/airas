@@ -352,3 +352,28 @@ def test_a_lean_only_record_needs_provenance_like_an_experiment(
     )
     assert not report.ok
     assert any("provenance" in m for m in report.problems), report.problems
+
+
+def test_a_lean_result_names_the_execution_the_manifest_declares(
+    tmp_path: Path,
+) -> None:
+    from airas.core.types.run_provenance import (
+        ResultsDirProvenance,
+        RunProvenanceManifest,
+    )
+
+    _init(tmp_path)
+    record = _record(_lean_claim())
+    save_record(str(tmp_path), record)
+    _commit(tmp_path, "prereg")
+    _write(tmp_path, "thm1", "lean.json", LEAN_REPORT)
+    manifest = RunProvenanceManifest(
+        dirs={
+            "thm1": ResultsDirProvenance(
+                execution_id="34941959631", backend="github_actions"
+            )
+        }
+    )
+    update_record_with_results(tmp_path, record, {}, manifest)
+    result = _c1(record).designs[0].runs[0].results[0]
+    assert isinstance(result, LeanResult) and result.id == "34941959631"

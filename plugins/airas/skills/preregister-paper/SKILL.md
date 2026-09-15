@@ -138,7 +138,14 @@ changes *when* the paper is written and how Results are stated.
    \InputIfFileExists{values.tex}{}{}
    \providecommand{\airasval}[1]{\textbf{??airasval:\detokenize{#1}??}}
    \providecommand{\unverified}[1]{#1}
+   \providecommand{\airasrecordlink}[1]{#1}
    ```
+
+   Put `\airasrecordlink{record.json}` in the Data Availability statement
+   (or wherever the paper points at its record): after `update_record` it
+   is a hyperlink to record.json at the commit that realized the record,
+   so a reader of the PDF reaches the record without the repository's
+   history; before, it is plain text.
 
    (`\providecommand` is a no-op once values.tex defines the macros.
    Do not move these definitions into an `\IfFileExists` branch — a

@@ -73,6 +73,28 @@ decl: thm1
 record の verifier を変えることなので、勝手にやらない。`module` と `decl` は
 英数字・`_`・`.`・`'` のみ。
 
+### 未証明の部分を残して論文にするとき
+
+`sorry` は許可できない（`sorryAx` は `allowed_axioms` に何を書いても error）。`sorry` は
+匿名で、何を仮定したのかが record に残らないからである。部分的な形式化を出すなら、
+穴を**名前付きの公理**として書き、claim の `allowed_axioms` に列挙する。
+
+```lean
+axiom sum_lemma_L (n : ℕ) : ∑ i ∈ Finset.range n, i = n * (n - 1) / 2   -- 未証明の補題
+theorem main_thm (n : ℕ) : ... := by ... sum_lemma_L n ...
+```
+
+```
+"allowed_axioms": ["propext", "Classical.choice", "Quot.sound", "sum_lemma_L"]
+```
+
+- `collectAxioms` が `sum_lemma_L` を返し、`allowed_axioms` にあるので supported。record と
+  claims.tex に「この公理を仮定した上での結果」として残る。仮説の `assumptions` にも
+  同じ補題を書く。
+- 予定外の公理に頼れば inconclusive。`allowed_axioms` は preregister で凍結される。
+- 後で証明できたら、公理を定理に置き換え、claim を同じ id で append して
+  `allowed_axioms` から外す。前の entry も読める。
+
 ## 3. 走らせる
 
 実験と同じく `dispatch_experiment(run_id=..., run_stage=...)` で起動する。backend は
@@ -103,6 +125,12 @@ provenance 付きで commit し、`update_record` が `lean.json` を `LeanResul
 verdict は `supported`（errors が空）か `inconclusive`（ビルド失敗、`sorry`、
 statement 不一致、module / decl / toolchain / mathlib_rev の不一致、許可外公理）の
 どちらか。Lean は反証しない。
+
+`LeanResult.id` には manifest の実行 id（GitHub Actions の run id）が写され、claims.tex の
+Lean claim には realize 後に `Evidence: run <run_id>, execution <id>, commit <sha>; axioms: ...`
+が描かれる。論文の claim 一覧から実行まで辿れるのはこのため。main.tex の Data Availability
+には `\airasrecordlink{record.json}` を置く（`update_record` が record の commit 固定 URL で
+定義する。prereg 段階は `\providecommand{\airasrecordlink}[1]{#1}` で素の文字）。
 
 gate（`verify_record.yml`）は今のところ `lean.json` と record の一致と、artifact との
 バイト比較まで。gate 自身が再ビルドして report を導き直すのは airas-org/airas#1020。
