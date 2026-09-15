@@ -4,16 +4,19 @@
 
 ## クラス図
 
-![record.json のクラス図](images/record-json-schema.png)
+<!-- 2 枚とも下の mermaid を Kroki (https://kroki.io, output_format png,
+     diagram_options {"html-labels": "false"}) で描画し、透明背景を白に合成したもの。
+     箱の中は名前と型だけで、各フィールドの意味は「木構造」節にある。図を変えたら描画し直す。 -->
 
-<!-- 下の mermaid を Kroki (https://kroki.io, output_format png,
-     diagram_options {"html-labels": "false"}) で描画し、透明背景を白に合成したもの
-     （2449 px 幅）。箱の中は名前と型だけで、各フィールドの意味は「木構造」節にある。
-     図を変えたら描画し直す。 -->
+### 図 1: 文献（literature）
+
+文献と、そこから引いた passage。右側の Hypothesis / ClaimBase / Criterion / Design / Run は図 2 の型で、passage を id で参照するフィールドだけを示す。
+
+![literature](images/record-json-literature.png)
 
 ```mermaid
 classDiagram
-    direction TB
+    direction LR
 
     class ResearchRecord {
         literature: LiteratureSource[]
@@ -25,7 +28,7 @@ classDiagram
         title, authors, year, venue
         doi, arxiv_id, url, commit
         bibkey: str
-        verified_by: Registry
+        verified_by: airas_db | doi.org | arxiv | git
         verified_at: str
         fulltext: InputRef
         parser: str
@@ -33,13 +36,53 @@ classDiagram
     }
     class QuotedPassage {
         id: "s1.p1"
-        node_type: PassageNodeType
+        node_type: claim|result|method|setup|gap|definition
         anchor: text|table|figure|code
         quote: str
     }
     class InputRef {
         path: str
         sha256: str
+    }
+    class Hypothesis {
+        grounded_on: passage id[]
+    }
+    class ClaimBase {
+        cites_passages: passage id[]
+    }
+    class Criterion {
+        reference_passage: passage id
+    }
+    class Design {
+        cites_passages: passage id[]
+    }
+    class Run {
+        cites_passages: passage id[]
+    }
+
+    ResearchRecord "1" --> "*" LiteratureSource : literature
+    LiteratureSource "1" --> "*" QuotedPassage : passages
+    LiteratureSource --> InputRef : fulltext
+    Hypothesis ..> QuotedPassage : grounded_on
+    ClaimBase ..> QuotedPassage : cites_passages
+    Criterion ..> QuotedPassage : reference_passage
+    Design ..> QuotedPassage : cites_passages
+    Run ..> QuotedPassage : cites_passages
+```
+
+### 図 2: 仮説と検証（hypotheses）
+
+仮説 → claim → design → run → result。claim の kind ごとに design / run / result の型が決まる。`QuotedPassage` は図 1 のもの。design / run の `cites_passages` も同じく図 1 の passage を指す。
+
+![hypotheses](images/record-json-hypothesis.png)
+
+```mermaid
+classDiagram
+    direction LR
+
+    class ResearchRecord {
+        literature: LiteratureSource[]
+        hypotheses: Hypothesis[]
     }
     class Hypothesis {
         id: "h1"
@@ -136,11 +179,11 @@ classDiagram
         verdict: Verdict
         errors, warnings
     }
+    class QuotedPassage {
+        図1 の literature[].passages[]
+    }
 
-    ResearchRecord "1" --> "*" LiteratureSource : literature
     ResearchRecord "1" --> "*" Hypothesis : hypotheses
-    LiteratureSource "1" --> "*" QuotedPassage : passages
-    LiteratureSource --> InputRef : fulltext
     Hypothesis "1" --> "*" ClaimBase : claims
     ClaimBase <|-- SeyvalClaim
     ClaimBase <|-- LeanClaim
@@ -159,12 +202,6 @@ classDiagram
     Hypothesis ..> QuotedPassage : grounded_on
     ClaimBase ..> QuotedPassage : cites_passages
     Criterion ..> QuotedPassage : reference_passage
-    SeyvalDesign ..> QuotedPassage : cites_passages
-    SeyvalRun ..> QuotedPassage : cites_passages
-    LeanDesign ..> QuotedPassage : cites_passages
-    LeanRun ..> QuotedPassage : cites_passages
-    LlmJudgeDesign ..> QuotedPassage : cites_passages
-    LlmJudgeRun ..> QuotedPassage : cites_passages
 ```
 
 ## 論理構造
