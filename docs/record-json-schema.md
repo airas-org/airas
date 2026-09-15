@@ -4,9 +4,11 @@
 
 ## クラス図
 
-[![record.json のクラス図](images/record-json-schema.png)](images/record-json-schema.png)
+[![record.json のクラス図](images/record-json-schema.svg)](images/record-json-schema.svg)
 
-<!-- クリックで画像単体のページが開く（GitHub 上では下の mermaid もズーム・パン可）。画像は mermaid を描画したもの。図を変えたら描画し直す。 -->
+<!-- SVG なので Raw で開けばブラウザのズームで文字まで読める。下の mermaid を Kroki
+     (https://kroki.io, diagram_options {"html-labels": "false"}) で描画したもの。
+     図を変えたら描画し直す。 -->
 
 ```mermaid
 classDiagram
