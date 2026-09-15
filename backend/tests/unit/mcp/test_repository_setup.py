@@ -20,6 +20,7 @@ class _Recorder:
     def __init__(self) -> None:
         self.secrets: list[tuple[str, str, str]] = []
         self.protection: list[tuple[str, str, str, list[str]]] = []
+        self.pages: list[tuple[str, str]] = []
 
 
 @pytest.fixture
@@ -55,7 +56,13 @@ def recorder(monkeypatch: pytest.MonkeyPatch) -> _Recorder:
     monkeypatch.setattr(server, "PrepareRepositorySubgraph", _FakeSubgraph)
     monkeypatch.setattr(server, "_github_client", lambda: object())
     monkeypatch.setattr(server, "_apply_secrets", _secrets)
+
+    async def _pages(owner: str, repo: str) -> bool:
+        rec.pages.append((owner, repo))
+        return True
+
     monkeypatch.setattr(server, "_apply_branch_protection", _protect)
+    monkeypatch.setattr(server, "_apply_pages", _pages)
     return rec
 
 
@@ -65,8 +72,10 @@ async def test_setup_configures_secrets_and_protection(recorder: _Recorder) -> N
     assert result["secrets_set"] is True
     assert result["branch_protected"] is True
     assert result["merge_settings_updated"] is True
+    assert result["pages_enabled"] is True
     assert result["warnings"] == []
     assert recorder.secrets == [("o", "r", "main")]
+    assert recorder.pages == [("o", "r")]
     # The required checks are the gates' job names in the template workflows: a
     # different string would be required forever and never reported, which
     # blocks the branch instead of guarding it.
@@ -158,3 +167,16 @@ async def test_protect_branch_cannot_drop_a_gate(recorder: _Recorder) -> None:
         server.RECORD_GATE_CHECK_NAME,
         server.PAPER_GATE_CHECK_NAME,
     ]
+
+
+async def test_pages_that_cannot_be_enabled_are_reported_not_fatal(
+    recorder: _Recorder, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def _refused(owner: str, repo: str) -> bool:
+        raise RuntimeError("Upgrade to GitHub Pro or make this repository public")
+
+    monkeypatch.setattr(server, "_apply_pages", _refused)
+    result = await server.prepare_repository("o", "r")
+    assert result["is_repository_ready"] is True
+    assert result["pages_enabled"] is False
+    assert any("make this repository public" in w for w in result["warnings"])

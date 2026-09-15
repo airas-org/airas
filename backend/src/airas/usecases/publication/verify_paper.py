@@ -301,9 +301,23 @@ def verify_latex_build(
 
 
 # ------------------------------------- the paper's numbers are the record's
-_UNVERIFIED_RE = re.compile(r"\\unverified\{([^{}]*)\}")
 
-_AIRASVAL_RE = re.compile(r"\\airasval\{([^{}]*)\}")
+
+def _macro_arguments(line: str, macro: str) -> list[str]:
+    """The argument of every `\\<macro>{...}` on the line, braces balanced, so
+    `\\unverified{\\texttt{sha}}` is one argument rather than none."""
+    token = f"\\{macro}{{"
+    arguments: list[str] = []
+    start = 0
+    while (at := line.find(token, start)) != -1:
+        depth, i = 1, at + len(token)
+        while i < len(line) and depth:
+            depth += {"{": 1, "}": -1}.get(line[i], 0)
+            i += 1
+        if depth == 0:
+            arguments.append(line[at + len(token) : i - 1])
+        start = i
+    return arguments
 
 
 def _strip_comment(line: str) -> str:
@@ -329,11 +343,9 @@ def scan_main_tex(main_tex: str) -> tuple[list[str], list[str]]:
     used_keys: list[str] = []
     for raw_line in main_tex.splitlines():
         line = _strip_comment(raw_line)
-        unverified.extend(m.group(1) for m in _UNVERIFIED_RE.finditer(line))
+        unverified.extend(_macro_arguments(line, "unverified"))
         used_keys.extend(
-            m.group(1)
-            for m in _AIRASVAL_RE.finditer(line)
-            if m.group(1) not in used_keys
+            key for key in _macro_arguments(line, "airasval") if key not in used_keys
         )
     return unverified, used_keys
 

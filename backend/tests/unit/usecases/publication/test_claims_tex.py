@@ -16,7 +16,11 @@ from airas.core.types.research_record import (
     SeyvalVerifier,
     VerifierKind,
 )
-from airas.usecases.publication.map_record_to_publication import render_claims_tex
+from airas.usecases.publication.map_record_to_publication import (
+    latex_text,
+    render_claims_tex,
+    render_values_tex,
+)
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 
@@ -82,3 +86,25 @@ def test_observed_and_verdict_once_the_runs_are_in() -> None:
 def test_an_unresolvable_metric_stays_pending() -> None:
     tex = render_claims_tex(_record(), {"run_1": {"f1": 0.5}, "run_2": {"f1": 0.6}})
     assert r"\emph{Observed:} pending." in tex
+
+
+def test_record_text_is_escaped_for_pdflatex() -> None:
+    """Prose is the author's; `_` `{` `%` in it must not become LaTeX, and a
+    Lean statement's symbols must become math the engine has glyphs for."""
+    assert latex_text("Method X improves accuracy.") == "Method X improves accuracy."
+    assert (
+        latex_text("sum_range_succ & 100% {ok}") == r"sum\_range\_succ \& 100\% \{ok\}"
+    )
+    assert (
+        latex_text("∀ (n : ℕ), 2 * ∑ i ∈ Finset.range (n + 1), i = n²")
+        == r"$\forall$ (n : $\mathbb{N}$), 2 * $\sum$ i $\in$ Finset.range (n + 1), i = n$^{2}$"
+    )
+    record = _record()
+    record.hypotheses[0].claims[0].statement = "Σ_{i<n} (2i+1) = n²"
+    assert r"\_" in render_claims_tex(record, {})
+    from airas.core.types.map_record_to_publication import PaperValue
+
+    tex = render_values_tex(
+        [PaperValue(ref="t.params.statement", display="∀ n, n ≤ n")], None
+    )
+    assert "∀" not in tex and r"$\forall$ n, n $\leq$ n" in tex

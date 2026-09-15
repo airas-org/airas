@@ -32,6 +32,14 @@ def _client(log: RequestLog, status: int = 200) -> GithubClient:
 
         if request.method == "PUT" and path.endswith("/protection"):
             log.protection.append(body)
+            if status == 403:
+                return httpx.Response(
+                    status,
+                    json={
+                        "message": "Upgrade to GitHub Pro or make this repository "
+                        "public to enable this feature."
+                    },
+                )
             return httpx.Response(status, json={"url": path})
         if request.method == "PATCH" and path == f"/repos/{OWNER}/{REPO}":
             log.repo_settings.append(body)
@@ -114,8 +122,10 @@ async def test_protection_does_not_require_a_pull_request(log: RequestLog) -> No
     assert sent["required_pull_request_reviews"] is None
 
 
-async def test_protection_without_admin_rights_is_fatal(log: RequestLog) -> None:
-    with pytest.raises(GithubClientFatalError, match="admin"):
+async def test_a_refused_protection_repeats_githubs_reason(log: RequestLog) -> None:
+    """A 403 is not always missing admin rights: on a free plan a private
+    repository cannot be protected at all, and GitHub says so."""
+    with pytest.raises(GithubClientFatalError, match="make this repository public"):
         await _client(log, status=403).aupdate_branch_protection(
             github_owner=OWNER,
             repository_name=REPO,

@@ -469,6 +469,10 @@ def test_unreachable_provenance_fails_where_required(tmp_path: Path) -> None:
         store_factory=_no_store,
     )
     assert relaxed.ok, relaxed.problems
+    # What the cross-check found travels with the result, so CI's report can
+    # show it (status, sibling runs) rather than only a pass/fail.
+    assert relaxed.provenance is not None
+    assert relaxed.provenance["status"] == "unavailable"
 
 
 def test_a_shallow_clone_fails_rather_than_passing_quietly(tmp_path: Path) -> None:

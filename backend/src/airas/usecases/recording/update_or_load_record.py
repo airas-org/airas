@@ -256,6 +256,7 @@ def derive_result(
                 toolchain=payload.get("toolchain", ""),
                 mathlib_rev=payload.get("mathlib_rev", ""),
                 statement=payload.get("statement", ""),
+                statement_matches=payload.get("statement_matches"),
                 axioms=payload.get("axioms", []),
                 errors=_lean_errors(claim, run, payload),
                 warnings=payload.get("warnings", []),
@@ -331,8 +332,14 @@ def _lean_errors(claim: LeanClaim, run: LeanRun, payload: dict[str, Any]) -> lis
             errors.append(f"{key} differs from the declaration: built {built_value!r}")
     if errors:
         return errors
+    # The report tool compares the declared statement with the built type as
+    # Lean terms when it can; the printed-string comparison is the fallback
+    # for a report that did not.
     built = _normalize_statement(payload.get("statement", ""))
-    if built != _normalize_statement(run.params.statement):
+    same = payload.get("statement_matches")
+    if same is False or (
+        same is None and built != _normalize_statement(run.params.statement)
+    ):
         errors.append(f"statement differs from the declaration: built '{built}'")
     axioms = set(payload.get("axioms", []))
     if _SORRY_AXIOM in axioms:

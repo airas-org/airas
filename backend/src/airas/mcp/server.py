@@ -902,8 +902,10 @@ async def prepare_repository(
     Returns `html_url` and `clone_url` alongside the readiness flags, so the
     next step — cloning it locally — needs nothing reconstructed by hand.
 
-    `configure_ci` also provisions the Actions secrets and protects
-    `protected_branch`, because both are the kind of setup whose absence is
+    `configure_ci` also provisions the Actions secrets, protects
+    `protected_branch` and points GitHub Pages at the artifact the
+    `Publish HTML` workflow deploys (so no gh-pages branch is needed),
+    because all three are the kind of setup whose absence is
     invisible: without `SEYVAL_API_KEY` the provenance cross-check degrades
     to a skip rather than a failure, and without branch protection every
     guarantee in the record rests on the agent choosing to respect a red
@@ -938,6 +940,7 @@ async def prepare_repository(
     secrets_set = False
     branch_protected = False
     merge_settings_updated = False
+    pages_enabled = False
     if configure_ci:
         try:
             secrets_set = await _apply_secrets(
@@ -964,6 +967,14 @@ async def prepare_repository(
                 "the record's guarantees are advisory in this repository "
                 "until it is fixed (protect_branch)."
             )
+        try:
+            pages_enabled = await _apply_pages(github_owner, repository_name)
+        except Exception as e:
+            warnings.append(
+                f"GitHub Pages was not pointed at Actions ({e}); the Publish "
+                "HTML workflow will have nowhere to deploy until the "
+                "repository's Pages source is set to GitHub Actions."
+            )
 
     return {
         "is_repository_ready": result["is_repository_ready"],
@@ -973,6 +984,7 @@ async def prepare_repository(
         "secrets_set": secrets_set,
         "branch_protected": branch_protected,
         "merge_settings_updated": merge_settings_updated,
+        "pages_enabled": pages_enabled,
         "protected_branch": protected_branch if branch_protected else None,
         "warnings": warnings,
     }
@@ -1035,6 +1047,12 @@ async def _apply_secrets(
         .ainvoke({"github_config": config})
     )
     return bool(result["secrets_set"])
+
+
+async def _apply_pages(github_owner: str, repository_name: str) -> bool:
+    return await _github_client().aenable_pages_from_actions(
+        github_owner, repository_name
+    )
 
 
 async def _apply_branch_protection(

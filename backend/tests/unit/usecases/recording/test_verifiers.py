@@ -241,6 +241,7 @@ def test_a_sorry_free_build_supports_the_claim(tmp_path: Path) -> None:
     [
         ({"axioms": ["propext", "sorryAx"]}, "sorry"),
         ({"statement": "∀ (n : Nat), n = n"}, "statement differs"),
+        ({"statement_matches": False}, "statement differs"),
         ({"axioms": ["myAxiom"]}, "outside allowed_axioms"),
         ({"module": "Airas.Other"}, "module differs"),
         ({"decl": "thm1'"}, "decl differs"),
@@ -279,6 +280,20 @@ def test_an_unreadable_lean_report_leaves_the_claim_unverified(tmp_path: Path) -
     assert not claim.verified and claim.verdict is None
     assert statuses[0].verified is False
     assert _verify(str(tmp_path)).stage == "prereg"
+
+
+def test_a_term_comparison_by_the_tool_replaces_the_printed_string(
+    tmp_path: Path,
+) -> None:
+    """When the report says the declared statement elaborates to the built
+    type, the record's spelling need not be Lean's printed form."""
+    record = _lean_repo(
+        tmp_path,
+        {**LEAN_REPORT, "statement": "∀ (n : ℕ), n + 0 = n", "statement_matches": True},
+    )
+    claim = _c1(record)
+    assert claim.verdict == "supported"
+    assert claim.designs[0].runs[0].results[0].statement_matches is True
 
 
 def test_a_tampered_lean_report_fails(tmp_path: Path) -> None:

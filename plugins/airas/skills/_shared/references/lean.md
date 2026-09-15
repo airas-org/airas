@@ -43,13 +43,14 @@ freeze commit の子孫で走り直す。手元で確かめてから push し、
 
 - `toolchain` は `lean/lean-toolchain`、`mathlib_rev` は `lean/lake-manifest.json` の
   `mathlib` の `rev` をそのまま写す。report と一致しなければ error になる。
-- `statement` は `#check @thm1` が出す型を、Lean が印字する形で書く。照合は空白を
-  無視した文字列比較なので、印字形式に合わせる: 引数は `∀ (n : ℕ), ...` の束縛子に
-  展開される、mathlib の記法で書く（`Nat` ではなく `ℕ`、`Finset.sum (Finset.range n) f`
-  ではなく `∑ i ∈ Finset.range n, f i`）、`id` のような関数適用は `id i` と印字される。
-  ずれると full run は inconclusive になり、同じ id で append して凍結し直す。
-  意味で比較する `statement_matches` 方式（report ツールが宣言を elaborate して比較）は
-  後続 issue。
+- `statement` は定理の型を Lean が受理する式で書く。report ツールがこの文字列を
+  モジュールと同じ環境で elaborate して項にし、ビルドされた宣言の型と束縛変数名を
+  除いて一致するか（`statement_matches`）を判定するので、記法の違い（`Nat` と `ℕ`、
+  `∑ i ∈ s, f i` と `Finset.sum s fun i => f i`、`∀ n,` と `(n : ℕ) →`）は問わない。
+  定義上等しいだけの別の型（`n = n` に対する `n + 0 = n`）は一致しない。名前は
+  完全修飾（`Finset.range`）で書くか、`config/run/<run_id>.yaml` の `open` に名前空間を
+  列挙する（scoped な記法と短い名前がそこで有効になる。mathlib の `∑` と `ℕ` には不要）。
+  不一致なら run は失敗し、record では inconclusive。
 - `allowed_axioms` の既定は標準 3 公理。`sorryAx` は常に error。
 
 ## 2. 証明を書く
@@ -64,6 +65,7 @@ freeze commit の子孫で走り直す。手元で確かめてから push し、
 kind: lean
 module: Airas.Thm1
 decl: thm1
+# open: BigOperators,Finset   # 宣言の statement が scoped 記法や短い名前を使うとき
 ```
 
 `lean/lakefile.toml`、`lean/lake-manifest.json`、`lean/lean-toolchain`、

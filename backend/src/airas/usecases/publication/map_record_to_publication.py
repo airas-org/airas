@@ -143,6 +143,42 @@ def record_blob_url(repo_url: str | None, ref: str | None) -> str | None:
     return url if _URL_SAFE.match(url) else None
 
 
+# Record text reaches pdflatex verbatim, so LaTeX's specials are escaped and
+# the symbols a Lean statement carries become math macros (pdflatex has no
+# text glyph for `∀` or `ℕ`). ponytail: the table is the symbols seen in Lean
+# statements so far; add an entry when a paper needs another, or switch to
+# pylatexenc if the list keeps growing. Other non-ASCII text passes through —
+# the engine and fonts are the author's choice.
+_LATEX_TEXT = {
+    **{c: f"\\{c}" for c in "&%$#_{}"},
+    "\\": r"\textbackslash{}",
+    "~": r"\textasciitilde{}",
+    "^": r"\textasciicircum{}",
+    "∀": r"$\forall$",
+    "∃": r"$\exists$",
+    "∑": r"$\sum$",
+    "∈": r"$\in$",
+    "→": r"$\to$",
+    "≤": r"$\leq$",
+    "≥": r"$\geq$",
+    "≠": r"$\neq$",
+    "¬": r"$\neg$",
+    "∧": r"$\wedge$",
+    "∨": r"$\vee$",
+    "ℕ": r"$\mathbb{N}$",
+    "ℤ": r"$\mathbb{Z}$",
+    "ℚ": r"$\mathbb{Q}$",
+    "ℝ": r"$\mathbb{R}$",
+    "²": r"$^{2}$",
+}
+_LATEX_TEXT_RE = re.compile("|".join(re.escape(k) for k in _LATEX_TEXT))
+
+
+def latex_text(text: str) -> str:
+    """`text` as pdflatex can typeset it in text mode."""
+    return _LATEX_TEXT_RE.sub(lambda m: _LATEX_TEXT[m.group(0)], text)
+
+
 def render_values_tex(
     values: list[PaperValue], repo_url: str | None, ref: str | None = None
 ) -> str:
@@ -168,7 +204,7 @@ def render_values_tex(
             lines.append(f"% {value.ref} = {value.derivation}")
         lines.append(
             rf"\expandafter\def\csname airasval@{value.ref}\endcsname"
-            rf"{{\airasrecordlink{{{value.display}}}}}"
+            rf"{{\airasrecordlink{{{latex_text(value.display)}}}}}"
         )
     lines.append(r"\makeatother")
     return "\n".join(lines) + "\n"
@@ -243,12 +279,15 @@ def render_claims_tex(record: ResearchRecord, metrics_data: dict[str, Any]) -> s
     lines = [_TABLES_TEX_HEADER]
     for hypothesis in record.active_hypotheses():
         lines += [
-            rf"\noindent\textbf{{{hypothesis.id.upper()}.}} {hypothesis.statement}",
+            rf"\noindent\textbf{{{hypothesis.id.upper()}.}} "
+            + latex_text(hypothesis.statement),
             r"\begin{enumerate}",
         ]
         for claim in active(hypothesis.claims, "id"):
-            lines.append(rf"\item[\textbf{{{claim.id.upper()}}}] {claim.statement}")
-            lines.append(rf"  \emph{{Rationale:}} {claim.rationale}")
+            lines.append(
+                rf"\item[\textbf{{{claim.id.upper()}}}] {latex_text(claim.statement)}"
+            )
+            lines.append(rf"  \emph{{Rationale:}} {latex_text(claim.rationale)}")
             if isinstance(claim, SeyvalClaim):
                 c = claim.criterion
                 reference = (
@@ -263,7 +302,7 @@ def render_claims_tex(record: ResearchRecord, metrics_data: dict[str, Any]) -> s
                 p = claim.prediction
                 lines.append(
                     rf"  \emph{{Prediction:}} $[{format_display(p.low, None)}, "
-                    rf"{format_display(p.high, None)}]$ ({p.basis})."
+                    rf"{format_display(p.high, None)}]$ ({latex_text(p.basis)})."
                 )
                 try:
                     observed = format_display(c.observed(metrics_data), None)
@@ -278,7 +317,7 @@ def render_claims_tex(record: ResearchRecord, metrics_data: dict[str, Any]) -> s
                 rf"{hypothesis.id.upper()}:}}"
             )
             lines.append(r"\begin{itemize}")
-            lines += [rf"\item {a}" for a in hypothesis.assumptions]
+            lines += [rf"\item {latex_text(a)}" for a in hypothesis.assumptions]
             lines.append(r"\end{itemize}")
     return "\n".join(lines) + "\n"
 

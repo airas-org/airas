@@ -272,6 +272,13 @@ class LeanResult(BaseModel):
     toolchain: str = Field(default="", description="What built it, per the report")
     mathlib_rev: str = ""
     statement: str = Field(default="", description="The built declaration's type")
+    statement_matches: Optional[bool] = Field(
+        default=None,
+        description=(
+            "Whether the declared statement, elaborated by the report tool, is "
+            "the built type as a term; None when the tool did not compare"
+        ),
+    )
     axioms: list[str] = Field(default_factory=list)
     # A failed build is a result too. Any entry here makes the verdict
     # inconclusive: a proof that did not go through proves nothing either way.

@@ -193,6 +193,7 @@ classDiagram
             - `commit`
             - `toolchain` / `mathlib_rev` 実際にビルドした版。verifier の宣言と一致しなければ error
             - `statement` 実際にビルドされた宣言の型
+            - `statement_matches` 宣言した statement を項として比較した結果（report ツールが判定。無ければ文字列比較）
             - `axioms[]` 宣言が依存する公理（`sorryAx` を含む）
             - `errors[]` ビルド失敗 / sorry / statement 不一致 / module・decl・toolchain・mathlib_rev の不一致 / 許可外公理
             - `warnings[]`
