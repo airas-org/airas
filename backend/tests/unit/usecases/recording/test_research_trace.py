@@ -5,9 +5,9 @@ import json
 import subprocess
 from pathlib import Path
 
+from airas.agent_session.research_trace import record_access
 from airas.core.research_paths import STEPS_PATH
 from airas.core.types.agent_state import SessionPointer
-from airas.usecases.recording.research_trace import record_access
 
 
 def _repo(tmp_path: Path) -> Path:

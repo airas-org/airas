@@ -13,7 +13,7 @@ from typing import Any
 
 import pytest
 
-from airas.mcp import server
+from airas.mcp.tools import repository as repository_tools
 
 
 class _Recorder:
@@ -53,21 +53,21 @@ def recorder(monkeypatch: pytest.MonkeyPatch) -> _Recorder:
         rec.protection.append((owner, repo, branch, checks))
         return True, True
 
-    monkeypatch.setattr(server, "PrepareRepositorySubgraph", _FakeSubgraph)
-    monkeypatch.setattr(server, "_github_client", lambda: object())
-    monkeypatch.setattr(server, "_apply_secrets", _secrets)
+    monkeypatch.setattr(repository_tools, "PrepareRepositorySubgraph", _FakeSubgraph)
+    monkeypatch.setattr(repository_tools, "_github_client", lambda: object())
+    monkeypatch.setattr(repository_tools, "_apply_secrets", _secrets)
 
     async def _pages(owner: str, repo: str) -> bool:
         rec.pages.append((owner, repo))
         return True
 
-    monkeypatch.setattr(server, "_apply_branch_protection", _protect)
-    monkeypatch.setattr(server, "_apply_pages", _pages)
+    monkeypatch.setattr(repository_tools, "_apply_branch_protection", _protect)
+    monkeypatch.setattr(repository_tools, "_apply_pages", _pages)
     return rec
 
 
 async def test_setup_configures_secrets_and_protection(recorder: _Recorder) -> None:
-    result = await server.prepare_repository("o", "r")
+    result = await repository_tools.prepare_repository("o", "r")
 
     assert result["secrets_set"] is True
     assert result["branch_protected"] is True
@@ -84,7 +84,10 @@ async def test_setup_configures_secrets_and_protection(recorder: _Recorder) -> N
             "o",
             "r",
             "main",
-            [server.RECORD_GATE_CHECK_NAME, server.PAPER_GATE_CHECK_NAME],
+            [
+                repository_tools.RECORD_GATE_CHECK_NAME,
+                repository_tools.PAPER_GATE_CHECK_NAME,
+            ],
         )
     ]
 
@@ -92,7 +95,7 @@ async def test_setup_configures_secrets_and_protection(recorder: _Recorder) -> N
 async def test_the_protected_branch_can_differ_from_the_working_branch(
     recorder: _Recorder,
 ) -> None:
-    await server.prepare_repository(
+    await repository_tools.prepare_repository(
         "o", "r", branch_name="research", protected_branch="main"
     )
     assert recorder.secrets == [("o", "r", "research")]
@@ -105,8 +108,8 @@ async def test_failed_protection_is_reported_but_does_not_lose_the_repository(
     async def _boom(*_args: Any, **_kwargs: Any) -> tuple[bool, bool]:
         raise RuntimeError("403 admin rights required")
 
-    monkeypatch.setattr(server, "_apply_branch_protection", _boom)
-    result = await server.prepare_repository("o", "r")
+    monkeypatch.setattr(repository_tools, "_apply_branch_protection", _boom)
+    result = await repository_tools.prepare_repository("o", "r")
 
     # The repository was created; throwing that away would help nobody.
     assert result["is_repository_ready"] is True
@@ -126,8 +129,8 @@ async def test_failed_secrets_warn_that_the_check_will_look_green(
     async def _boom(*_args: Any, **_kwargs: Any) -> bool:
         raise RuntimeError("no token")
 
-    monkeypatch.setattr(server, "_apply_secrets", _boom)
-    result = await server.prepare_repository("o", "r")
+    monkeypatch.setattr(repository_tools, "_apply_secrets", _boom)
+    result = await repository_tools.prepare_repository("o", "r")
 
     assert result["secrets_set"] is False
     assert any("skipped rather than fail" in w for w in result["warnings"])
@@ -136,7 +139,7 @@ async def test_failed_secrets_warn_that_the_check_will_look_green(
 
 
 async def test_configure_ci_can_be_declined(recorder: _Recorder) -> None:
-    result = await server.prepare_repository("o", "r", configure_ci=False)
+    result = await repository_tools.prepare_repository("o", "r", configure_ci=False)
 
     assert result["secrets_set"] is False
     assert result["branch_protected"] is False
@@ -147,12 +150,15 @@ async def test_configure_ci_can_be_declined(recorder: _Recorder) -> None:
 
 async def test_standalone_tools_reach_the_same_code(recorder: _Recorder) -> None:
     """The repair path and the setup path must not drift apart."""
-    assert (await server.set_github_actions_secrets("o", "r"))["secrets_set"]
+    assert (await repository_tools.set_github_actions_secrets("o", "r"))["secrets_set"]
     assert recorder.secrets == [("o", "r", "main")]
 
-    protect = await server.protect_branch("o", "r")
+    protect = await repository_tools.protect_branch("o", "r")
     assert protect["branch_protected"] is True
-    checks = [server.RECORD_GATE_CHECK_NAME, server.PAPER_GATE_CHECK_NAME]
+    checks = [
+        repository_tools.RECORD_GATE_CHECK_NAME,
+        repository_tools.PAPER_GATE_CHECK_NAME,
+    ]
     assert protect["required_checks"] == checks
     assert recorder.protection[0][3] == checks
 
@@ -160,12 +166,12 @@ async def test_standalone_tools_reach_the_same_code(recorder: _Recorder) -> None
 async def test_protect_branch_cannot_drop_a_gate(recorder: _Recorder) -> None:
     """A caller naming only the record gate still gets both: the paper gate
     is part of the guarantee, not an option."""
-    await server.protect_branch(
-        "o", "r", required_check_names=[server.RECORD_GATE_CHECK_NAME]
+    await repository_tools.protect_branch(
+        "o", "r", required_check_names=[repository_tools.RECORD_GATE_CHECK_NAME]
     )
     assert recorder.protection[0][3] == [
-        server.RECORD_GATE_CHECK_NAME,
-        server.PAPER_GATE_CHECK_NAME,
+        repository_tools.RECORD_GATE_CHECK_NAME,
+        repository_tools.PAPER_GATE_CHECK_NAME,
     ]
 
 
@@ -175,8 +181,8 @@ async def test_pages_that_cannot_be_enabled_are_reported_not_fatal(
     async def _refused(owner: str, repo: str) -> bool:
         raise RuntimeError("Upgrade to GitHub Pro or make this repository public")
 
-    monkeypatch.setattr(server, "_apply_pages", _refused)
-    result = await server.prepare_repository("o", "r")
+    monkeypatch.setattr(repository_tools, "_apply_pages", _refused)
+    result = await repository_tools.prepare_repository("o", "r")
     assert result["is_repository_ready"] is True
     assert result["pages_enabled"] is False
     assert any("make this repository public" in w for w in result["warnings"])

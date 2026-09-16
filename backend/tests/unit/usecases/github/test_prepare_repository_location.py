@@ -7,7 +7,7 @@ owner and name that were passed in.
 """
 
 from airas.core.types.github import GitHubConfig
-from airas.usecases.github.prepare_repository_subgraph.prepare_repository_subgraph import (
+from airas.usecases.repository.prepare_repository_subgraph.prepare_repository_subgraph import (
     PrepareRepositorySubgraph,
 )
 

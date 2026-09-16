@@ -11,14 +11,14 @@ from airas.dashboard.api.schemas.github_actions import (
     SetGithubActionsSecretsRequestBody,
     SetGithubActionsSecretsResponseBody,
 )
-from airas.infra.github_client import GithubClient
-from airas.usecases.github.download_github_actions_artifacts_subgraph.download_github_actions_artifacts_subgraph import (
+from airas.infra.github.download_github_actions_artifacts_subgraph.download_github_actions_artifacts_subgraph import (
     DownloadGithubActionsArtifactsSubgraph,
 )
-from airas.usecases.github.poll_github_actions_subgraph.poll_github_actions_subgraph import (
+from airas.infra.github.poll_github_actions_subgraph.poll_github_actions_subgraph import (
     PollGithubActionsSubgraph,
 )
-from airas.usecases.github.set_github_actions_secrets_subgraph.set_github_actions_secrets_subgraph import (
+from airas.infra.github_client import GithubClient
+from airas.usecases.repository.set_github_actions_secrets_subgraph import (
     SetGithubActionsSecretsSubgraph,
 )
 

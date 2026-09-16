@@ -37,20 +37,29 @@ from airas.core.types.run_provenance import (
     ResultsDirProvenance,
     RunProvenanceManifest,
 )
+from airas.research_record.derive_results import (
+    update_record_with_results,
+)
+from airas.research_record.read_run_outputs import (
+    load_metrics_data,
+)
+from airas.research_record.store import (
+    load_record,
+    save_record,
+)
+from airas.research_record.verify import RecordVerification, verify_record
+from airas.usecases.literature.bibliography import (
+    render_references_bib,
+)
+from airas.usecases.literature.fulltext_snapshot import (
+    write_fulltext,
+)
 from airas.usecases.publication.map_record_to_publication import (
     render_claims_tex,
     render_values_tex,
     resolve_paper_values,
 )
 from airas.usecases.publication.verify_paper import scan_main_tex, verify_paper
-from airas.usecases.recording.sources import render_references_bib, write_fulltext
-from airas.usecases.recording.update_or_load_record import (
-    load_metrics_data,
-    load_record,
-    save_record,
-    update_record_with_results,
-)
-from airas.usecases.recording.verify_record import RecordVerification, verify_record
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 
@@ -820,7 +829,7 @@ PAGES = [
 QUOTE = "We apply dropout to the output of each sub-layer."
 
 
-def _source(repo: Path, confirmed: bool = True) -> LiteratureSource:
+def find_source(repo: Path, confirmed: bool = True) -> LiteratureSource:
     return LiteratureSource(
         id="s1",
         title="Attention Is All You Need",
@@ -838,7 +847,7 @@ def _source(repo: Path, confirmed: bool = True) -> LiteratureSource:
 def _grounded_repo(tmp_path: Path, **source_kw: Any) -> tuple[Path, ResearchRecord]:
     _init(tmp_path)
     record = _record()
-    record.literature.append(_source(tmp_path, **source_kw))
+    record.literature.append(find_source(tmp_path, **source_kw))
     record.hypotheses[0].grounded_on = ["s1.p1"]
     _c1(record).cites_passages = ["s1.p1"]
     save_record(str(tmp_path), record)
@@ -886,7 +895,7 @@ def test_a_passage_registered_after_the_hypothesis_that_names_it_fails(
     tmp_path: Path,
 ) -> None:
     _init(tmp_path)
-    record = ResearchRecord(literature=[_source(tmp_path)])
+    record = ResearchRecord(literature=[find_source(tmp_path)])
     record.literature[0].passages.clear()
     save_record(str(tmp_path), record)
     _commit(tmp_path, "register the source")

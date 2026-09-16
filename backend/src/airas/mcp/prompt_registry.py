@@ -1,24 +1,3 @@
-"""Host-authoring prompt registry (dual-mode generation).
-
-Each generation step in AIRAS can run in one of two modes:
-
-- Backend mode: the corresponding MCP tool (e.g. ``generate_paper``) calls
-  the backend LLM with AIRAS's curated prompts. Requires an LLM provider
-  API key.
-- Host mode: the MCP host (Claude Code etc.) authors the artifact itself.
-  ``get_generation_prompt`` assembles the *same* prompts from the *same*
-  template files the backend nodes use — this module is a thin renderer on
-  top of them, so the two modes cannot drift apart.
-
-Every step returns a single fully rendered ``prompt``, an
-``input_json_schema`` describing the shape of ``inputs`` it accepts, an
-``output_json_schema`` describing exactly the data format to produce, and a
-``flow`` note on how the output is used next. Steps that loop internally on
-the backend (hypothesis refinement, paper refinement) are intentionally
-single-shot in host mode: the host produces the artifact once, at its best,
-instead of replaying the backend's iteration loop.
-"""
-
 import json
 from typing import Any, Optional
 
@@ -160,7 +139,7 @@ def _research_queries(inputs: _ResearchQueriesInputs) -> dict[str, Any]:
     }
 
 
-def _hypothesis(inputs: _HypothesisInputs) -> dict[str, Any]:
+def find_hypothesis(inputs: _HypothesisInputs) -> dict[str, Any]:
     prompt = _render(
         generate_simple_hypothesis_prompt,
         {
@@ -308,7 +287,7 @@ def _latex_conversion(inputs: _LatexConversionInputs) -> dict[str, Any]:
 
 _STEP_BUILDERS: dict[str, tuple[type[BaseModel], Any]] = {
     "research_queries": (_ResearchQueriesInputs, _research_queries),
-    "hypothesis": (_HypothesisInputs, _hypothesis),
+    "hypothesis": (_HypothesisInputs, find_hypothesis),
     "experimental_design": (_ExperimentalDesignInputs, _experimental_design),
     "experiment_analysis": (_ExperimentAnalysisInputs, _experiment_analysis),
     "paper_writing": (_PaperWritingInputs, _paper_writing),

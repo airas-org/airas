@@ -12,14 +12,17 @@ from airas.core.types.research_record import (
     Criterion,
     Hypothesis,
     Prediction,
+    ResearchRecord,
     SeyvalClaim,
     SeyvalDesign,
     SeyvalRun,
     SeyvalVerifier,
     VerifierKind,
 )
-from airas.mcp import server
-from airas.usecases.recording.update_or_load_record import load_record
+from airas.mcp.tools import record as record_tools
+from airas.research_record.store import (
+    load_record,
+)
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -77,7 +80,7 @@ def _hypotheses() -> list[dict[str, Any]]:
 async def test_the_shipped_empty_record_is_initialised_in_place(tmp_path: Path) -> None:
     repo = _repo_with_record(tmp_path, "{}")
 
-    result = await server.preregister_record(str(repo), _hypotheses(), "mdpi")
+    result = await record_tools.preregister_record(str(repo), _hypotheses(), "mdpi")
 
     assert result["record_path"] == str(repo / RECORD_PATH)
     assert [h.id for h in load_record(str(repo)).hypotheses] == ["h1"]
@@ -87,10 +90,10 @@ async def test_the_shipped_empty_record_is_initialised_in_place(tmp_path: Path) 
 async def test_a_record_that_already_declares_is_not_overwritten(
     tmp_path: Path,
 ) -> None:
-    declared = server.ResearchRecord(
+    declared = ResearchRecord(
         hypotheses=[Hypothesis.model_validate(h) for h in _hypotheses()]
     )
     repo = _repo_with_record(tmp_path, declared.model_dump_json())
 
     with pytest.raises(ValueError, match="already holds declarations"):
-        await server.preregister_record(str(repo), _hypotheses(), "mdpi")
+        await record_tools.preregister_record(str(repo), _hypotheses(), "mdpi")

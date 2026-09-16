@@ -9,8 +9,11 @@ from typing import Any
 import pytest
 
 from airas.core.research_paths import RECORD_PATH
-from airas.mcp import server
-from airas.usecases.recording.update_or_load_record import load_record
+from airas.mcp.tools import record as record_tools
+from airas.research_record.store import (
+    load_record,
+)
+from airas.usecases.literature import register_sources as register_sources_usecase
 
 PAGES = [
     "ATTENTION IS ALL YOU NEED\nWe propose the Transformer.",
@@ -125,13 +128,15 @@ def _snapshot(
 
 @pytest.fixture(autouse=True)
 def _offline(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(server, "_search_index", _Index())
-    monkeypatch.setattr(server, "verify_existence", _verify)
-    monkeypatch.setattr(server, "snapshot_repository", _snapshot)
-    monkeypatch.setattr(server, "FetchPaperFulltextSubgraph", _Fetch)
-    monkeypatch.setattr(server, "_semantic_scholar_client", lambda: object())
-    monkeypatch.setattr(server, "_arxiv_client", lambda: object())
-    monkeypatch.setattr(server, "parser_version", lambda: "pymupdf test")
+    monkeypatch.setattr(record_tools, "_search_index", _Index())
+    monkeypatch.setattr(register_sources_usecase, "verify_existence", _verify)
+    monkeypatch.setattr(register_sources_usecase, "snapshot_repository", _snapshot)
+    monkeypatch.setattr(register_sources_usecase, "FetchPaperFulltextSubgraph", _Fetch)
+    monkeypatch.setattr(record_tools, "_semantic_scholar_client", lambda: object())
+    monkeypatch.setattr(record_tools, "_arxiv_client", lambda: object())
+    monkeypatch.setattr(
+        register_sources_usecase, "parser_version", lambda: "pymupdf test"
+    )
     _Fetch.calls = []
 
 
@@ -140,7 +145,7 @@ async def test_a_db_paper_is_pinned_from_its_record_and_committed(
 ) -> None:
     repo = _repo(tmp_path)
 
-    result = await server.register_sources(str(repo), [{"airas_db": "e369"}])
+    result = await record_tools.register_sources(str(repo), [{"airas_db": "e369"}])
 
     assert result["sources"]["s1"]["bibkey"] == "vaswani-2017-attention"
     assert result["sources"]["s1"]["verified_by"] == "airas_db"
@@ -170,7 +175,7 @@ async def test_a_paper_the_agent_found_on_the_web_gets_the_same_check(
         "pdf_url": "https://example.org/found-by-search.pdf",
     }
 
-    result = await server.register_sources(str(repo), [paper])
+    result = await record_tools.register_sources(str(repo), [paper])
 
     assert result["sources"]["s1"]["verified_by"] == "doi.org"
     assert load_record(str(repo)).literature[0].doi == paper["doi"]
@@ -178,7 +183,7 @@ async def test_a_paper_the_agent_found_on_the_web_gets_the_same_check(
 
 async def test_a_paper_with_no_identifier_is_refused(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="existence can be checked"):
-        await server.register_sources(
+        await record_tools.register_sources(
             str(_repo(tmp_path)), [{"title": "t", "pdf_url": "https://x/y.pdf"}]
         )
 
@@ -189,7 +194,9 @@ async def test_a_paper_no_registry_confirms_is_refused_and_nothing_is_written(
     repo = _repo(tmp_path)
 
     with pytest.raises(ValueError, match="no registry verified it"):
-        await server.register_sources(str(repo), [{"doi": "10.1/nope", "title": "t"}])
+        await record_tools.register_sources(
+            str(repo), [{"doi": "10.1/nope", "title": "t"}]
+        )
 
     assert _Fetch.calls == []
     assert not (repo / ".research" / "sources").exists()
@@ -200,10 +207,10 @@ async def test_registering_the_same_paper_again_leaves_it_as_it_is(
     tmp_path: Path,
 ) -> None:
     repo = _repo(tmp_path)
-    await server.register_sources(str(repo), [{"airas_db": "e369"}])
+    await record_tools.register_sources(str(repo), [{"airas_db": "e369"}])
     before = load_record(str(repo)).literature
 
-    await server.register_sources(str(repo), [{"airas_db": "e369"}])
+    await record_tools.register_sources(str(repo), [{"airas_db": "e369"}])
 
     assert load_record(str(repo)).literature == before
     assert len(_Fetch.calls) == 1
@@ -213,9 +220,9 @@ async def test_passages_append_under_their_source_and_must_be_verbatim(
     tmp_path: Path,
 ) -> None:
     repo = _repo(tmp_path)
-    await server.register_sources(str(repo), [{"airas_db": "e369"}])
+    await record_tools.register_sources(str(repo), [{"airas_db": "e369"}])
 
-    result = await server.append_to_record(
+    result = await record_tools.append_to_record(
         str(repo),
         source_id="s1",
         passages=[{"node_type": "setup", "quote": "The rate is 0.1."}],
@@ -224,7 +231,7 @@ async def test_passages_append_under_their_source_and_must_be_verbatim(
     assert [p.id for p in load_record(str(repo)).literature[0].passages] == ["s1.p1"]
 
     with pytest.raises(ValueError, match="not found verbatim"):
-        await server.append_to_record(
+        await record_tools.append_to_record(
             str(repo),
             source_id="s1",
             passages=[{"node_type": "setup", "quote": "Dropout is 0.1."}],
@@ -234,7 +241,7 @@ async def test_passages_append_under_their_source_and_must_be_verbatim(
 
 async def test_passages_without_a_source_are_refused(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="pass source_id"):
-        await server.append_to_record(
+        await record_tools.append_to_record(
             str(_repo(tmp_path)), passages=[{"node_type": "claim", "quote": "q"}]
         )
 
@@ -243,7 +250,7 @@ async def test_preregister_keeps_the_sources_registered_before_it(
     tmp_path: Path,
 ) -> None:
     repo = _repo(tmp_path)
-    await server.register_sources(
+    await record_tools.register_sources(
         str(repo),
         [
             {
@@ -253,7 +260,7 @@ async def test_preregister_keeps_the_sources_registered_before_it(
         ],
     )
 
-    await server.preregister_record(str(repo), _hypotheses(["s1.p1"]), "mdpi")
+    await record_tools.preregister_record(str(repo), _hypotheses(["s1.p1"]), "mdpi")
 
     record = load_record(str(repo))
     assert [s.id for s in record.literature] == ["s1"]
@@ -266,7 +273,7 @@ async def test_a_passage_no_source_declares_is_refused_at_preregistration(
     tmp_path: Path,
 ) -> None:
     with pytest.raises(ValueError, match="no source declares"):
-        await server.preregister_record(
+        await record_tools.preregister_record(
             str(_repo(tmp_path)), _hypotheses(["s1.p1"]), "mdpi"
         )
 
@@ -285,7 +292,7 @@ async def test_a_repository_is_pinned_at_its_commit_with_its_files(
 ) -> None:
     repo = _repo(tmp_path)
 
-    result = await server.register_sources(
+    result = await record_tools.register_sources(
         str(repo),
         repositories=[
             {
@@ -312,7 +319,7 @@ async def test_a_repository_is_pinned_at_its_commit_with_its_files(
 async def test_a_repository_that_cannot_be_fetched_is_refused(tmp_path: Path) -> None:
     repo = _repo(tmp_path)
     with pytest.raises(ValueError, match="git fetch failed"):
-        await server.register_sources(
+        await record_tools.register_sources(
             str(repo), repositories=[{**REPO, "commit": "0" * 40}]
         )
     assert _git(repo, "status", "--porcelain") == ""
@@ -320,7 +327,7 @@ async def test_a_repository_that_cannot_be_fetched_is_refused(tmp_path: Path) ->
 
 async def test_a_repository_needs_url_commit_and_files(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="url, commit and files"):
-        await server.register_sources(
+        await record_tools.register_sources(
             str(_repo(tmp_path)), repositories=[{"url": REPO["url"]}]
         )
 
@@ -329,21 +336,21 @@ async def test_the_same_repository_and_commit_is_registered_once(
     tmp_path: Path,
 ) -> None:
     repo = _repo(tmp_path)
-    await server.register_sources(str(repo), repositories=[REPO])
-    await server.register_sources(str(repo), repositories=[REPO])
+    await record_tools.register_sources(str(repo), repositories=[REPO])
+    await record_tools.register_sources(str(repo), repositories=[REPO])
     assert [s.id for s in load_record(str(repo)).literature] == ["s1"]
 
 
 async def test_nothing_to_register_is_refused(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="nothing to register"):
-        await server.register_sources(str(_repo(tmp_path)))
+        await record_tools.register_sources(str(_repo(tmp_path)))
 
 
 async def test_a_passage_id_cannot_be_passed_in(tmp_path: Path) -> None:
     repo = _repo(tmp_path)
-    await server.register_sources(str(repo), [{"airas_db": "e369"}])
+    await record_tools.register_sources(str(repo), [{"airas_db": "e369"}])
     with pytest.raises(ValueError, match="assigned by its source"):
-        await server.append_to_record(
+        await record_tools.append_to_record(
             str(repo),
             source_id="s1",
             passages=[
@@ -357,7 +364,7 @@ async def test_a_failure_on_a_later_paper_leaves_no_snapshot_behind(
 ) -> None:
     repo = _repo(tmp_path)
     with pytest.raises(ValueError, match="no registry verified it"):
-        await server.register_sources(
+        await record_tools.register_sources(
             str(repo), [{"airas_db": "e369"}, {"doi": "10.1/nope", "title": "t"}]
         )
     assert not (repo / ".research" / "sources").exists()
@@ -372,12 +379,12 @@ async def test_a_pdf_that_does_not_carry_the_title_is_refused(tmp_path: Path) ->
         "pdf_url": "https://x/y.pdf",
     }
     with pytest.raises(ValueError, match="do not carry this title"):
-        await server.register_sources(str(repo), [paper])
+        await record_tools.register_sources(str(repo), [paper])
     assert not (repo / ".research" / "sources").exists()
 
 
 async def test_a_repository_commit_must_be_a_full_sha(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="full 40-hex sha"):
-        await server.register_sources(
+        await record_tools.register_sources(
             str(_repo(tmp_path)), repositories=[{**REPO, "commit": "main"}]
         )

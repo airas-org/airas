@@ -9,8 +9,8 @@ from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
+from airas.infra.github.nodes.dispatch_workflow import dispatch_workflow
 from airas.infra.github_client import GithubClient
-from airas.usecases.github.nodes.dispatch_workflow import dispatch_workflow
 
 setup_logging()
 logger = logging.getLogger(__name__)

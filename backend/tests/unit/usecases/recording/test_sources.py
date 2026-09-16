@@ -10,14 +10,20 @@ import pytest
 
 from airas.core.research_paths import PAGE_SEPARATOR
 from airas.core.types.research_record import LiteratureSource
-from airas.usecases.recording.sources import (
-    airas_db_metadata,
+from airas.research_record.passages import (
     quote_in,
+)
+from airas.usecases.literature.bibliography import (
     render_references_bib,
-    snapshot_repository,
     unique_bibkey,
-    verify_existence,
+)
+from airas.usecases.literature.fulltext_snapshot import (
+    snapshot_repository,
     write_fulltext,
+)
+from airas.usecases.literature.verify_existence import (
+    airas_db_metadata,
+    verify_existence,
 )
 
 PAGES = [

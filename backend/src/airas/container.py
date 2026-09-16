@@ -8,7 +8,6 @@ from hishel import CacheOptions, SpecificationPolicy
 from hishel.httpx import AsyncCacheClient, SyncCacheClient
 
 from airas.infra.arxiv_client import ArxivClient
-from airas.infra.email_feedback_notifier import EmailFeedbackNotifier
 from airas.infra.github_client import GithubClient
 from airas.infra.hugging_face_client import HuggingFaceClient
 from airas.infra.litellm_client import LiteLLMClient
@@ -19,7 +18,6 @@ from airas.usecases.autonomous_research.in_memory_e2e_research_service import (
     InMemoryE2EResearchService,
 )
 from airas.usecases.dashboard.verification_session_store import VerificationService
-from airas.usecases.feedback.feedback_service import FeedbackService
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
@@ -144,27 +142,6 @@ class Container(containers.DeclarativeContainer):
     # --- Search Index ---
     airas_db_search_index: providers.Singleton[AirasDbPaperSearchIndex] = (
         providers.Singleton(AirasDbPaperSearchIndex)
-    )
-
-    ## --- Feedback Service ---
-    @staticmethod
-    def _build_feedback_notifiers() -> list:
-        from_addr = os.getenv("FEEDBACK_FROM_ADDRESS", "")
-        to_addr = os.getenv("FEEDBACK_TO_ADDRESS", "")
-        region = os.getenv("AWS_SES_REGION", "ap-northeast-1")
-        if not (from_addr and to_addr):
-            return []
-        return [
-            EmailFeedbackNotifier(
-                from_address=from_addr,
-                to_address=to_addr,
-                region_name=region,
-            )
-        ]
-
-    feedback_service = providers.Factory(
-        FeedbackService,
-        notifiers=providers.Callable(_build_feedback_notifiers.__func__),
     )
 
     ## --- Verification Service ---

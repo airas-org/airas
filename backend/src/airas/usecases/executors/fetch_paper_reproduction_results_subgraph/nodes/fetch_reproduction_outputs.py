@@ -1,6 +1,6 @@
 from airas.core.types.github import GitHubConfig
+from airas.infra.github.nodes.fetch_repository_files import fetch_repository_files
 from airas.infra.github_client import GithubClient
-from airas.usecases.github.nodes.fetch_repository_files import fetch_repository_files
 
 # src/main.py (the Hydra experiment code) / run.log / paper.txt / paper_extraction.json / the run
 # config feed the backend validation nodes; validation is produced on the backend side, so no

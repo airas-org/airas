@@ -17,13 +17,13 @@ from airas.core.types.github import (
 )
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.wandb import WandbConfig
+from airas.infra.github.poll_github_actions_subgraph.poll_github_actions_subgraph import (
+    PollGithubActionsSubgraph,
+)
 from airas.infra.github_client import GithubClient
 from airas.usecases.generators.dispatch_code_generation_subgraph.dispatch_code_generation_subgraph import (
     DispatchCodeGenerationLLMMapping,
     DispatchCodeGenerationSubgraph,
-)
-from airas.usecases.github.poll_github_actions_subgraph.poll_github_actions_subgraph import (
-    PollGithubActionsSubgraph,
 )
 
 setup_logging()
