@@ -10,10 +10,10 @@ from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
-from airas.infra.github_client import GithubClient
-from airas.usecases.github.nodes.dispatch_workflow_and_get_run_id import (
+from airas.infra.github.nodes.dispatch_workflow_and_get_run_id import (
     dispatch_workflow_and_get_run_id,
 )
+from airas.infra.github_client import GithubClient
 
 setup_logging()
 logger = logging.getLogger(__name__)

@@ -9,15 +9,7 @@ import webbrowser
 from pathlib import Path
 from typing import get_args
 
-from airas.core.types.latex import LATEX_TEMPLATE_NAME
-from airas.core.types.research_trace import DerivedFromRepository
-from airas.usecases.publication.verify_paper import (
-    build_paper,
-    detect_templates,
-    paper_directories,
-    verify_paper,
-)
-from airas.usecases.recording.agent_state import (
+from airas.agent_session.agent_state import (
     load_agent_state,
     neutral_messages,
     pointer_from_hook,
@@ -26,15 +18,23 @@ from airas.usecases.recording.agent_state import (
     restore_claude_session,
     write_pointer,
 )
-from airas.usecases.recording.codex_hooks import install_codex_hooks
-from airas.usecases.recording.research_trace import (
+from airas.agent_session.codex_hooks import install_codex_hooks
+from airas.agent_session.research_trace import (
     capture,
     is_experiment_repository,
     record_access,
     record_step,
     write_derived_from,
 )
-from airas.usecases.recording.verify_record import verify_record
+from airas.core.types.latex import LATEX_TEMPLATE_NAME
+from airas.core.types.research_trace import DerivedFromRepository
+from airas.research_record.verify import verify_record
+from airas.usecases.publication.verify_paper import (
+    build_paper,
+    detect_templates,
+    paper_directories,
+    verify_paper,
+)
 
 # "AIRAS" on a phone keypad (per ITU-T E.161); a high port to avoid the
 # crowded 8000 range.

@@ -32,9 +32,9 @@ from airas.core.types.research_record import (
     VerifierKind,
     active,
 )
-from airas.usecases.recording.verify_record import (
+from airas.research_record.verify import (
     _containment_violations,
-    _verify_consistency,
+    verify_consistency,
 )
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
@@ -207,7 +207,7 @@ def test_a_run_declared_under_two_claims_is_caught() -> None:
     """Run ids address a results directory, so a run belongs to one claim."""
     record = _record()
     record.hypotheses[0].claims.append(_claim("c2", run_id="proposed"))
-    assert any("repo-unique" in p for p in _verify_consistency(record))
+    assert any("repo-unique" in p for p in verify_consistency(record))
 
 
 def test_a_claim_with_no_run_is_caught() -> None:
@@ -223,7 +223,7 @@ def test_a_claim_with_no_run_is_caught() -> None:
             prediction=Prediction(low=0.1, high=0.3, basis="pilot"),
         )
     )
-    assert any("declares no run" in p for p in _verify_consistency(record))
+    assert any("declares no run" in p for p in verify_consistency(record))
 
 
 def test_a_table_row_on_an_undeclared_run_is_caught() -> None:
@@ -236,11 +236,11 @@ def test_a_table_row_on_an_undeclared_run_is_caught() -> None:
             rows=[TableRowSpec(run_id="ghost", label="?")],
         )
     )
-    assert any("which no design declares" in p for p in _verify_consistency(record))
+    assert any("which no design declares" in p for p in verify_consistency(record))
 
 
 def test_a_clean_record_has_no_problems() -> None:
-    assert _verify_consistency(_record()) == []
+    assert verify_consistency(_record()) == []
 
 
 @pytest.mark.parametrize("bad_id", ["claim1", "C1", "c0"])
@@ -268,7 +268,7 @@ def test_active_keeps_order_and_takes_the_last_entry_per_id() -> None:
     ]
 
 
-def _source() -> LiteratureSource:
+def find_source() -> LiteratureSource:
     return LiteratureSource(
         id="s1",
         title="Attention Is All You Need",
@@ -279,8 +279,8 @@ def _source() -> LiteratureSource:
 
 
 def test_appending_a_passage_to_a_source_is_allowed() -> None:
-    older = ResearchRecord(literature=[_source()])
-    newer = ResearchRecord(literature=[_source()])
+    older = ResearchRecord(literature=[find_source()])
+    newer = ResearchRecord(literature=[find_source()])
     newer.literature[0].passages.append(
         QuotedPassage(id="s1.p1", node_type="claim", quote="q")
     )
@@ -288,8 +288,8 @@ def test_appending_a_passage_to_a_source_is_allowed() -> None:
 
 
 def test_who_verified_a_source_cannot_be_edited_in_place() -> None:
-    older = ResearchRecord(literature=[_source()])
-    newer = ResearchRecord(literature=[_source()])
+    older = ResearchRecord(literature=[find_source()])
+    newer = ResearchRecord(literature=[find_source()])
     newer.literature[0].verified_by = "arxiv"
     assert record_append_violations(older, newer)
 

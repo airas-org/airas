@@ -9,11 +9,11 @@ from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.latex import LATEX_TEMPLATE_NAME, LATEX_TEMPLATE_REPOSITORY_INFO
 from airas.core.types.paper import PaperContent
-from airas.infra.github_client import GithubClient
-from airas.infra.litellm_client import LiteLLMClient
-from airas.usecases.github.nodes.retrieve_github_repository_file import (
+from airas.infra.github.nodes.retrieve_github_repository_file import (
     retrieve_github_repository_file,
 )
+from airas.infra.github_client import GithubClient
+from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.publication.generate_latex_subgraph.nodes.convert_pandoc_to_latex import (
     convert_pandoc_to_latex,
 )

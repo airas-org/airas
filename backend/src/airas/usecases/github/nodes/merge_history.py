@@ -1,3 +1,9 @@
+"""Part of the ResearchHistory transport.
+
+TODO: retires with `ResearchHistory`. The record reaches GitHub as pushed
+commits, not as contents-API writes — see `github_upload_subgraph`.
+"""
+
 from copy import deepcopy
 
 from airas.core.types.research_history import ResearchHistory

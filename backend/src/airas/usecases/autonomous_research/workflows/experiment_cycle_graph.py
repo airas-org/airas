@@ -45,6 +45,7 @@ from airas.core.types.github import (
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.runner import ExperimentRunnerConfig
 from airas.core.types.wandb import WandbConfig
+from airas.infra.github.create_branch_subgraph import CreateBranchSubgraph
 from airas.infra.github_client import GithubClient
 from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
@@ -84,7 +85,6 @@ from airas.usecases.generators.refine_experimental_design_subgraph.refine_experi
     RefineExperimentalDesignLLMMapping,
     RefineExperimentalDesignSubgraph,
 )
-from airas.usecases.github.create_branch_subgraph import CreateBranchSubgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)

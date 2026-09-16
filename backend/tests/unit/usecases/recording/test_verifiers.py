@@ -21,11 +21,13 @@ from airas.core.types.research_record import (
     LlmJudgeResult,
     ResearchRecord,
 )
-from airas.usecases.recording.update_or_load_record import (
-    save_record,
+from airas.research_record.derive_results import (
     update_record_with_results,
 )
-from airas.usecases.recording.verify_record import (
+from airas.research_record.store import (
+    save_record,
+)
+from airas.research_record.verify import (
     RecordVerification,
     _containment_violations,
     verify_record,

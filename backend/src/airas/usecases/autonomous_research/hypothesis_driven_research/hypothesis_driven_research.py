@@ -27,6 +27,9 @@ from airas.core.types.research_study import ResearchStudy
 from airas.core.types.runner import ExperimentRunnerConfig
 from airas.core.types.wandb import WandbConfig
 from airas.core.utils import to_dict_deep
+from airas.infra.github.push_github_subgraph.push_github_subgraph import (
+    PushGitHubSubgraph,
+)
 from airas.infra.github_client import GithubClient
 from airas.infra.litellm_client import LiteLLMClient
 from airas.usecases.autonomous_research.e2e_research_service_protocol import (
@@ -51,13 +54,10 @@ from airas.usecases.generators.generate_experimental_design_subgraph.generate_ex
     GenerateExperimentalDesignLLMMapping,
     GenerateExperimentalDesignSubgraph,
 )
-from airas.usecases.github.prepare_repository_subgraph.prepare_repository_subgraph import (
+from airas.usecases.repository.prepare_repository_subgraph.prepare_repository_subgraph import (
     PrepareRepositorySubgraph,
 )
-from airas.usecases.github.push_github_subgraph.push_github_subgraph import (
-    PushGitHubSubgraph,
-)
-from airas.usecases.github.set_github_actions_secrets_subgraph.set_github_actions_secrets_subgraph import (
+from airas.usecases.repository.set_github_actions_secrets_subgraph import (
     SetGithubActionsSecretsSubgraph,
 )
 from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (

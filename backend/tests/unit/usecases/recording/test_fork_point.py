@@ -10,11 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from airas.core.research_paths import SESSIONS_DIR, STEPS_PATH
-from airas.core.types.agent_state import SessionPointer
-from airas.core.types.research_trace import DerivedFromRepository
-from airas.usecases.recording import agent_state as agent_state_module
-from airas.usecases.recording.agent_state import (
+from airas.agent_session import agent_state as agent_state_module
+from airas.agent_session.agent_state import (
     load_agent_state,
     neutral_messages,
     pointer_from_hook,
@@ -23,13 +20,16 @@ from airas.usecases.recording.agent_state import (
     restore_claude_session,
     write_pointer,
 )
-from airas.usecases.recording.codex_hooks import install_codex_hooks
-from airas.usecases.recording.research_trace import (
+from airas.agent_session.codex_hooks import install_codex_hooks
+from airas.agent_session.research_trace import (
     capture,
     is_experiment_repository,
     record_step,
     write_derived_from,
 )
+from airas.core.research_paths import SESSIONS_DIR, STEPS_PATH
+from airas.core.types.agent_state import SessionPointer
+from airas.core.types.research_trace import DerivedFromRepository
 
 SESSION = "11111111-2222-3333-4444-555555555555"
 

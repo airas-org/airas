@@ -33,6 +33,15 @@ from airas.core.types.run_provenance import (
     ResultsDirProvenance,
     RunProvenanceManifest,
 )
+from airas.research_record.derive_results import (
+    update_record_with_results,
+)
+from airas.research_record.read_run_outputs import (
+    load_metrics_data,
+)
+from airas.research_record.store import (
+    save_record,
+)
 from airas.usecases.publication.map_record_to_publication import (
     record_blob_url,
     render_claims_tex,
@@ -41,11 +50,6 @@ from airas.usecases.publication.map_record_to_publication import (
     resolve_paper_values,
 )
 from airas.usecases.publication.verify_paper import scan_main_tex, verify_paper
-from airas.usecases.recording.update_or_load_record import (
-    load_metrics_data,
-    save_record,
-    update_record_with_results,
-)
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 

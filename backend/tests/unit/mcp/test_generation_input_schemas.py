@@ -22,7 +22,7 @@ from airas.mcp.prompt_registry import (
     build_generation_prompt,
     get_input_json_schema,
 )
-from airas.mcp.server import _reject_unknown_history_keys
+from airas.mcp.tools.history import _reject_unknown_history_keys
 
 HYPOTHESIS_INPUTS = {
     "research_topic": "Whether aggregate docking scores hide per-system failure",
