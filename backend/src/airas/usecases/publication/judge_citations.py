@@ -111,7 +111,6 @@ async def judge_citations(
     for citation, verdict in zip(pending, verdicts, strict=True):
         citation.passage.judgments.append(
             CitationJudgment(
-                cited_by=citation.where,
                 text_sha256=citation.text_sha256,
                 model=model,
                 supported=verdict.supported,

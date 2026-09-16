@@ -77,7 +77,7 @@ def judgment_of(citation: Citation) -> CitationJudgment | None:
         (
             j
             for j in reversed(citation.passage.judgments)
-            if j.cited_by == citation.where and j.text_sha256 == citation.text_sha256
+            if j.text_sha256 == citation.text_sha256
         ),
         None,
     )

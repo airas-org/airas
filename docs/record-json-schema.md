@@ -41,7 +41,6 @@ classDiagram
         judgments: CitationJudgment[]
     }
     class CitationJudgment {
-        cited_by: main.tex | hypothesis | claim
         text_sha256: str
         model: str
         supported: bool
@@ -264,7 +263,6 @@ classDiagram
     - `anchor` `text` / `table` / `figure` / `code`。どこにあるか。既定 `text`
     - `quote` fulltext.txt からの逐語コピー
     - **judgments[]** モデルがこの箇所の引用を読んだ結果。`judge_citations` が書く（手では書かない）。append-only
-      - `cited_by` `"main.tex \cite[s1.p2]{key}"` / `"hypothesis h1"` / `"claim c1"`
       - `text_sha256` 引用側の文のハッシュ。書き直せば判定は古くなり、再判定が要る
       - `model` / `supported` / `reason`
 - **hypotheses[]** 仮説の一覧

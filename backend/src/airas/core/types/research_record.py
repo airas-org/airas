@@ -151,9 +151,6 @@ Registry = Literal["airas_db", "doi.org", "arxiv", "git"]
 
 
 class CitationJudgment(BaseModel):
-    cited_by: str = Field(
-        description="'main.tex \\cite[s1.p2]{key}', 'hypothesis h1' or 'claim c1'"
-    )
     text_sha256: str = Field(
         description="Of the citing text, so a rewrite needs a new judgment"
     )

@@ -1035,10 +1035,10 @@ def test_the_judge_reads_every_citation_and_the_gate_reads_the_judgments(
     assert "Unrelated" not in judge.prompts[0]
     assert "Rationale:" in judge.prompts[2]
     judgments = load_record(str(repo)).literature[0].passages[0].judgments
-    assert [(j.cited_by, j.supported, j.model) for j in judgments] == [
-        (r"main.tex \cite[s1.p1]{vaswani-2017-attention}", False, "judge-1"),
-        ("hypothesis h1", True, "judge-1"),
-        ("claim c1", False, "judge-1"),
+    assert [(j.supported, j.model) for j in judgments] == [
+        (False, "judge-1"),
+        (True, "judge-1"),
+        (False, "judge-1"),
     ]
 
     result = _verify_paper(str(repo))
