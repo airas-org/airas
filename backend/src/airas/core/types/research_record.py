@@ -198,6 +198,13 @@ class LiteratureSource(BaseModel):
                 f"source {self.id}: passages {', '.join(foreign)} carry another "
                 "source's id"
             )
+        if self.verified_by and (self.verified_by == "git") != (
+            self.kind == "repository"
+        ):
+            raise ValueError(
+                f"source {self.id}: a {self.kind} cannot be verified by "
+                f"{self.verified_by}"
+            )
         return self
 
 
@@ -289,6 +296,11 @@ class Criterion(BaseModel):
     def _subject_is_not_the_reference(self) -> Criterion:
         if self.subject == self.reference:
             raise ValueError("criterion compares a run to itself")
+        if self.reference_passage and isinstance(self.reference, str):
+            raise ValueError(
+                "reference_passage names where a constant reference was read; "
+                "this reference is a run"
+            )
         return self
 
     def observed(self, metrics_by_run: Mapping[str, Any]) -> float:

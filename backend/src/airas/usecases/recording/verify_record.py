@@ -177,12 +177,18 @@ def _verify_pinned_once(record: ResearchRecord) -> list[str]:
     a different snapshot or quote behind the same reference."""
     problems: list[str] = []
     seen_sources: set[str] = set()
+    bibkeys: dict[str, str] = {}
     for source in record.literature:
         if source.id in seen_sources:
             problems.append(
                 f"source {source.id}: declared twice — a source is pinned once"
             )
         seen_sources.add(source.id)
+        if bibkeys.setdefault(source.bibkey, source.id) != source.id:
+            problems.append(
+                f"source {source.id}: bibkey '{source.bibkey}' is also source "
+                f"{bibkeys[source.bibkey]}'s"
+            )
         seen_passages: set[str] = set()
         for passage in source.passages:
             if passage.id in seen_passages:
@@ -237,6 +243,8 @@ def _verify_literature(root: Path, record: ResearchRecord) -> list[str]:
     """A source is confirmed by a registry and every passage quoted from it
     is verbatim in its snapshot — the same check whatever the source's
     origin."""
+    # TODO: authors, year and venue are what the agent passed; only the
+    # identifier's existence and the title in the PDF are checked.
     # TODO: the agent finds papers by unconstrained web search; the record
     # shows what it read, not whether it also found test data or answers.
     problems: list[str] = []

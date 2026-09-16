@@ -1006,3 +1006,17 @@ def test_a_citation_spanning_lines_is_still_checked(tmp_path: Path) -> None:
     _write_cited_paper(repo, "See \\cite[s1.p1]{\n  made-up-2020-key\n}.")
     result = _verify_paper(str(repo))
     assert any("'made-up-2020-key'" in p for p in result.problems)
+
+
+def test_two_sources_sharing_a_bibkey_fail(tmp_path: Path) -> None:
+    repo, record = _grounded_repo(tmp_path)
+    twin = record.literature[0].model_copy(
+        deep=True, update={"id": "s2", "passages": []}
+    )
+    record.literature.append(twin)
+    save_record(str(repo), record)
+    result = _verify(str(repo))
+    assert any(
+        "bibkey 'vaswani-2017-attention' is also source s1's" in p
+        for p in result.problems
+    )

@@ -57,6 +57,16 @@ def test_the_snapshot_round_trips_through_the_file(tmp_path: Path) -> None:
     assert quote_in(written, "The rate is 0.1.")
 
 
+def test_a_snapshot_is_not_written_through_a_symlink(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (tmp_path / ".research" / "sources").mkdir(parents=True)
+    (tmp_path / ".research" / "sources" / "s1").symlink_to(outside)
+    with pytest.raises(ValueError, match="symlink"):
+        write_fulltext(tmp_path, "s1", PAGES)
+    assert not (outside / "fulltext.txt").exists()
+
+
 # ----------------------------------------------------------- the bibkey
 
 

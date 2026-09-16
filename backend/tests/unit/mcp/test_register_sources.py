@@ -362,3 +362,22 @@ async def test_a_failure_on_a_later_paper_leaves_no_snapshot_behind(
         )
     assert not (repo / ".research" / "sources").exists()
     assert _git(repo, "status", "--porcelain") == ""
+
+
+async def test_a_pdf_that_does_not_carry_the_title_is_refused(tmp_path: Path) -> None:
+    repo = _repo(tmp_path)
+    paper = {
+        "title": "Some Other Paper",
+        "doi": "10.5555/1",
+        "pdf_url": "https://x/y.pdf",
+    }
+    with pytest.raises(ValueError, match="do not carry this title"):
+        await server.register_sources(str(repo), [paper])
+    assert not (repo / ".research" / "sources").exists()
+
+
+async def test_a_repository_commit_must_be_a_full_sha(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="full 40-hex sha"):
+        await server.register_sources(
+            str(_repo(tmp_path)), repositories=[{**REPO, "commit": "main"}]
+        )

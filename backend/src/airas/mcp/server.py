@@ -2,6 +2,7 @@ import asyncio
 import contextlib
 import logging
 import os
+import re
 import shutil
 from datetime import datetime, timezone
 from io import BytesIO
@@ -178,6 +179,7 @@ from airas.usecases.recording.sources import (
     airas_db_metadata,
     next_passage_id,
     next_source_id,
+    quote_in,
     render_references_bib,
     snapshot_repository,
     unique_bibkey,
@@ -2553,6 +2555,11 @@ async def register_sources(
             )
             if not (url and commit and entry.get("files")):
                 raise ValueError("a repository needs url, commit and files")
+            if not re.fullmatch(r"[0-9a-f]{40}", commit):
+                raise ValueError(
+                    f"'{url}': commit must be a full 40-hex sha, not '{commit}' — "
+                    "a branch or tag moves"
+                )
             source = next(
                 (
                     s
@@ -2566,6 +2573,8 @@ async def register_sources(
                     snapshot_repository, url, commit, list(entry["files"])
                 )
                 source_id = next_source_id(record)
+                fulltext = write_fulltext(root, source_id, pages)
+                snapshots.append(fulltext.path)
                 source = LiteratureSource(
                     id=source_id,
                     kind="repository",
@@ -2579,12 +2588,11 @@ async def register_sources(
                     verified_at=datetime.now(timezone.utc).isoformat(
                         timespec="seconds"
                     ),
-                    fulltext=write_fulltext(root, source_id, pages),
+                    fulltext=fulltext,
                     parser="git show",
                     **metadata,
                 )
                 record.literature.append(source)
-                snapshots.append(source.fulltext.path)
             _register(source, entry)
 
         for entry in papers or []:
@@ -2600,17 +2608,6 @@ async def register_sources(
                     f"'{label}': a paper needs an airas_db id, a doi or an arxiv_id "
                     "so that its existence can be checked"
                 )
-            registries, verified_at = await verify_existence(
-                airas_db_record={} if db_id and db_record is None else db_record,
-                doi=doi,
-                arxiv_id=arxiv_id,
-                arxiv=_arxiv_client(),
-                http=_async_session,
-            )
-            verified_by = next((r for r, s in registries.items() if s == "found"), "")
-            if not verified_by:
-                raise ValueError(f"'{label}': no registry verified it ({registries})")
-
             url = entry.get("url") or metadata.get("url")
             source = next(
                 (
@@ -2623,6 +2620,20 @@ async def register_sources(
                 None,
             )
             if source is None:
+                registries, verified_at = await verify_existence(
+                    airas_db_record={} if db_id and db_record is None else db_record,
+                    doi=doi,
+                    arxiv_id=arxiv_id,
+                    arxiv=_arxiv_client(),
+                    http=_async_session,
+                )
+                verified_by = next(
+                    (r for r, s in registries.items() if s == "found"), ""
+                )
+                if not verified_by:
+                    raise ValueError(
+                        f"'{label}': no registry verified it ({registries})"
+                    )
                 pdf_url = entry.get("pdf_url") or metadata.get("url")
                 fetched = (
                     await FetchPaperFulltextSubgraph(
@@ -2642,7 +2653,15 @@ async def register_sources(
                     raise ValueError(
                         f"'{label}': no PDF yielded text ({fetched['status']}) — pass pdf_url"
                     )
+                # The registry confirmed the identifier; this ties the PDF to it.
+                if title and not quote_in("".join(fetched["pages"][:2]), title):
+                    raise ValueError(
+                        f"'{label}': the PDF's first pages do not carry this title — "
+                        "is pdf_url the right paper?"
+                    )
                 source_id = next_source_id(record)
+                fulltext = write_fulltext(root, source_id, fetched["pages"])
+                snapshots.append(fulltext.path)
                 authors = metadata.get("authors") or entry.get("authors") or []
                 year = metadata.get("year") or entry.get("year")
                 source = LiteratureSource(
@@ -2659,11 +2678,10 @@ async def register_sources(
                     ),
                     verified_by=verified_by,
                     verified_at=verified_at,
-                    fulltext=write_fulltext(root, source_id, fetched["pages"]),
+                    fulltext=fulltext,
                     parser=parser_version(),
                 )
                 record.literature.append(source)
-                snapshots.append(source.fulltext.path)
             _register(source, entry)
 
     except Exception:

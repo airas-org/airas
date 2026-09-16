@@ -304,3 +304,19 @@ def test_a_passage_carrying_another_sources_id_is_rejected() -> None:
                 "passages": [{"id": "s2.p1", "node_type": "claim", "quote": "q"}],
             }
         )
+
+
+def test_a_paper_cannot_claim_to_be_verified_by_git() -> None:
+    with pytest.raises(ValueError, match="cannot be verified by git"):
+        LiteratureSource(id="s1", title="t", bibkey="k", verified_by="git")
+
+
+def test_a_reference_passage_needs_a_constant_reference() -> None:
+    with pytest.raises(ValueError, match="this reference is a run"):
+        Criterion(
+            metric="accuracy",
+            subject="proposed",
+            reference="baseline",
+            op=">=",
+            reference_passage="s1.p1",
+        )

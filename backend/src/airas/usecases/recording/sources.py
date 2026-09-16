@@ -33,6 +33,10 @@ def write_fulltext(root: Path, source_id: str, pages: list[str]) -> InputRef:
     relpath = f"{SOURCES_DIR}/{source_id}/{FULLTEXT_FILENAME}"
     path = root / relpath
     path.parent.mkdir(parents=True, exist_ok=True)
+    if any(p.is_symlink() for p in (path, *path.parents[:2])) or not (
+        path.resolve().is_relative_to(root.resolve())
+    ):
+        raise ValueError(f"{relpath} is a symlink or leaves the repository")
     path.write_text(PAGE_SEPARATOR.join(pages), encoding="utf-8")
     return InputRef(path=relpath, sha256=file_sha256(path))
 

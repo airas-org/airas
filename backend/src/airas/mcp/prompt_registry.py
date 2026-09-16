@@ -124,8 +124,8 @@ class _PaperWritingInputs(BaseModel):
     research_hypothesis: ResearchHypothesis
     experiment_history: ExperimentHistory
     experiment_code: ExperimentCode
-    research_study_list: list[ResearchStudy]
-    references_bib: str
+    research_study_list: list[ResearchStudy] = Field(default_factory=list)
+    references_bib: str = ""
     literature: list[LiteratureSource] = Field(
         default_factory=list,
         description="record.json's literature; when given, the note lists each "
