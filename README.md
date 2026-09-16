@@ -142,7 +142,7 @@ The `auto-research` flow uses the following tools; the skills above are thin con
 | `write-experiment-code` | `get_library_docs` |
 | `run-experiments` | `dispatch_experiment`, `get_experiment_run_status`, `import_run_outputs`, `fetch_experiment_results` |
 | `analyze-results` | `fetch_experiment_results`, `render_chart`, `render_diagram`, `append_to_record`, `update_record` |
-| `publish-paper` | `generate_bibfile`, `verify_latex`, `open_in_overleaf`, `get_workflow_runs`, `download_research_history` |
+| `publish-paper` | `generate_bibfile`, `verify_latex`, `judge_citations`, `open_in_overleaf`, `get_workflow_runs`, `download_research_history` |
 
 See the [MCP documentation](docs/development/MCP.mdx) for descriptions, credentials per tool, and configuration options.
 

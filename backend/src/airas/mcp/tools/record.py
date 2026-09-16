@@ -8,11 +8,13 @@ from airas.mcp.app import mcp
 from airas.mcp.context import (
     _arxiv_client,
     _async_session,
+    _litellm_client,
     _search_index,
     _semantic_scholar_client,
 )
 from airas.usecases.hypothesis import declarations
 from airas.usecases.literature import register_sources as register_sources_usecase
+from airas.usecases.publication import judge_citations as judge_citations_usecase
 from airas.usecases.publication import realize_paper_values
 
 
@@ -297,4 +299,37 @@ async def update_record(
     refresh_environment()
     return await realize_paper_values.realize_paper_values(
         local_path, latex_template_name
+    )
+
+
+@mcp.tool()
+async def judge_citations(
+    local_path: str,
+    model: str,
+    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+) -> dict[str, Any]:
+    """Have a model read every citation of a passage against the passage,
+    and write its judgments into the record.
+
+    The gate checks that a quote is verbatim and that `\\cite[s1.p2]{key}`
+    points at a passage of that source; whether the citing text says what
+    the passage says is a reading, and this asks `model` for it. Each place
+    a passage is cited — the paragraph around a `\\cite[s1.p2]{key}` in
+    main.tex, a claim's statement and rationale for its `cites_passages`, a
+    hypothesis's statement for its `grounded_on` — is read against the
+    quote in its snapshot context, so a quote clipped of its negation is
+    seen with the negation. The judgment (model, supported, reason and a
+    hash of the citing text) is appended to the passage in record.json
+    and committed with claims.tex. A citing text already
+    judged is not read again; a rewritten one is.
+
+    `verify_paper_values` then reports, without a model call, the
+    citations judged unsupported (`unsupported_citations`) and those the
+    judgments do not cover (`unjudged_citations`) — review input like
+    `unverified`, not failures. Run it after the paper is written and
+    again after any rewrite. Requires an LLM provider key.
+    """
+    refresh_environment()
+    return await judge_citations_usecase.judge_citations(
+        local_path, model, latex_template_name, litellm_client=_litellm_client()
     )

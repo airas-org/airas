@@ -150,6 +150,15 @@ PassageAnchor = Literal["text", "table", "figure", "code"]
 Registry = Literal["airas_db", "doi.org", "arxiv", "git"]
 
 
+class CitationJudgment(BaseModel):
+    text_sha256: str = Field(
+        description="Of the citing text, so a rewrite needs a new judgment"
+    )
+    model: str
+    supported: bool
+    reason: str = ""
+
+
 class QuotedPassage(BaseModel):
     """A verbatim passage of a source, the unit a hypothesis or claim cites."""
 
@@ -162,6 +171,7 @@ class QuotedPassage(BaseModel):
     quote: str = Field(
         min_length=1, description="Verbatim, copied from the fulltext snapshot"
     )
+    judgments: list[CitationJudgment] = Field(default_factory=list)
 
 
 class LiteratureSource(BaseModel):

@@ -37,6 +37,7 @@ from airas.core.types.run_provenance import (
     ResultsDirProvenance,
     RunProvenanceManifest,
 )
+from airas.research_record.citations import collect_citations
 from airas.research_record.derive_results import (
     update_record_with_results,
 )
@@ -54,6 +55,7 @@ from airas.usecases.literature.bibliography import (
 from airas.usecases.literature.fulltext_snapshot import (
     write_fulltext,
 )
+from airas.usecases.publication.judge_citations import judge_citations
 from airas.usecases.publication.map_record_to_publication import (
     render_claims_tex,
     render_values_tex,
@@ -980,6 +982,123 @@ def test_sources_never_cited_are_reported_not_failed(tmp_path: Path) -> None:
     result = _verify_paper(str(repo))
     assert result.ok, result.record.problems + result.problems
     assert result.uncited_sources == ["vaswani-2017-attention"]
+
+
+# ------------------------------------------------ a judge reads the citations
+
+
+class _Judge:
+    """Stands in for the model: supports what `supports` says of `where`."""
+
+    def __init__(self, supports: Any) -> None:
+        self.supports = supports
+        self.prompts: list[str] = []
+
+    async def structured_output(
+        self, llm_name: str, message: str, data_model: Any, **_: Any
+    ) -> Any:
+        self.prompts.append(message)
+        where = message.split("## Citing text (")[1].split(")")[0]
+        return data_model(supported=self.supports(where), reason=f"read {where}")
+
+
+CITED = "Dropout is applied everywhere \\cite[s1.p1]{vaswani-2017-attention}."
+
+
+def _judge(repo: Path, judge: _Judge) -> dict[str, Any]:
+    return asyncio.run(judge_citations(str(repo), "judge-1", litellm_client=judge))
+
+
+def test_a_record_without_judgments_reviews_nothing(tmp_path: Path) -> None:
+    repo, _ = _grounded_repo(tmp_path)
+    _write_cited_paper(repo, CITED)
+    result = _verify_paper(str(repo))
+    assert result.unjudged_citations == result.unsupported_citations == []
+
+
+def test_the_judge_reads_every_citation_and_the_gate_reads_the_judgments(
+    tmp_path: Path,
+) -> None:
+    repo, _ = _grounded_repo(tmp_path)
+    _write_cited_paper(repo, CITED + "\n\nUnrelated paragraph.")
+    judge = _Judge(lambda where: where.startswith("hypothesis"))
+
+    written = _judge(repo, judge)
+    assert written["judged"] == 3 and written["commit"]
+    assert [p.split("## Citing text (")[1].split(")")[0] for p in judge.prompts] == [
+        r"main.tex \cite[s1.p1]{vaswani-2017-attention}",
+        "hypothesis h1",
+        "claim c1",
+    ]
+    # The judge sees the quote in its snapshot, and the paragraph, not the paper.
+    assert all("The rate is 0.1." in p for p in judge.prompts)
+    assert "Unrelated" not in judge.prompts[0]
+    assert "Rationale:" in judge.prompts[2]
+    judgments = load_record(str(repo)).literature[0].passages[0].judgments
+    assert [(j.supported, j.model) for j in judgments] == [
+        (False, "judge-1"),
+        (True, "judge-1"),
+        (False, "judge-1"),
+    ]
+
+    result = _verify_paper(str(repo))
+    assert result.ok, result.record.problems + result.problems
+    assert result.unjudged_citations == []
+    assert result.unsupported_citations == [
+        r"main.tex \cite[s1.p1]{vaswani-2017-attention} cites s1.p1: "
+        r"read main.tex \cite[s1.p1]{vaswani-2017-attention} (judge-1)",
+        "claim c1 cites s1.p1: read claim c1 (judge-1)",
+    ]
+
+    # Judged once: nothing to read again.
+    assert _judge(repo, judge)["judged"] == 0
+
+    # A rewritten sentence is a new citation until judged.
+    latex_dir = repo / ".research" / "latex" / "mdpi"
+    (latex_dir / "main.tex").write_text(
+        (latex_dir / "main.tex").read_text().replace("everywhere", "to sub-layers")
+    )
+    result = _verify_paper(str(repo))
+    assert result.unjudged_citations == [
+        r"main.tex \cite[s1.p1]{vaswani-2017-attention} cites s1.p1"
+    ]
+    assert result.unsupported_citations == [
+        "claim c1 cites s1.p1: read claim c1 (judge-1)"
+    ]
+
+
+def test_a_clipped_quote_reaches_the_judge_with_what_it_dropped(
+    tmp_path: Path,
+) -> None:
+    _init(tmp_path)
+    record = _record()
+    record.literature.append(
+        LiteratureSource(
+            id="s1",
+            title="A negative result",
+            bibkey="nobody-2020-negative",
+            verified_by="doi.org",
+            fulltext=write_fulltext(
+                tmp_path, "s1", ["We do not find that\ndropout improves accuracy."]
+            ),
+            passages=[
+                QuotedPassage(
+                    id="s1.p1", node_type="result", quote="dropout improves accuracy"
+                )
+            ],
+        )
+    )
+    record.hypotheses[0].grounded_on = ["s1.p1"]
+    (citation,) = collect_citations(tmp_path, record, "")
+    assert citation.context == "We do not find that dropout improves accuracy."
+
+
+def test_a_citation_of_an_undeclared_passage_is_left_to_the_gate(
+    tmp_path: Path,
+) -> None:
+    repo, record = _grounded_repo(tmp_path)
+    cited = collect_citations(repo, record, r"See \cite[s1.p9]{key}.")
+    assert [c.where for c in cited] == ["hypothesis h1", "claim c1"]
 
 
 def test_a_source_declared_twice_fails(tmp_path: Path) -> None:

@@ -62,7 +62,14 @@ local stage.
    cites it as `\cite[s1.p2]{key}` (the writer's `[@key, s1.p2]`), and
    the gate checks the passage belongs to that source. Registered
    sources the paper never cites are listed in `uncited_sources` for
-   you to judge, not failed. Bibliography: `register_sources` wrote
+   you to judge, not failed. Once the text is settled, `judge_citations`
+   has a model read every passage citation against the passage in its
+   snapshot and writes the judgments into the record; from then on
+   `verify_paper_values` lists what it found overstated, clipped or
+   reversed in `unsupported_citations`, and what it has not read as the
+   text now stands in `unjudged_citations` — review both like
+   `unverified`, and re-run `judge_citations` after a rewrite.
+   Bibliography: `register_sources` wrote
    `.research/latex/{template}/references.bib` from the record and the
    gate regenerates it — never edit it; only a repository without
    registered sources uses `generate_bibfile`.

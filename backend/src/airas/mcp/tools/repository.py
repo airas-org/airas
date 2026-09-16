@@ -20,7 +20,7 @@ async def prepare_repository(
     github_owner: str,
     repository_name: str,
     branch_name: str = "main",
-    is_private: bool = True,
+    is_private: bool = False,
     protected_branch: str = "main",
     configure_ci: bool = True,
 ) -> dict[str, Any]:

@@ -15,14 +15,31 @@ def _normalize(text: str) -> str:
     return " ".join(unicodedata.normalize("NFKC", text).replace("­", "").split())
 
 
-def quote_in(fulltext: str, quote: str) -> bool:
+def _find(fulltext: str, quote: str) -> tuple[str, int, int] | None:
+    """(normalized fulltext, start, end) of the quote's first occurrence."""
+    needle = _normalize(quote)
+    if not needle:
+        return None
     # A word the extractor broke with a hyphen at the line end ("gen-\ner-
     # alization") is matched joined as well as as written.
-    needle = _normalize(quote)
-    return bool(needle) and (
-        needle in _normalize(fulltext)
-        or needle in _normalize(re.sub(r"-\n(?=\w)", "", fulltext))
-    )
+    for text in (fulltext, re.sub(r"-\n(?=\w)", "", fulltext)):
+        hay = _normalize(text)
+        if (at := hay.find(needle)) != -1:
+            return hay, at, at + len(needle)
+    return None
+
+
+def quote_in(fulltext: str, quote: str) -> bool:
+    return _find(fulltext, quote) is not None
+
+
+def quote_context(fulltext: str, quote: str, margin: int = 600) -> str | None:
+    """The quote with `margin` characters of its snapshot either side."""
+    found = _find(fulltext, quote)
+    if found is None:
+        return None
+    hay, start, end = found
+    return hay[max(0, start - margin) : end + margin]
 
 
 def add_passages(source: LiteratureSource, passages: list[dict[str, Any]]) -> None:
