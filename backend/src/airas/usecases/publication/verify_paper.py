@@ -648,6 +648,13 @@ def _verify_mapping(
         unjudged, unsupported = review_citations(
             root, record, without_comments(main_tex)
         )
+        # Judged is required, supported is not: a citation nobody read as it
+        # stands is the gap the judge exists to close.
+        problems += [
+            f"{label}: no judgment covers the citing text as it stands "
+            "(airas judge-citations writes one)"
+            for label in unjudged
+        ]
     if record_result.stage == "prereg":
         # A values.tex carried over without runs would put unverifiable
         # numbers in the PDF.

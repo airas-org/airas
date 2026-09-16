@@ -936,9 +936,10 @@ def _write_cited_paper(repo: Path, body: str, bib: str | None = None) -> None:
     )
 
 
-def test_a_citation_of_a_registered_passage_passes(tmp_path: Path) -> None:
+def test_a_citation_of_a_registered_passage_passes_once_judged(tmp_path: Path) -> None:
     repo, _ = _grounded_repo(tmp_path)
     _write_cited_paper(repo, r"Dropout helps \cite[s1.p1]{vaswani-2017-attention}.")
+    _judge(repo, _Judge(lambda where: True))
     result = _verify_paper(str(repo))
     assert result.ok, result.record.problems + result.problems
     assert result.uncited_sources == []
@@ -979,6 +980,7 @@ def test_a_hand_edited_references_bib_fails(tmp_path: Path) -> None:
 def test_sources_never_cited_are_reported_not_failed(tmp_path: Path) -> None:
     repo, _ = _grounded_repo(tmp_path)
     _write_cited_paper(repo, "No citations at all.")
+    _judge(repo, _Judge(lambda where: True))
     result = _verify_paper(str(repo))
     assert result.ok, result.record.problems + result.problems
     assert result.uncited_sources == ["vaswani-2017-attention"]
@@ -1009,11 +1011,18 @@ def _judge(repo: Path, judge: _Judge) -> dict[str, Any]:
     return asyncio.run(judge_citations(str(repo), "judge-1", litellm_client=judge))
 
 
-def test_a_record_without_judgments_reviews_nothing(tmp_path: Path) -> None:
+def test_a_citation_no_judgment_covers_fails_the_gate(tmp_path: Path) -> None:
     repo, _ = _grounded_repo(tmp_path)
     _write_cited_paper(repo, CITED)
     result = _verify_paper(str(repo))
-    assert result.unjudged_citations == result.unsupported_citations == []
+    assert not result.ok
+    assert result.unjudged_citations == [
+        r"main.tex \cite[s1.p1]{vaswani-2017-attention} cites s1.p1",
+        "hypothesis h1 cites s1.p1",
+        "claim c1 cites s1.p1",
+    ]
+    assert sum("no judgment covers" in p for p in result.problems) == 3
+    assert result.unsupported_citations == []
 
 
 def test_the_judge_reads_every_citation_and_the_gate_reads_the_judgments(
@@ -1059,6 +1068,7 @@ def test_the_judge_reads_every_citation_and_the_gate_reads_the_judgments(
         (latex_dir / "main.tex").read_text().replace("everywhere", "to sub-layers")
     )
     result = _verify_paper(str(repo))
+    assert not result.ok
     assert result.unjudged_citations == [
         r"main.tex \cite[s1.p1]{vaswani-2017-attention} cites s1.p1"
     ]

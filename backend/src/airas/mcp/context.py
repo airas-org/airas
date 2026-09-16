@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from airas.core.credentials import SETUP_INSTRUCTIONS, refresh_environment
 from airas.core.types.llm_provider import LLMProvider
+from airas.infra.airas_records_client import AirasRecordsClient
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
 from airas.infra.hugging_face_client import HuggingFaceClient
@@ -23,6 +24,7 @@ from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.run_output_store import RunOutputStore, build_store
 from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.infra.seyval_client import SeyvalClient
+from airas.usecases.literature.search_airas_records import AirasRecordsIndex
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
@@ -40,6 +42,9 @@ _github_async_session = httpx.AsyncClient(
 )
 _sync_session = httpx.Client(follow_redirects=True)
 _async_session = httpx.AsyncClient(follow_redirects=True)
+
+# BM25 index over the research records AIRAS produced; built on first search.
+_records_index = AirasRecordsIndex(AirasRecordsClient(async_session=_async_session))
 
 
 def _github_client() -> GithubClient:

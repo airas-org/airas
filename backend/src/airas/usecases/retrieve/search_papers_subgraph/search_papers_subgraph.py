@@ -1,5 +1,4 @@
 import logging
-import re
 from operator import or_
 from typing import Annotated, Callable, Coroutine
 
@@ -8,10 +7,11 @@ from typing_extensions import Any, TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.logging_utils import setup_logging
-from airas.core.types.paper_search import PAPER_SEARCH_SOURCES, PaperSearchResult
+from airas.core.types.paper_search import PaperSearchResult
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.semantic_scholar_client import SemanticScholarClient
+from airas.usecases.literature.search_papers import merge_results
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
 )
@@ -61,36 +61,6 @@ class SearchPapersSubgraphState(
 ):
     # Source nodes run in parallel; each merges its own entry into this dict.
     source_outputs: Annotated[dict[str, SourceSearchOutput], or_]
-
-
-def _dedupe_keys(paper: PaperSearchResult) -> list[str]:
-    keys = []
-    if paper.doi:
-        keys.append(f"doi:{paper.doi.lower()}")
-    if paper.arxiv_id:
-        keys.append(f"arxiv:{paper.arxiv_id.lower()}")
-    if paper.title:
-        keys.append(f"title:{re.sub(r'[^a-z0-9]', '', paper.title.lower())}")
-    return keys
-
-
-def _merge_missing_fields(
-    kept: PaperSearchResult, duplicate: PaperSearchResult
-) -> None:
-    """Fill fields the kept entry lacks from a duplicate found by another source."""
-    for field in (
-        "abstract",
-        "doi",
-        "arxiv_id",
-        "url",
-        "pdf_url",
-        "published_date",
-        "venue",
-        "citations",
-    ):
-        if getattr(kept, field) is None and getattr(duplicate, field) is not None:
-            setattr(kept, field, getattr(duplicate, field))
-    kept.external_ids = {**duplicate.external_ids, **kept.external_ids}
 
 
 class SearchPapersSubgraph:
@@ -172,40 +142,7 @@ class SearchPapersSubgraph:
 
     @record_execution_time
     def _merge_results(self, state: SearchPapersSubgraphState) -> dict:
-        source_outputs = state.get("source_outputs", {})
-
-        source_results: dict[str, int] = {}
-        search_errors: dict[str, str] = {}
-        merged: list[PaperSearchResult] = []
-        seen: dict[str, PaperSearchResult] = {}
-
-        for source in PAPER_SEARCH_SOURCES:
-            output = source_outputs.get(source)
-            if output is None:
-                continue
-            if output["error"] is not None:
-                search_errors[source] = output["error"]
-            source_results[source] = len(output["papers"])
-
-            for paper in output["papers"]:
-                keys = _dedupe_keys(paper)
-                kept = next(
-                    (seen[key] for key in keys if key in seen),
-                    None,
-                )
-                if kept is None:
-                    merged.append(paper)
-                    kept = paper
-                else:
-                    _merge_missing_fields(kept, paper)
-                for key in _dedupe_keys(kept):
-                    seen[key] = kept
-
-        return {
-            "papers": merged,
-            "source_results": source_results,
-            "search_errors": search_errors,
-        }
+        return merge_results(dict(state.get("source_outputs", {})))
 
     def build_graph(self):
         graph_builder = StateGraph(

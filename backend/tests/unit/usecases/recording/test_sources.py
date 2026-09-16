@@ -142,6 +142,25 @@ def test_a_repository_is_a_misc_entry_pinned_to_its_commit() -> None:
     assert "note = {commit 0123abcd}" in bib
 
 
+def test_an_airas_record_is_a_misc_entry_and_its_registry_binds_its_kind() -> None:
+    source = LiteratureSource(
+        id="s3",
+        kind="airas_record",
+        title="SAM on CIFAR, revisited",
+        authors=["auto-res2/sam-cifar (AIRAS)"],
+        year=2026,
+        url="https://github.com/auto-res2/sam-cifar",
+        commit="a" * 40,
+        bibkey="sam-cifar-2026-sam",
+        verified_by="airas_records",
+    )
+    assert render_references_bib([source]).startswith("@misc{sam-cifar-2026-sam,")
+    with pytest.raises(ValueError, match="cannot be verified by git"):
+        source.model_copy(update={"verified_by": "git"}).model_validate(
+            source.model_copy(update={"verified_by": "git"}).model_dump()
+        )
+
+
 # ------------------------------------------------------------ a repository
 
 
@@ -175,6 +194,14 @@ def test_a_repository_snapshot_holds_the_named_files_at_the_commit(
     assert metadata["commit"] == commit
     assert pages == ["==> src/train.py <==\nlr = 3e-4\nsteps = 1000\n"]
     assert quote_in(PAGE_SEPARATOR.join(pages), "lr = 3e-4")
+
+
+def test_an_optional_file_absent_at_the_commit_is_left_out(tmp_path: Path) -> None:
+    repo, commit = _upstream(tmp_path)
+    _, pages = snapshot_repository(
+        str(repo), commit, ["README.md"], ["src/train.py", "missing.tex"]
+    )
+    assert [p.split(" <==")[0] for p in pages] == ["==> README.md", "==> src/train.py"]
 
 
 def test_a_repository_that_cannot_be_fetched_is_refused(tmp_path: Path) -> None:

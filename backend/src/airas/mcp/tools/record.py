@@ -9,6 +9,7 @@ from airas.mcp.context import (
     _arxiv_client,
     _async_session,
     _litellm_client,
+    _records_index,
     _search_index,
     _semantic_scholar_client,
 )
@@ -201,6 +202,7 @@ async def register_sources(
     `papers[]` entry is one paper:
 
       {"airas_db": "<id from search_papers>"}            metadata from the db
+      {"airas_record": "<owner/repo@sha from search_papers>"}   a study AIRAS produced
       {"title", "authors", "year", "venue", "pdf_url",   what a web search found
        "doi"?, "arxiv_id"?, "url"?}
       + optional "passages": [{"node_type": "claim|result|method|setup|gap|
@@ -226,6 +228,14 @@ async def register_sources(
     a passage of a repository quotes lines of a file, with `"anchor":
     "code"`.
 
+    `airas_record` pins a study AIRAS itself produced, by the id
+    `search_papers(sources="airas_records")` returns: it must be in
+    airas-records-db (`verified_by: "airas_records"`) and its commit must be
+    fetchable. The snapshot is that commit's `.research/record.json` and
+    `claims.tex` — the claims with their verdicts in prose — so a refuted
+    hypothesis is quoted from claims.tex like any passage. It is cited as
+    `@misc` under `<repo>-<year>-<word>`, authored `<owner>/<repo> (AIRAS)`.
+
     Quotes are copied from the snapshot, not from the PDF: the gate checks
     that every passage's `quote` is verbatim in `fulltext.txt` (ligatures,
     line breaks and soft hyphens aside). Read the snapshot, declare
@@ -241,6 +251,7 @@ async def register_sources(
         repositories,
         latex_template_name,
         search_index=_search_index,
+        records_index=_records_index,
         arxiv_client=_arxiv_client(),
         semantic_scholar_client=_semantic_scholar_client(),
         http=_async_session,
@@ -323,11 +334,12 @@ async def judge_citations(
     and committed with claims.tex. A citing text already
     judged is not read again; a rewritten one is.
 
-    `verify_paper_values` then reports, without a model call, the
-    citations judged unsupported (`unsupported_citations`) and those the
-    judgments do not cover (`unjudged_citations`) — review input like
-    `unverified`, not failures. Run it after the paper is written and
-    again after any rewrite. Requires an LLM provider key.
+    `verify_paper_values` then reads the judgments without a model call:
+    a citation no judgment covers (`unjudged_citations`) fails the gate,
+    one judged unsupported (`unsupported_citations`) is review input like
+    `unverified`. CI runs the same judge as `airas judge-citations` before
+    the paper gate; run this after writing and after any rewrite so the
+    gate finds nothing unjudged. Requires an LLM provider key.
     """
     refresh_environment()
     return await judge_citations_usecase.judge_citations(

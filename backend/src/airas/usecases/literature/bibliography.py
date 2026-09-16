@@ -29,7 +29,7 @@ def render_references_bib(literature: list[LiteratureSource]) -> str:
     for source in literature:
         entry = {
             "ID": source.bibkey,
-            "ENTRYTYPE": "misc" if source.kind == "repository" else "article",
+            "ENTRYTYPE": "article" if source.kind == "paper" else "misc",
             "title": source.title,
         }
         if source.authors:

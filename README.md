@@ -152,6 +152,7 @@ See the [MCP documentation](docs/development/MCP.mdx) for descriptions, credenti
 uvx airas                 # MCP server on stdio (default)
 uvx airas verify-record   # check .research/record.json against run outputs, git history, and the platform
 uvx airas verify-paper    # verify the paper's values and provenance against the record — no PDF build (the CI gate)
+uvx airas judge-citations --model <name>   # have a model read every citation against its passage and write the judgments into the record (CI, before verify-paper)
 uvx airas publish-paper   # build the paper's PDF for publishing (values already verified by the gate)
 ```
 

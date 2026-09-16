@@ -369,10 +369,10 @@ async def verify_paper_values(
     `unverified` lists every `\\unverified{...}` the author marked —
     review input, not a failure. Run this after any step that may edit
     main.tex (including compile agents), and treat the list as mandatory
-    review items before publishing. Once `judge_citations` has written
-    judgments, `unsupported_citations` and `unjudged_citations` are the
-    same kind of item: what the judge did not find borne out by the
-    passage, and what it has not read as the text now stands.
+    review items before publishing. `unsupported_citations` is the same
+    kind of item: what the judge did not find borne out by the passage.
+    `unjudged_citations` — citations no judgment covers as the text now
+    stands — fail the check; `judge_citations` writes the judgments.
     """
     refresh_environment()
     verification = await _verify_paper(

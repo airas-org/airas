@@ -90,9 +90,6 @@ def review_citations(
     root: Path, record: ResearchRecord, main_tex: str
 ) -> tuple[list[str], list[str]]:
     """(citations no judgment covers, citations judged unsupported)."""
-    # A record with no judgment at all is not using the judge.
-    if not any(p.judgments for s in record.active_literature() for p in s.passages):
-        return [], []
     unjudged: list[str] = []
     unsupported: list[str] = []
     for citation in collect_citations(root, record, main_tex):

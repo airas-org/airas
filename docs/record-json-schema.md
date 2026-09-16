@@ -23,11 +23,11 @@ classDiagram
     }
     class LiteratureSource {
         id: "s1"
-        kind: paper | repository
+        kind: paper | repository | airas_record
         title, authors, year, venue
         doi, arxiv_id, url, commit
         bibkey: str
-        verified_by: airas_db | doi.org | arxiv | git
+        verified_by: airas_db | doi.org | arxiv | git | airas_records
         verified_at: str
         fulltext: InputRef
         parser: str
@@ -229,7 +229,7 @@ classDiagram
 | 参照解決 | `grounded_on` / `cites_passages` / `reference_passage` の id が既知の passage |
 | 時系列 | 宣言を含む各コミットで、その宣言が名指す passage が既に record にある（後から登録した passage を根拠にできない） |
 | 引用（verify_paper） | main.tex の `\cite` の鍵が登録済み bibkey、`\cite[s1.p2]{key}` の locator がその source の passage、references.bib が再生成と一致。引かれなかった source は `uncited_sources` として報告（失敗ではない） |
-| 文意（verify_paper） | record に judgment が一つでもあれば、今の引用文（main.tex の `\cite[s1.p2]{key}` を含む段落、claim の statement + rationale、hypothesis の statement）ごとに対応する judgment を探す。無いものは `unjudged_citations`、`supported: false` は `unsupported_citations` として報告（失敗ではない）。判定そのものは `judge_citations` が LLM で行って record に書き、gate は LLM を呼ばない |
+| 文意（verify_paper） | record に judgment が一つでもあれば、今の引用文（main.tex の `\cite[s1.p2]{key}` を含む段落、claim の statement + rationale、hypothesis の statement）ごとに対応する judgment を探す。無いものは `unjudged_citations` として**失敗**、`supported: false` は `unsupported_citations` として報告（失敗ではない）。判定そのものは `judge_citations`（MCP）か `airas judge-citations`（CI）が LLM で行って record に書き、gate は LLM を呼ばない |
 
 ### 実在の条件
 
@@ -241,6 +241,7 @@ classDiagram
 | `doi` | `HEAD https://doi.org/<doi>`（リダイレクトは追わない）が 2xx か 3xx。404 は not_found |
 | `arxiv_id` | arXiv API がその id で entry を 1 件以上返す |
 | repository | `git fetch --depth 1 <url> <40-hex sha>` が成功し、指定ファイルが `git show` できる |
+| `airas_record` | airas-records-db の manifest にその `owner/repo@sha` がある **かつ** その sha が `git fetch` できる。snapshot はその commit の `record.json` と `claims.tex` |
 
 論文はさらに PDF が本文を返し、title が分かっていれば最初の 2 ページに（大文字小文字・空白を正規化して）含まれることを要求する。これが識別子と読んだ PDF を結ぶ唯一の紐。
 
@@ -250,12 +251,12 @@ classDiagram
 
 - **literature[]** 依拠した文献。`register_sources` が書く
   - `id` `"s1"`, `"s2"`, …
-  - `kind` `"paper"` / `"repository"`
+  - `kind` `"paper"` / `"repository"` / `"airas_record"`（AIRAS が生成した研究。`register_sources(papers=[{"airas_record": "owner/repo@sha"}])`）
   - `title` / `authors[]` / `year` / `venue`
-  - `doi` / `arxiv_id` / `url`。repository は `url` と `commit`
+  - `doi` / `arxiv_id` / `url`。repository と airas_record は `url` と `commit`
   - `bibkey` `\cite` の鍵（`<surname>-<year>-<word>`）。`references.bib` はここから再生成
   - `verified_by` / `verified_at` 登録時に実在を確認したレジストリと時刻。凍結
-  - `fulltext` `{path, sha256}` `.research/sources/<id>/fulltext.txt`。論文はページを form feed 区切り、repository は 1 ファイル 1 ページ（`==> path <==` 見出し）
+  - `fulltext` `{path, sha256}` `.research/sources/<id>/fulltext.txt`。論文はページを form feed 区切り、repository と airas_record は 1 ファイル 1 ページ（`==> path <==` 見出し）
   - `parser` 抽出器（`pymupdf 1.26` / `git show`）
   - **passages[]** 引いた箇所。`append_to_record(source_id, passages)` で追記
     - `id` `"s1.p1"`, `"s1.p2"`, …

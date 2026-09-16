@@ -5,7 +5,13 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 # Sources supported by the multi-source paper search.
-PAPER_SEARCH_SOURCES = ("openalex", "semantic_scholar", "arxiv", "airas_db")
+PAPER_SEARCH_SOURCES = (
+    "openalex",
+    "semantic_scholar",
+    "arxiv",
+    "airas_db",
+    "airas_records",
+)
 
 
 class PaperSearchResult(BaseModel):

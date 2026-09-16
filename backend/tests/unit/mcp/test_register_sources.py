@@ -3,17 +3,20 @@ does not, writing nothing; passages append under their source and are
 checked against the snapshot before anything is committed."""
 
 import subprocess
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 from airas.core.research_paths import RECORD_PATH
+from airas.core.types.research_record import ResearchRecord
 from airas.mcp.tools import record as record_tools
 from airas.research_record.store import (
     load_record,
 )
 from airas.usecases.literature import register_sources as register_sources_usecase
+from airas.usecases.literature.search_airas_records import RecordEntry
 
 PAGES = [
     "ATTENTION IS ALL YOU NEED\nWe propose the Transformer.",
@@ -107,13 +110,26 @@ async def _verify(**kw: Any) -> tuple[dict[str, str], str]:
 
 
 REPO_PAGE = "==> src/train.py <==\nlr = 3e-4\nsteps = 1000\n"
+STUDY = "auto-res2/sam-cifar@" + "b" * 40
+CLAIMS_PAGE = (
+    "==> .research/latex/mdpi/claims.tex <==\n"
+    "\\item[\\textbf{C1}] SAM beats SGD on CIFAR-10 accuracy.\n"
+    "  \\emph{Verdict:} refuted.\n"
+)
 
 
 def _snapshot(
-    url: str, commit: str, files: list[str]
+    url: str, commit: str, files: list[str], optional_files: Sequence[str] = ()
 ) -> tuple[dict[str, Any], list[str]]:
     if commit == "0" * 40:
         raise ValueError(f"git fetch failed for {url}@{commit}: not found")
+    pages = (
+        [REPO_PAGE]
+        if "src/train.py" in files
+        else ["==> .research/record.json <==\n{}\n"]
+    )
+    if any(p.endswith("mdpi/claims.tex") for p in optional_files):
+        pages.append(CLAIMS_PAGE)
     return (
         {
             "title": "acme/trainer",
@@ -122,13 +138,29 @@ def _snapshot(
             "url": url,
             "commit": commit,
         },
-        [REPO_PAGE],
+        pages,
     )
+
+
+class _Records:
+    async def get(self, record_id: str) -> RecordEntry | None:
+        if record_id != STUDY:
+            return None
+        return RecordEntry(
+            id=STUDY,
+            url="https://github.com/auto-res2/sam-cifar",
+            commit="b" * 40,
+            stage="results",
+            collected_at="2026-09-10T00:00:00+00:00",
+            title="SAM on CIFAR, revisited",
+            record=ResearchRecord(),
+        )
 
 
 @pytest.fixture(autouse=True)
 def _offline(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(record_tools, "_search_index", _Index())
+    monkeypatch.setattr(record_tools, "_records_index", _Records())
     monkeypatch.setattr(register_sources_usecase, "verify_existence", _verify)
     monkeypatch.setattr(register_sources_usecase, "snapshot_repository", _snapshot)
     monkeypatch.setattr(register_sources_usecase, "FetchPaperFulltextSubgraph", _Fetch)
@@ -388,3 +420,58 @@ async def test_a_repository_commit_must_be_a_full_sha(tmp_path: Path) -> None:
         await record_tools.register_sources(
             str(_repo(tmp_path)), repositories=[{**REPO, "commit": "main"}]
         )
+
+
+# ------------------------------------------------- a study AIRAS produced
+
+
+async def test_an_airas_record_is_pinned_by_its_record_and_claims(
+    tmp_path: Path,
+) -> None:
+    repo = _repo(tmp_path)
+
+    result = await record_tools.register_sources(
+        str(repo),
+        [
+            {
+                "airas_record": STUDY,
+                "passages": [
+                    {
+                        "node_type": "result",
+                        "quote": "SAM beats SGD on CIFAR-10 accuracy.",
+                    }
+                ],
+            }
+        ],
+    )
+
+    source = load_record(str(repo)).literature[0]
+    assert (source.kind, source.verified_by, source.commit) == (
+        "airas_record",
+        "airas_records",
+        "b" * 40,
+    )
+    assert (source.title, source.authors, source.bibkey) == (
+        "SAM on CIFAR, revisited",
+        ["auto-res2/sam-cifar (AIRAS)"],
+        "samcifar-2026-sam",
+    )
+    assert result["sources"]["s1"]["passages"] == ["s1.p1"]
+    assert CLAIMS_PAGE in (repo / source.fulltext.path).read_text()
+    assert (
+        "@misc{samcifar-2026-sam,"
+        in (repo / ".research" / "latex" / "mdpi" / "references.bib").read_text()
+    )
+
+    again = await record_tools.register_sources(str(repo), [{"airas_record": STUDY}])
+    assert list(again["sources"]) == ["s1"]
+    assert len(load_record(str(repo)).literature) == 1
+
+
+async def test_a_study_not_in_the_store_is_refused(tmp_path: Path) -> None:
+    repo = _repo(tmp_path)
+    with pytest.raises(ValueError, match="not in airas-records-db"):
+        await record_tools.register_sources(
+            str(repo), [{"airas_record": "auto-res2/other@" + "c" * 40}]
+        )
+    assert not (repo / ".research" / "sources").exists()

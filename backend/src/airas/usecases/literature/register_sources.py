@@ -6,7 +6,7 @@ import re
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, get_args
 
 import httpx
 
@@ -45,6 +45,7 @@ from airas.usecases.literature.fulltext_snapshot import (
     snapshot_repository,
     write_fulltext,
 )
+from airas.usecases.literature.search_airas_records import AirasRecordsIndex
 from airas.usecases.literature.verify_existence import (
     airas_db_metadata,
     verify_existence,
@@ -71,6 +72,7 @@ async def register_sources(
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
     *,
     search_index: AirasDbPaperSearchIndex,
+    records_index: AirasRecordsIndex,
     arxiv_client: ArxivClient,
     semantic_scholar_client: SemanticScholarClient,
     http: httpx.AsyncClient,
@@ -105,6 +107,60 @@ async def register_sources(
             "passages": [p.id for p in source.passages],
             "verified_by": source.verified_by,
         }
+
+    async def _register_airas_record(record_id: str, entry: dict[str, Any]) -> None:
+        found = await records_index.get(record_id)
+        if found is None:
+            raise ValueError(
+                f"'{record_id}': not in airas-records-db (search_papers with "
+                'sources="airas_records" lists what is)'
+            )
+        source = next(
+            (
+                s
+                for s in record.active_literature()
+                if s.kind == "airas_record" and s.commit == found.commit
+            ),
+            None,
+        )
+        if source is None:
+            # The record as the gate saw it, and claims.tex — the verdicts in
+            # prose — from whichever template the study used.
+            metadata, pages = await asyncio.to_thread(
+                snapshot_repository,
+                found.url,
+                found.commit,
+                [RECORD_PATH],
+                [
+                    f".research/latex/{t}/claims.tex"
+                    for t in get_args(LATEX_TEMPLATE_NAME)
+                ],
+            )
+            source_id = next_source_id(record)
+            fulltext = write_fulltext(root, source_id, pages)
+            snapshots.append(fulltext.path)
+            repo_name = found.owner_repo.rsplit("/", 1)[-1]
+            source = LiteratureSource(
+                id=source_id,
+                kind="airas_record",
+                title=found.title,
+                authors=[f"{found.owner_repo} (AIRAS)"],
+                year=metadata["year"],
+                url=found.url,
+                commit=found.commit,
+                bibkey=unique_bibkey(
+                    found.title,
+                    [repo_name],
+                    metadata["year"],
+                    {s.bibkey for s in record.literature},
+                ),
+                verified_by="airas_records",
+                verified_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                fulltext=fulltext,
+                parser="git show",
+            )
+            record.literature.append(source)
+        _register(source, entry)
 
     try:
         for entry in repositories or []:
@@ -155,6 +211,9 @@ async def register_sources(
             _register(source, entry)
 
         for entry in papers or []:
+            if record_id := str(entry.get("airas_record") or ""):
+                await _register_airas_record(record_id, entry)
+                continue
             db_id = str(entry.get("airas_db") or "") or None
             db_record = await search_index.get(db_id) if db_id else None
             metadata = airas_db_metadata(db_record) if db_record else {}

@@ -9,7 +9,11 @@ description: Author search queries, search and read papers with the AIRAS MCP to
    academic search backends match keywords, not sentences.
    Cover the topic's method, its task, and alternative phrasings.
 2. **Search**: `search_papers` (no key needed). Check `search_errors`
-   per source instead of assuming every backend answered.
+   per source instead of assuming every backend answered. The
+   `airas_records` source is the research AIRAS itself produced whose
+   gate passed: query it first with `verdict="refuted"` to learn what has
+   already failed on the topic, and cite a study through its
+   `external_ids.airas_record`.
 3. **Read**: `fetch_paper_fulltext`, passing **both** `doi` and
    `pdf_url` when the search row has both — a DOI alone often returns
    abstract-only. Check `status`: `abstract_only` means you are about

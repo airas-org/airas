@@ -64,11 +64,12 @@ local stage.
    sources the paper never cites are listed in `uncited_sources` for
    you to judge, not failed. Once the text is settled, `judge_citations`
    has a model read every passage citation against the passage in its
-   snapshot and writes the judgments into the record; from then on
-   `verify_paper_values` lists what it found overstated, clipped or
-   reversed in `unsupported_citations`, and what it has not read as the
-   text now stands in `unjudged_citations` — review both like
-   `unverified`, and re-run `judge_citations` after a rewrite.
+   snapshot and writes the judgments into the record. `verify_paper_values`
+   then fails on any citation no judgment covers as the text now stands
+   (`unjudged_citations`; CI runs the same judge before its paper gate),
+   and lists what the model found overstated, clipped or reversed in
+   `unsupported_citations` — review those like `unverified`. Re-run
+   `judge_citations` after a rewrite.
    Bibliography: `register_sources` wrote
    `.research/latex/{template}/references.bib` from the record and the
    gate regenerates it — never edit it; only a repository without

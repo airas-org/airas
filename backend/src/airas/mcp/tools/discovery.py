@@ -5,7 +5,6 @@ from typing import Any, Literal
 
 from airas.core.credentials import SETUP_INSTRUCTIONS, refresh_environment
 from airas.core.llm_config import uniform_llm_mapping
-from airas.core.types.paper_search import PAPER_SEARCH_SOURCES
 from airas.core.types.research_study import ResearchStudy
 from airas.mcp.app import mcp
 from airas.mcp.context import (
@@ -13,6 +12,7 @@ from airas.mcp.context import (
     _github_client,
     _litellm_client,
     _openalex_client,
+    _records_index,
     _search_index,
     _semantic_scholar_client,
 )
@@ -25,15 +25,13 @@ from airas.usecases.generators.generate_queries_subgraph.generate_queries_subgra
     GenerateQueriesLLMMapping,
     GenerateQueriesSubgraph,
 )
+from airas.usecases.literature import search_papers as search_papers_usecase
 from airas.usecases.retrieve.fetch_paper_fulltext_subgraph.fetch_paper_fulltext_subgraph import (
     FetchPaperFulltextSubgraph,
 )
 from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
     RetrievePaperSubgraphLLMMapping,
-)
-from airas.usecases.retrieve.search_papers_subgraph.search_papers_subgraph import (
-    SearchPapersSubgraph,
 )
 
 
@@ -119,19 +117,6 @@ async def generate_research_queries(
     return result["queries"]
 
 
-def _parse_paper_sources(sources: str) -> list[str]:
-    if not sources.strip() or sources.strip().lower() == "all":
-        return list(PAPER_SEARCH_SOURCES)
-    selected = [part.strip().lower() for part in sources.split(",") if part.strip()]
-    unknown = sorted(set(selected) - set(PAPER_SEARCH_SOURCES))
-    if unknown:
-        raise ValueError(
-            f"Unknown sources: {', '.join(unknown)}. "
-            f"Available: {', '.join(PAPER_SEARCH_SOURCES)} (or 'all')."
-        )
-    return selected
-
-
 @mcp.tool()
 async def search_papers(
     query: str,
@@ -139,14 +124,27 @@ async def search_papers(
     max_results_per_source: int = 5,
     year: str | None = None,
     search_mode: Literal["keyword", "semantic"] = "keyword",
+    verdict: Literal["supported", "refuted", "inconclusive"] | None = None,
+    stage: Literal["prereg", "results"] | None = None,
 ) -> dict[str, Any]:
     """Search academic papers across multiple sources in parallel.
 
     Sources: openalex, semantic_scholar, arxiv, airas_db (curated conference
     database: the major ML and NLP venues, plus the formal-methods and
     theorem-proving venues — ITP, CPP, CADE, IJCAR, CAV, TACAS, LICS, POPL —
-    for theory claims). Pass a comma-separated subset or "all". `year`
-    filters by publication year ("2024" or "2020-2024").
+    for theory claims), airas_records (the research AIRAS itself produced
+    whose gate passed). Pass a comma-separated subset or "all". `year`
+    filters by publication year ("2024" or "2020-2024"); it does not apply
+    to airas_records.
+
+    `airas_records` matches the query against what each study hypothesized
+    and claimed — and the titles of the papers it built on, so a paper's
+    title finds the studies that rest on it — not against paper prose. Each
+    row's `abstract` lists the hypotheses and claims with their verdicts, and
+    `external_ids.airas_record` is the id `register_sources` takes. `verdict`
+    keeps studies with a claim of that verdict (`refuted` finds what has
+    already failed), `stage` keeps preregistered-only or realized studies;
+    both apply to airas_records alone, so select only that source with them.
 
     `search_mode="keyword"` (default) does lexical/relevance search on every
     source. `search_mode="semantic"` does AI-embedding search that matches by
@@ -163,35 +161,23 @@ async def search_papers(
     `fetch_paper_fulltext`.
     """
     refresh_environment()
-    selected_sources = _parse_paper_sources(sources)
-    if search_mode == "semantic":
-        unsupported = sorted(set(selected_sources) - {"openalex"})
-        if unsupported:
-            raise ValueError(
-                f"Semantic search is not supported by: {', '.join(unsupported)}. "
-                "Only 'openalex' supports semantic search."
-            )
-        if not os.getenv("OPENALEX_API_KEY"):
-            raise RuntimeError(
-                f"Semantic search requires OPENALEX_API_KEY. {SETUP_INSTRUCTIONS}"
-            )
-    result = (
-        await SearchPapersSubgraph(
-            openalex_client=_openalex_client(),
-            semantic_scholar_client=_semantic_scholar_client(),
-            arxiv_client=_arxiv_client(),
-            airas_db_search_index=_search_index,
+    if search_mode == "semantic" and not os.getenv("OPENALEX_API_KEY"):
+        raise RuntimeError(
+            f"Semantic search requires OPENALEX_API_KEY. {SETUP_INSTRUCTIONS}"
         )
-        .build_graph()
-        .ainvoke(
-            {
-                "query": query,
-                "sources": selected_sources,
-                "max_results_per_source": max_results_per_source,
-                "year": year,
-                "search_mode": search_mode,
-            }
-        )
+    result = await search_papers_usecase.search_papers(
+        query,
+        sources=search_papers_usecase.parse_sources(sources),
+        max_results_per_source=max_results_per_source,
+        year=year,
+        search_mode=search_mode,
+        verdict=verdict,
+        stage=stage,
+        openalex_client=_openalex_client(),
+        semantic_scholar_client=_semantic_scholar_client(),
+        arxiv_client=_arxiv_client(),
+        airas_db_index=_search_index,
+        airas_records_index=_records_index,
     )
     return {
         "papers": [paper.model_dump(exclude_none=True) for paper in result["papers"]],
