@@ -14,7 +14,6 @@ from airas.dashboard.api.routes.v1 import (
     datasets,
     experimental_settings,
     experiments,
-    feedback,
     github,
     github_actions,
     hypotheses,
@@ -88,7 +87,6 @@ def create_app() -> FastAPI:
         topic_open_ended_research.router,
         hypothesis_driven_research.router,
         verification.router,
-        feedback.router,
         credentials.router,
     ]
     for router in v1_routers:

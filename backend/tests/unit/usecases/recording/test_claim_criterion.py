@@ -19,10 +19,12 @@ from airas.core.types.research_record import (
     SeyvalVerifier,
     VerifierKind,
 )
-from airas.usecases.recording.update_or_load_record import compute_claim_statuses
-from airas.usecases.recording.verify_record import (
+from airas.research_record.derive_results import (
+    compute_claim_statuses,
+)
+from airas.research_record.verify import (
     _containment_violations,
-    _verify_consistency,
+    verify_consistency,
 )
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
@@ -134,8 +136,8 @@ def test_a_criterion_must_be_a_range_apart_from_itself() -> None:
 
 def test_a_criterion_may_only_name_the_claims_own_runs() -> None:
     record = _record(_criterion(reference="ghost"), {})
-    assert any("'ghost'" in p for p in _verify_consistency(record))
-    assert _verify_consistency(_record(_criterion(), {})) == []
+    assert any("'ghost'" in p for p in verify_consistency(record))
+    assert verify_consistency(_record(_criterion(), {})) == []
 
 
 # -------------------------------------------------------------- containment

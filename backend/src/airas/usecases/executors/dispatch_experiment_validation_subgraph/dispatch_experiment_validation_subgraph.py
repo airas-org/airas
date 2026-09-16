@@ -12,8 +12,8 @@ from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.wandb import WandbConfig
+from airas.infra.github.nodes.dispatch_workflow import dispatch_workflow
 from airas.infra.github_client import GithubClient
-from airas.usecases.github.nodes.dispatch_workflow import dispatch_workflow
 
 setup_logging()
 logger = logging.getLogger(__name__)

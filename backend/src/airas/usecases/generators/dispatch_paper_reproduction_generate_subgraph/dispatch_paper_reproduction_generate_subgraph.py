@@ -9,11 +9,11 @@ from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
+from airas.infra.github.nodes.dispatch_workflow import dispatch_workflow
 from airas.infra.github_client import GithubClient
 from airas.usecases.generators.dispatch_paper_reproduction_generate_subgraph.repro_id import (
     generate_repro_id,
 )
-from airas.usecases.github.nodes.dispatch_workflow import dispatch_workflow
 
 setup_logging()
 logger = logging.getLogger(__name__)

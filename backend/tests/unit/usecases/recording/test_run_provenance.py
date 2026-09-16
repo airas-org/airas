@@ -7,8 +7,8 @@ from typing import Any, cast
 from airas.core.types.run_provenance import PROVENANCE_MANIFEST_PATH
 from airas.infra.run_output_store import RunExpired, SeyvalOutputStore, StoredRun
 from airas.infra.seyval_client import SeyvalClient
-from airas.usecases.recording._run_provenance import verify_run_provenance
-from airas.usecases.recording.verify_record import _provenance_problems
+from airas.research_record.run_provenance import verify_run_provenance
+from airas.research_record.verify import _provenance_problems
 
 GIT_URL = "https://github.com/test-org/test-repo"
 METRICS = {"accuracy": 0.871}

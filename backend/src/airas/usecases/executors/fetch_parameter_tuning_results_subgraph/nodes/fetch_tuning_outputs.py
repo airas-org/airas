@@ -1,6 +1,6 @@
 from airas.core.types.github import GitHubConfig
+from airas.infra.github.nodes.fetch_repository_files import fetch_repository_files
 from airas.infra.github_client import GithubClient
-from airas.usecases.github.nodes.fetch_repository_files import fetch_repository_files
 
 _FILE_NAMES = ("result.json", "tuning_figure.png")
 
