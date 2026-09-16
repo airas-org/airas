@@ -7,7 +7,7 @@ import sys
 import threading
 import webbrowser
 from pathlib import Path
-from typing import get_args
+from typing import cast, get_args
 
 from airas.agent_session.agent_state import (
     load_agent_state,
@@ -115,15 +115,21 @@ def _run_publish_paper(args: argparse.Namespace) -> None:
 
 
 def _run_judge_citations(args: argparse.Namespace) -> None:
-    result = asyncio.run(
-        judge_citations(
-            args.local_path,
-            args.model,
-            args.template,
-            litellm_client=LiteLLMClient(),
+    # Every template verify-paper will read; with no paper yet, the record's
+    # own citations still get judged.
+    templates = args.template or detect_templates(args.local_path) or ["mdpi"]
+    results = [
+        asyncio.run(
+            judge_citations(
+                args.local_path,
+                args.model,
+                cast(LATEX_TEMPLATE_NAME, template),
+                litellm_client=LiteLLMClient(),
+            )
         )
-    )
-    print(json.dumps(result, indent=2, ensure_ascii=False))
+        for template in templates
+    ]
+    print(json.dumps(results, indent=2, ensure_ascii=False))
 
 
 def _run_verify_record(args: argparse.Namespace) -> None:
@@ -370,9 +376,12 @@ def main() -> None:
     judge.add_argument("--model", required=True, help="Model name, as for the tools")
     judge.add_argument(
         "--template",
-        default="mdpi",
+        action="append",
         choices=get_args(LATEX_TEMPLATE_NAME),
-        help="LaTeX template whose main.tex is read (default: mdpi)",
+        help=(
+            "LaTeX template whose main.tex is read (repeatable); default: every "
+            "known template under .research/latex/ that has a main.tex"
+        ),
     )
 
     publish = subparsers.add_parser(

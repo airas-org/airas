@@ -119,7 +119,9 @@ async def register_sources(
             (
                 s
                 for s in record.active_literature()
-                if s.kind == "airas_record" and s.commit == found.commit
+                if s.kind == "airas_record"
+                and s.url == found.url
+                and s.commit == found.commit
             ),
             None,
         )

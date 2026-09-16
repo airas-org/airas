@@ -40,15 +40,20 @@ class RecordEntry:
 
 def searchable_text(entry: RecordEntry) -> str:
     """What a query is matched against: not the paper's prose but the
-    record's — plus the titles it built on, so a paper's title finds the
-    research that rests on it."""
+    record's — plus the titles and identifiers of the papers it built on,
+    so a paper's title, DOI or arXiv id finds the research that rests on it."""
     record = entry.record
     return "\n".join(
         [
             entry.title,
             *(h.statement for h in record.active_hypotheses()),
             *(c.statement for _, c in record.active_claims()),
-            *(s.title for s in record.active_literature()),
+            *(
+                v
+                for s in record.active_literature()
+                for v in (s.title, s.doi, s.arxiv_id)
+                if v
+            ),
         ]
     )
 

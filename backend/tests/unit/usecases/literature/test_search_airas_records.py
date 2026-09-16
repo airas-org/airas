@@ -29,10 +29,16 @@ SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 
 
 def _record(
-    hypothesis: str, claim: str, verdict: str | None, source_title: str | None
+    hypothesis: str,
+    claim: str,
+    verdict: str | None,
+    source_title: str | None,
+    doi: str | None = None,
 ) -> str:
     record = ResearchRecord(
-        literature=[LiteratureSource(id="s1", title=source_title, bibkey="x-2020-y")]
+        literature=[
+            LiteratureSource(id="s1", title=source_title, bibkey="x-2020-y", doi=doi)
+        ]
         if source_title
         else [],
         hypotheses=[
@@ -84,6 +90,7 @@ STORE: dict[str, Any] = {
         "Sparse attention matches dense attention perplexity.",
         None,
         "Attention Is All You Need",
+        "10.48550/arXiv.1706.03762",
     ),
     "records/auto-res2/broken/" + "c" * 40 + "/record.json": json.dumps(
         {"hypotheses": "no"}
@@ -119,9 +126,11 @@ def test_a_study_without_a_paper_is_titled_by_its_hypothesis() -> None:
     assert hit.abstract is not None and "[pending]" in hit.abstract
 
 
-def test_the_papers_a_study_built_on_find_it() -> None:
-    hits = asyncio.run(search_airas_records(_index(), "attention is all you need", 5))
-    assert [h.external_ids["airas_record"] for h in hits][:1] == [SPARSE]
+def test_the_papers_a_study_built_on_find_it_by_title_or_identifier() -> None:
+    index = _index()
+    for query in ("attention is all you need", "10.48550/arXiv.1706.03762"):
+        hits = asyncio.run(search_airas_records(index, query, 5))
+        assert [h.external_ids["airas_record"] for h in hits][:1] == [SPARSE], query
 
 
 def test_verdict_and_stage_narrow_without_eating_max_results() -> None:

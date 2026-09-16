@@ -126,6 +126,7 @@ async def search_papers(
             semantic_scholar_client=semantic_scholar_client,
             arxiv_client=arxiv_client,
             airas_db_search_index=search_index,
+            airas_records_index=container.airas_records_index(),
         )
         .build_graph()
         .ainvoke(

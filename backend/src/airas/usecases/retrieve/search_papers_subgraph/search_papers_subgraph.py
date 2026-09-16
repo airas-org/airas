@@ -11,6 +11,10 @@ from airas.core.types.paper_search import PaperSearchResult
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.semantic_scholar_client import SemanticScholarClient
+from airas.usecases.literature.search_airas_records import (
+    AirasRecordsIndex,
+    search_airas_records,
+)
 from airas.usecases.literature.search_papers import merge_results
 from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
     AirasDbPaperSearchIndex,
@@ -77,11 +81,13 @@ class SearchPapersSubgraph:
         semantic_scholar_client: SemanticScholarClient,
         arxiv_client: ArxivClient,
         airas_db_search_index: AirasDbPaperSearchIndex,
+        airas_records_index: AirasRecordsIndex | None = None,
     ):
         self.openalex_client = openalex_client
         self.semantic_scholar_client = semantic_scholar_client
         self.arxiv_client = arxiv_client
         self.airas_db_search_index = airas_db_search_index
+        self.airas_records_index = airas_records_index
 
     async def _run_source(
         self,
@@ -141,6 +147,24 @@ class SearchPapersSubgraph:
         )
 
     @record_execution_time
+    async def _search_airas_records(self, state: SearchPapersSubgraphState) -> dict:
+        index = self.airas_records_index
+        if index is None:
+            if "airas_records" not in state["sources"]:
+                return {}
+            output = SourceSearchOutput(
+                papers=[], error="airas_records index not configured for this path"
+            )
+            return {"source_outputs": {"airas_records": output}}
+        return await self._run_source(
+            "airas_records",
+            state,
+            lambda query, max_results, year: search_airas_records(
+                index, query, max_results
+            ),
+        )
+
+    @record_execution_time
     def _merge_results(self, state: SearchPapersSubgraphState) -> dict:
         return merge_results(dict(state.get("source_outputs", {})))
 
@@ -154,6 +178,7 @@ class SearchPapersSubgraph:
         graph_builder.add_node("search_semantic_scholar", self._search_semantic_scholar)
         graph_builder.add_node("search_arxiv", self._search_arxiv)
         graph_builder.add_node("search_airas_db", self._search_airas_db)
+        graph_builder.add_node("search_airas_records", self._search_airas_records)
         graph_builder.add_node("merge_results", self._merge_results)
 
         for node in (
@@ -161,6 +186,7 @@ class SearchPapersSubgraph:
             "search_semantic_scholar",
             "search_arxiv",
             "search_airas_db",
+            "search_airas_records",
         ):
             graph_builder.add_edge(START, node)
         graph_builder.add_edge(
@@ -169,6 +195,7 @@ class SearchPapersSubgraph:
                 "search_semantic_scholar",
                 "search_arxiv",
                 "search_airas_db",
+                "search_airas_records",
             ],
             "merge_results",
         )

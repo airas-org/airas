@@ -2,6 +2,7 @@
 sources become one row."""
 
 import asyncio
+from typing import Any
 
 import pytest
 
@@ -64,3 +65,26 @@ def test_sources_are_parsed_and_unknown_ones_refused() -> None:
     assert parse_sources(" arxiv, Airas_Records ") == ["arxiv", "airas_records"]
     with pytest.raises(ValueError, match="Unknown sources: nope"):
         parse_sources("arxiv,nope")
+
+
+def test_the_graph_path_says_when_it_cannot_search_the_store() -> None:
+    from airas.usecases.retrieve.search_papers_subgraph.search_papers_subgraph import (
+        SearchPapersSubgraph,
+    )
+
+    unused: Any = None
+    result = asyncio.run(
+        SearchPapersSubgraph(unused, unused, unused, unused)
+        .build_graph()
+        .ainvoke(
+            {
+                "query": "x",
+                "sources": ["airas_records"],
+                "max_results_per_source": 5,
+                "year": None,
+                "search_mode": "keyword",
+            }
+        )
+    )
+    assert result["papers"] == []
+    assert "not configured" in result["search_errors"]["airas_records"]
