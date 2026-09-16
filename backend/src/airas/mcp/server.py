@@ -2654,7 +2654,10 @@ async def register_sources(
                         f"'{label}': no PDF yielded text ({fetched['status']}) — pass pdf_url"
                     )
                 # The registry confirmed the identifier; this ties the PDF to it.
-                if title and not quote_in("".join(fetched["pages"][:2]), title):
+                # Case-insensitive: title pages are often set in capitals.
+                if title and not quote_in(
+                    "".join(fetched["pages"][:2]).casefold(), title.casefold()
+                ):
                     raise ValueError(
                         f"'{label}': the PDF's first pages do not carry this title — "
                         "is pdf_url the right paper?"

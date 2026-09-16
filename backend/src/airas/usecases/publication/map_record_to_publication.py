@@ -305,11 +305,12 @@ def _cited_passages_line(claim: Any) -> str | None:
     parts = [_passages(claim.cites_passages)] if claim.cites_passages else []
     if isinstance(claim, SeyvalClaim) and claim.criterion.reference_passage:
         parts.append(f"criterion: {_tt(claim.criterion.reference_passage)}")
-    for design, run in claim.runs():
+    for design in active(claim.designs, "id"):
         if design.cites_passages:
             parts.append(f"{_tt(design.id)}: {_passages(design.cites_passages)}")
-        if run.cites_passages:
-            parts.append(f"{_tt(run.run_id)}: {_passages(run.cites_passages)}")
+        for run in active(design.runs, "run_id"):
+            if run.cites_passages:
+                parts.append(f"{_tt(run.run_id)}: {_passages(run.cites_passages)}")
     return rf"  \emph{{Cites:}} {'; '.join(parts)}." if parts else None
 
 

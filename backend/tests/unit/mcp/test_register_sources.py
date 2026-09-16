@@ -13,7 +13,7 @@ from airas.mcp import server
 from airas.usecases.recording.update_or_load_record import load_record
 
 PAGES = [
-    "Attention Is All You Need\nWe propose the Transformer.",
+    "ATTENTION IS ALL YOU NEED\nWe propose the Transformer.",
     "We apply dropout to the output of each sub-layer.\nThe rate is 0.1.",
 ]
 DB_RECORD = {
