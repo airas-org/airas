@@ -318,9 +318,9 @@ async def judge_citations(
     main.tex, a claim's statement and rationale for its `cites_passages`, a
     hypothesis's statement for its `grounded_on` — is read against the
     quote in its snapshot context, so a quote clipped of its negation is
-    seen with the negation. The judgment (model, supported, reason, time
-    and a hash of the citing text) is appended to the passage in
-    record.json and committed with claims.tex. A citing text already
+    seen with the negation. The judgment (model, supported, reason and a
+    hash of the citing text) is appended to the passage in record.json
+    and committed with claims.tex. A citing text already
     judged is not read again; a rewritten one is.
 
     `verify_paper_values` then reports, without a model call, the

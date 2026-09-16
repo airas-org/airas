@@ -5,6 +5,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from airas.core.research_paths import FULLTEXT_FILENAME, SOURCES_DIR
 from airas.core.types.research_record import (
     PASSAGE_ID_PATTERN,
     CitationJudgment,
@@ -45,9 +46,11 @@ def collect_citations(
             return
         source, passage = found
         if source.id not in fulltexts:
-            path = root / source.fulltext.path if source.fulltext else None
+            # The canonical path the gate requires, not the record's own
+            # `fulltext.path`: a crafted record must not choose what is read.
+            path = root / SOURCES_DIR / source.id / FULLTEXT_FILENAME
             fulltexts[source.id] = (
-                path.read_text(encoding="utf-8") if path and path.is_file() else ""
+                path.read_text(encoding="utf-8") if path.is_file() else ""
             )
         context = quote_context(fulltexts[source.id], passage.quote) or passage.quote
         citations.append(Citation(where, text, passage, context))
