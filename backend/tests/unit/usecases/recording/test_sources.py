@@ -11,6 +11,7 @@ import pytest
 from airas.core.research_paths import PAGE_SEPARATOR
 from airas.core.types.research_record import LiteratureSource
 from airas.research_record.passages import (
+    quote_context,
     quote_in,
 )
 from airas.usecases.literature.bibliography import (
@@ -60,6 +61,18 @@ def test_a_paraphrase_is_not_found() -> None:
 
 def test_a_quote_spanning_a_page_break_is_found() -> None:
     assert quote_in(_fulltext(), "a model architecture. We apply dropout")
+
+
+def test_a_quotes_context_is_the_text_around_it_in_the_snapshot() -> None:
+    fulltext = _fulltext(
+        ["We do not find that\nSAM improves generalization.  Nor on CIFAR."]
+    )
+    context = quote_context(fulltext, "SAM improves generalization.", margin=20)
+    assert context == "We do not find that SAM improves generalization. Nor on CIFAR."
+    assert quote_context(fulltext, "SAM improves generalization.", margin=0) == (
+        "SAM improves generalization."
+    )
+    assert quote_context(fulltext, "SAM hurts generalization.") is None
 
 
 def test_the_snapshot_round_trips_through_the_file(tmp_path: Path) -> None:

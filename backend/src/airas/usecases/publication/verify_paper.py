@@ -27,6 +27,7 @@ from airas.infra.local_git import (
     remote_origin_url,
 )
 from airas.infra.run_output_store import default_store
+from airas.research_record.citations import review_citations
 from airas.research_record.read_run_outputs import (
     load_metrics_data,
 )
@@ -362,11 +363,15 @@ def scan_main_tex(main_tex: str) -> tuple[list[str], list[str]]:
 _CITE = re.compile(r"\\cite[pt]?\*?(?:\[([^\]]*)\])?\{([^}]*)\}")
 
 
+def without_comments(main_tex: str) -> str:
+    return "\n".join(_strip_comment(line) for line in main_tex.splitlines())
+
+
 def scan_citations(main_tex: str) -> list[tuple[str | None, list[str]]]:
     """(locator, keys) of every \\cite, comments stripped."""
     # Comments go line by line; the scan runs over the whole text, since a
     # \\cite may span lines.
-    text = "\n".join(_strip_comment(line) for line in main_tex.splitlines())
+    text = without_comments(main_tex)
     return [
         (locator.strip() or None, [k.strip() for k in keys.split(",") if k.strip()])
         for locator, keys in _CITE.findall(text)
@@ -559,7 +564,7 @@ async def verify_paper(
         )
     root = Path(local_path).expanduser().resolve()
 
-    problems, unverified, uncited = await asyncio.to_thread(
+    problems, unverified, uncited, unjudged, unsupported = await asyncio.to_thread(
         _verify_mapping, root, template, record
     )
     if require_record and not (root / RECORD_PATH).is_file():
@@ -589,6 +594,8 @@ async def verify_paper(
         problems=problems,
         unverified=unverified,
         uncited_sources=uncited,
+        unjudged_citations=unjudged,
+        unsupported_citations=unsupported,
         build=build,
         pdf=pdf,
     )
@@ -596,11 +603,12 @@ async def verify_paper(
 
 def _verify_mapping(
     root: Path, template: str, record_result: RecordVerification
-) -> tuple[list[str], list[str], list[str]]:
+) -> tuple[list[str], list[str], list[str], list[str], list[str]]:
     """Every mapped artifact matches its regeneration from the record.
 
     Returns (problems, \\unverified claims for human review, registered
-    sources the paper never cites).
+    sources the paper never cites, citations no judgment covers, citations
+    judged unsupported).
     """
     latex_dir = root / ".research" / "latex" / template
     values_tex_path = latex_dir / VALUES_TEX_FILENAME
@@ -610,6 +618,8 @@ def _verify_mapping(
     unverified: list[str] = []
     used_keys: list[str] = []
     uncited: list[str] = []
+    unjudged: list[str] = []
+    unsupported: list[str] = []
     main_tex = (
         main_tex_path.read_text(encoding="utf-8") if main_tex_path.is_file() else ""
     )
@@ -626,7 +636,7 @@ def _verify_mapping(
         record = load_record(str(root))
     except (ValidationError, ValueError):
         # The record's own verification already reports this.
-        return problems, unverified, uncited
+        return problems, unverified, uncited, unjudged, unsupported
     try:
         metrics_data = load_metrics_data(str(root))
     except ValueError:
@@ -635,6 +645,9 @@ def _verify_mapping(
     if record.active_literature():
         cited_problems, uncited = _verify_citations(record, main_tex)
         problems += cited_problems + _verify_references_bib(latex_dir, record)
+        unjudged, unsupported = review_citations(
+            root, record, without_comments(main_tex)
+        )
     if record_result.stage == "prereg":
         # A values.tex carried over without runs would put unverifiable
         # numbers in the PDF.
@@ -642,7 +655,7 @@ def _verify_mapping(
             problems.append(f"{VALUES_TEX_FILENAME} exists but no run outputs exist")
         if (latex_dir / TABLES_DIR_NAME).is_dir():
             problems.append(f"{TABLES_DIR_NAME}/ exists but no run outputs exist")
-        return problems, unverified, uncited
+        return problems, unverified, uncited, unjudged, unsupported
 
     paper_values, undefined_keys = resolve_paper_values(record, metrics_data, used_keys)
     if undefined_keys:
@@ -663,7 +676,7 @@ def _verify_mapping(
             )
     problems += _verify_tables(latex_dir, record.active_tables(), metrics_data)
     problems += _verify_charts(record, str(root), metrics_data)
-    return problems, unverified, uncited
+    return problems, unverified, uncited, unjudged, unsupported
 
 
 def build_paper(

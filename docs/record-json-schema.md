@@ -12,7 +12,6 @@
 
 文献と、そこから引いた passage。右側の Hypothesis / ClaimBase / Criterion / Design / Run は図 2 の型で、passage を id で参照するフィールドだけを示す。
 
-![literature](images/record-json-literature.png)
 
 ```mermaid
 classDiagram
@@ -39,6 +38,14 @@ classDiagram
         node_type: claim|result|method|setup|gap|definition
         anchor: text|table|figure|code
         quote: str
+        judgments: CitationJudgment[]
+    }
+    class CitationJudgment {
+        cited_by: main.tex | hypothesis | claim
+        text_sha256: str
+        model: str
+        supported: bool
+        reason: str
     }
     class InputRef {
         path: str
@@ -62,6 +69,7 @@ classDiagram
 
     ResearchRecord "1" --> "*" LiteratureSource : literature
     LiteratureSource "1" --> "*" QuotedPassage : passages
+    QuotedPassage "1" --> "*" CitationJudgment : judgments
     LiteratureSource --> InputRef : fulltext
     Hypothesis ..> QuotedPassage : grounded_on
     ClaimBase ..> QuotedPassage : cites_passages
@@ -74,7 +82,6 @@ classDiagram
 
 仮説 → claim → design → run → result。claim の kind ごとに design / run / result の型が決まる。`QuotedPassage` は図 1 のもの。design / run の `cites_passages` も同じく図 1 の passage を指す。
 
-![hypotheses](images/record-json-hypothesis.png)
 
 ```mermaid
 classDiagram
@@ -217,12 +224,28 @@ classDiagram
 
 | 検査 | 内容 |
 | --- | --- |
-| 実在 | `verified_by` が空でない（登録時に airas_db の引き当て、doi.org の解決、arXiv API、`git fetch` のいずれかが確認） |
+| 実在 | `verified_by` が空でない。登録時に識別子ごとのレジストリへ問い合わせ、最初に found を返したものを記録する（下の「実在の条件」）。gate は再照会しない |
 | スナップショット | `fulltext.path` が存在し sha256 が一致 |
 | 逐語 | 全 passage の `quote` が snapshot の部分文字列（NFKC・空白正規化、合字・改行・ソフトハイフンは無視） |
 | 参照解決 | `grounded_on` / `cites_passages` / `reference_passage` の id が既知の passage |
 | 時系列 | 宣言を含む各コミットで、その宣言が名指す passage が既に record にある（後から登録した passage を根拠にできない） |
 | 引用（verify_paper） | main.tex の `\cite` の鍵が登録済み bibkey、`\cite[s1.p2]{key}` の locator がその source の passage、references.bib が再生成と一致。引かれなかった source は `uncited_sources` として報告（失敗ではない） |
+| 文意（verify_paper） | record に judgment が一つでもあれば、今の引用文（main.tex の `\cite[s1.p2]{key}` を含む段落、claim の statement + rationale、hypothesis の statement）ごとに対応する judgment を探す。無いものは `unjudged_citations`、`supported: false` は `unsupported_citations` として報告（失敗ではない）。判定そのものは `judge_citations` が LLM で行って record に書き、gate は LLM を呼ばない |
+
+### 実在の条件
+
+`register_sources` が識別子ごとに問い合わせる。一つも found が無ければ拒否し、ネットワーク障害は found にならない。
+
+| 識別子 | found の条件 |
+| --- | --- |
+| `airas_db` | airas-papers-db の索引にその id のレコードがある。title / authors / year / venue はレコードから取る |
+| `doi` | `HEAD https://doi.org/<doi>`（リダイレクトは追わない）が 2xx か 3xx。404 は not_found |
+| `arxiv_id` | arXiv API がその id で entry を 1 件以上返す |
+| repository | `git fetch --depth 1 <url> <40-hex sha>` が成功し、指定ファイルが `git show` できる |
+
+論文はさらに PDF が本文を返し、title が分かっていれば最初の 2 ページに（大文字小文字・空白を正規化して）含まれることを要求する。これが識別子と読んだ PDF を結ぶ唯一の紐。
+
+検査していないもの: Web 検索経由の authors / year / venue（エージェントが渡した値のまま）、DOI や arXiv entry のメタデータと渡された title の一致、撤回の有無。
 
 ## 木構造
 
@@ -240,6 +263,10 @@ classDiagram
     - `node_type` `claim` / `result` / `method` / `setup` / `gap` / `definition`。何を述べる箇所か（グラフ探索はここで絞る）
     - `anchor` `text` / `table` / `figure` / `code`。どこにあるか。既定 `text`
     - `quote` fulltext.txt からの逐語コピー
+    - **judgments[]** モデルがこの箇所の引用を読んだ結果。`judge_citations` が書く（手では書かない）。append-only
+      - `cited_by` `"main.tex \cite[s1.p2]{key}"` / `"hypothesis h1"` / `"claim c1"`
+      - `text_sha256` 引用側の文のハッシュ。書き直せば判定は古くなり、再判定が要る
+      - `model` / `supported` / `reason`
 - **hypotheses[]** 仮説の一覧
   - `id` `"h1"`, `"h2"`, …
   - `statement` 仮説そのもの（散文）
