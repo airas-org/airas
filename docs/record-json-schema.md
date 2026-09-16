@@ -1,124 +1,189 @@
 # record.json の構造
 
-`.research/record.json` は「この仮説を支えるにはこれらの claims、この claim を検証するにはこれらの designs、design はこれらの runs」という木。エージェントが書くのは宣言（declaration）だけで、`verified` / `verdict` / `results[]` は機械が導出する。record は append-only で、宣言の書き換えは同 id の再 append として履歴に残る。
+`.research/record.json` は二つの木を持つ。右半分は「この仮説を支えるにはこれらの claims、この claim を検証するにはこれらの designs、design はこれらの runs」、左半分は「この研究が依拠した文献（literature）と、そこから逐語で引いた箇所（passages）」。仮説・claim・design・run は passage の id で文献に結ばれる。エージェントが書くのは宣言（declaration）だけで、`verified` / `verdict` / `results[]` と、文献のスナップショット・実在確認は機械が書く。record は append-only で、宣言の書き換えは同 id の再 append として履歴に残る。
 
 ## クラス図
+
+<!-- 2 枚とも下の mermaid を Kroki (https://kroki.io, output_format png,
+     diagram_options {"html-labels": "false"}) で描画し、透明背景を白に合成したもの。
+     箱の中は名前と型だけで、各フィールドの意味は「木構造」節にある。図を変えたら描画し直す。 -->
+
+### 図 1: 文献（literature）
+
+文献と、そこから引いた passage。右側の Hypothesis / ClaimBase / Criterion / Design / Run は図 2 の型で、passage を id で参照するフィールドだけを示す。
+
+![literature](images/record-json-literature.png)
 
 ```mermaid
 classDiagram
     direction LR
 
     class ResearchRecord {
-        hypotheses: Hypothesis[]  仮説の一覧
+        literature: LiteratureSource[]
+        hypotheses: Hypothesis[]
     }
-
+    class LiteratureSource {
+        id: "s1"
+        kind: paper | repository
+        title, authors, year, venue
+        doi, arxiv_id, url, commit
+        bibkey: str
+        verified_by: airas_db | doi.org | arxiv | git
+        verified_at: str
+        fulltext: InputRef
+        parser: str
+        passages: QuotedPassage[]
+    }
+    class QuotedPassage {
+        id: "s1.p1"
+        node_type: claim|result|method|setup|gap|definition
+        anchor: text|table|figure|code
+        quote: str
+    }
+    class InputRef {
+        path: str
+        sha256: str
+    }
     class Hypothesis {
-        id: "h1"...
-        statement: str  仮説そのもの（散文）
-        assumptions: str[]  c1∧…∧cn ⇒ H を成り立たせる公理。全 claim 支持後も残る未検証
-        claims: ClaimDeclaration[]  verifier.kind で型が決まる
-        tables: TableSpec[]  論文の表の宣言
-        charts: ChartDeclaration[]  図の宣言
-        notes: str[]  自由記述
+        grounded_on: passage id[]
     }
-
     class ClaimBase {
-        id: "c1"...
-        statement: str  一文の主張。verdict が付く対象
-        rationale: str  この claim が H の証拠になる理由と、支える部分
-        verifier: Verifier  何が検証するか。claim に一つ
-        designs: Design[]  検証の構成。要素型は kind で決まる
-        verified: bool  全 run にレポートがあるか。false→true のみ
-        verdict: supported|refuted|inconclusive  一度だけ設定。反転は drift
+        cites_passages: passage id[]
+    }
+    class Criterion {
+        reference_passage: passage id
+    }
+    class Design {
+        cites_passages: passage id[]
+    }
+    class Run {
+        cites_passages: passage id[]
     }
 
+    ResearchRecord "1" --> "*" LiteratureSource : literature
+    LiteratureSource "1" --> "*" QuotedPassage : passages
+    LiteratureSource --> InputRef : fulltext
+    Hypothesis ..> QuotedPassage : grounded_on
+    ClaimBase ..> QuotedPassage : cites_passages
+    Criterion ..> QuotedPassage : reference_passage
+    Design ..> QuotedPassage : cites_passages
+    Run ..> QuotedPassage : cites_passages
+```
+
+### 図 2: 仮説と検証（hypotheses）
+
+仮説 → claim → design → run → result。claim の kind ごとに design / run / result の型が決まる。`QuotedPassage` は図 1 のもの。design / run の `cites_passages` も同じく図 1 の passage を指す。
+
+![hypotheses](images/record-json-hypothesis.png)
+
+```mermaid
+classDiagram
+    direction LR
+
+    class ResearchRecord {
+        literature: LiteratureSource[]
+        hypotheses: Hypothesis[]
+    }
+    class Hypothesis {
+        id: "h1"
+        statement: str
+        grounded_on: passage id[]
+        assumptions: str[]
+        claims: ClaimDeclaration[]
+        tables, charts, notes
+    }
+    class ClaimBase {
+        id: "c1"
+        statement: str
+        rationale: str
+        verifier: Verifier
+        designs: Design[]
+        cites_passages: passage id[]
+        verified: bool
+        verdict: Verdict
+    }
     class SeyvalClaim {
-        verifier: kind = seyval
-        criterion: Criterion  反証線。宣言時必須、凍結
-        prediction: Prediction  予測区間。宣言時必須、凍結
-        verdict  criterion を metrics に適用して導出
+        verifier.kind = seyval
+        criterion: Criterion
+        prediction: Prediction
     }
     class LeanClaim {
-        verifier: kind = lean, toolchain, mathlib_rev, allowed_axioms
-        verdict  supported か inconclusive。反証しない
+        verifier.kind = lean
+        toolchain, mathlib_rev, allowed_axioms
     }
     class LlmJudgeClaim {
-        verifier: kind = llm_judge, model, rubric, temperature, samples
-        verdict  全票一致で supported
+        verifier.kind = llm_judge
+        model, rubric, temperature, samples
     }
-
     class Criterion {
-        metric: str  metrics.json 内のパス
-        subject: run_id  判定対象
-        reference: run_id|float  比較対象（同じ metric）または定数
-        op: geq / leq / gt / lt
-        margin: float  既定 0。「subject − reference」op margin
+        metric: str
+        subject: run_id
+        reference: run_id | float
+        op, margin
+        reference_passage: passage id
     }
     class Prediction {
-        low: float  low < high。点は不可
-        high: float
-        basis: str  根拠。prior work や pilot
+        low, high: float
+        basis: str
     }
-
-
     class SeyvalDesign {
-        id: "d1"...
+        id: "d1"
         summary: str
         runs: SeyvalRun[]
+        cites_passages: passage id[]
     }
     class SeyvalRun {
-        run_id: str  .research/results/run_id/ を生む
-        description: str
-        params: dict  dispatch 条件。例 mode = full。基盤の記録と照合
-        results: SeyvalResult[]  機械が追記
+        run_id: str
+        params: dict
+        cites_passages: passage id[]
+        results: SeyvalResult[]
+    }
+    class SeyvalResult {
+        id, commit
+        metrics: any
+        eval_inputs: InputRef
+        eval_report: EvalReport
     }
     class LeanDesign {
-        id: "d1"...
+        id: "d1"
         summary: str
         runs: LeanRun[]
+        cites_passages: passage id[]
     }
     class LeanRun {
-        run_id: str  1 run = 1 宣言
-        description: str
-        params: LeanParams  module, decl, statement
-        results: LeanResult[]  lean.json から
-    }
-    class LlmJudgeDesign {
-        id: "d1"...
-        summary: str
-        runs: LlmJudgeRun[]
-    }
-    class LlmJudgeRun {
-        run_id: str  1 run = 1 判定
-        description: str
-        params: LlmJudgeParams  evidence[] リポジトリ内パス
-        results: LlmJudgeResult[]  judgment.json から
-    }
-
-    class SeyvalResult {
-        id: str  Seyval の実行 id
-        commit: str  実行したコミット
-        metrics: any  metrics.json そのまま
-        eval_inputs: InputRef  airas-eval への入力と sha256
-        eval_report: EvalReport  airas-eval の評価レポート
+        run_id: str
+        params: LeanParams
+        cites_passages: passage id[]
+        results: LeanResult[]
     }
     class LeanResult {
-        commit: str
-        statement: str  実際にビルドされた宣言の型
-        axioms: str[]  print axioms の結果
-        errors: str[]  ビルド失敗 / sorry / 不一致 / 許可外公理
-        warnings: str[]
+        commit, statement
+        axioms: str[]
+        errors, warnings
+    }
+    class LlmJudgeDesign {
+        id: "d1"
+        summary: str
+        runs: LlmJudgeRun[]
+        cites_passages: passage id[]
+    }
+    class LlmJudgeRun {
+        run_id: str
+        params: LlmJudgeParams
+        cites_passages: passage id[]
+        results: LlmJudgeResult[]
     }
     class LlmJudgeResult {
-        id: str  provider 側の応答 id
-        commit: str
-        inputs_sha256: str  rubric+evidence+statement+model の hash
+        id, commit
+        inputs_sha256: str
         verdict: Verdict
-        errors: str[]
-        warnings: str[]
+        errors, warnings
+    }
+    class QuotedPassage {
+        図1 の literature[].passages[]
     }
 
-    ResearchRecord "1" --> "*" Hypothesis
+    ResearchRecord "1" --> "*" Hypothesis : hypotheses
     Hypothesis "1" --> "*" ClaimBase : claims
     ClaimBase <|-- SeyvalClaim
     ClaimBase <|-- LeanClaim
@@ -134,6 +199,9 @@ classDiagram
     LlmJudgeClaim "1" --> "*" LlmJudgeDesign : designs
     LlmJudgeDesign "1" --> "*" LlmJudgeRun : runs
     LlmJudgeRun "1" --> "*" LlmJudgeResult : results
+    Hypothesis ..> QuotedPassage : grounded_on
+    ClaimBase ..> QuotedPassage : cites_passages
+    Criterion ..> QuotedPassage : reference_passage
 ```
 
 ## 論理構造
@@ -143,11 +211,39 @@ classDiagram
 - `hypotheses[].assumptions`: 含意が成り立つために認める必要のある公理。全 claim が支持されても未検証として残るのはちょうどこれ
 - `claims[].verdict`: `c_i` を仮定として置いてよいか
 
+## 文献の検査
+
+出どころ（airas-papers-db、エージェントの Web 検索、リポジトリ）に関係なく、gate は全 source に同じ検査をかける。
+
+| 検査 | 内容 |
+| --- | --- |
+| 実在 | `verified_by` が空でない（登録時に airas_db の引き当て、doi.org の解決、arXiv API、`git fetch` のいずれかが確認） |
+| スナップショット | `fulltext.path` が存在し sha256 が一致 |
+| 逐語 | 全 passage の `quote` が snapshot の部分文字列（NFKC・空白正規化、合字・改行・ソフトハイフンは無視） |
+| 参照解決 | `grounded_on` / `cites_passages` / `reference_passage` の id が既知の passage |
+| 時系列 | 宣言を含む各コミットで、その宣言が名指す passage が既に record にある（後から登録した passage を根拠にできない） |
+| 引用（verify_paper） | main.tex の `\cite` の鍵が登録済み bibkey、`\cite[s1.p2]{key}` の locator がその source の passage、references.bib が再生成と一致。引かれなかった source は `uncited_sources` として報告（失敗ではない） |
+
 ## 木構造
 
+- **literature[]** 依拠した文献。`register_sources` が書く
+  - `id` `"s1"`, `"s2"`, …
+  - `kind` `"paper"` / `"repository"`
+  - `title` / `authors[]` / `year` / `venue`
+  - `doi` / `arxiv_id` / `url`。repository は `url` と `commit`
+  - `bibkey` `\cite` の鍵（`<surname>-<year>-<word>`）。`references.bib` はここから再生成
+  - `verified_by` / `verified_at` 登録時に実在を確認したレジストリと時刻。凍結
+  - `fulltext` `{path, sha256}` `.research/sources/<id>/fulltext.txt`。論文はページを form feed 区切り、repository は 1 ファイル 1 ページ（`==> path <==` 見出し）
+  - `parser` 抽出器（`pymupdf 1.26` / `git show`）
+  - **passages[]** 引いた箇所。`append_to_record(source_id, passages)` で追記
+    - `id` `"s1.p1"`, `"s1.p2"`, …
+    - `node_type` `claim` / `result` / `method` / `setup` / `gap` / `definition`。何を述べる箇所か（グラフ探索はここで絞る）
+    - `anchor` `text` / `table` / `figure` / `code`。どこにあるか。既定 `text`
+    - `quote` fulltext.txt からの逐語コピー
 - **hypotheses[]** 仮説の一覧
   - `id` `"h1"`, `"h2"`, …
   - `statement` 仮説そのもの（散文）
+  - `grounded_on[]` 動機となった passage id（先行研究の gap）。既定は空
   - `assumptions[]` `c1 ∧ … ∧ cn ⇒ H` を成り立たせる公理。各項目に関わる claim id を書く。既定は空
   - **claims[]** 仮説を検証可能な主張に分解したもの。`verifier.kind` で型が決まる
     - 共通（ClaimBase）
@@ -155,6 +251,7 @@ classDiagram
       - `statement` 一文の主張。verdict が付く対象
       - `rationale` この claim が成り立つと、なぜ・仮説のどの部分が支えられるか。必須
       - `verifier` 何が検証するか。必須。一つの claim に一つ（証明と実験の両方が要るなら claim を二つに分ける）
+      - `cites_passages[]` 依拠する passage id。既定は空
       - `designs[]` 実験・証明・判定の構成
       - `verified` 配下の全 run に verifier のレポートがあるか。false → true のみ
       - `verdict` `"supported"` / `"refuted"` / `"inconclusive"`。未設定 → 設定の一回限り。再実行で反転した場合は gate が drift として報告
@@ -166,14 +263,15 @@ classDiagram
         - `reference` 比較対象の run_id（同じ metric）または定数
         - `op` `">="` / `"<="` / `">"` / `"<"`
         - `margin` 既定 0.0。意味は `(subject.metric − reference) op margin`。境界は一致扱い
+        - `reference_passage` `reference` が定数のとき、その値を読んだ passage id
       - `prediction` 予測区間。宣言時必須、凍結
         - `low` / `high` `low < high`（点は不可）
         - `basis` 根拠（prior work, pilot など）
       - `verdict` verified 時に criterion を runs の metrics に適用して導出。metric が解決できなければ `inconclusive`
       - **designs[]**
-        - `id` / `summary`
+        - `id` / `summary` / `cites_passages[]`
         - **runs[]** 実行単位。`.research/results/<run_id>/` を生む
-          - `run_id` / `description`
+          - `run_id` / `description` / `cites_passages[]`
           - `params` dispatch 条件（自由 dict、例 `{"mode": "full"}`）。基盤の記録と照合される
           - **results[]** metrics.json と provenance manifest から機械が追記
             - `id` Seyval の実行 id
@@ -220,7 +318,8 @@ classDiagram
 
 | 生成物 | 元 | 段階 |
 | --- | --- | --- |
-| `claims.tex` | claims の statement / rationale / criterion / prediction / observed / verdict と hypothesis の assumptions | prereg から（未着は pending） |
+| `claims.tex` | claims の statement / rationale / criterion / prediction / observed / verdict と hypothesis の assumptions。`grounded_on` / `cites_passages` の id と、末尾に Sources（各 source の bibkey・題名と passage の逐語引用） | prereg から（未着は pending） |
+| `references.bib` | literature[]（bibkey ごとに 1 エントリ） | register_sources 時 |
 | `values.tex` | `\airasval{<run_id>.<metric>}` の値 | results 以降 |
 | `tables/<key>.tex` | tables[] | results 以降 |
 
@@ -230,9 +329,30 @@ classDiagram
 
 ```json
 {
+  "literature": [{
+    "id": "s1",
+    "kind": "paper",
+    "title": "Dropout: A Simple Way to Prevent Neural Networks from Overfitting",
+    "authors": ["Nitish Srivastava", "Geoffrey Hinton"],
+    "year": 2014,
+    "venue": "JMLR",
+    "url": "https://jmlr.org/papers/v15/srivastava14a.html",
+    "bibkey": "srivastava-2014-dropout",
+    "verified_by": "airas_db",
+    "verified_at": "2026-09-15T09:00:00+00:00",
+    "fulltext": {"path": ".research/sources/s1/fulltext.txt", "sha256": "…"},
+    "parser": "pymupdf 1.26.0",
+    "passages": [
+      {"id": "s1.p1", "node_type": "gap",
+       "quote": "it is not clear how to choose the dropout rate for very deep networks"},
+      {"id": "s1.p2", "node_type": "result", "anchor": "table",
+       "quote": "Dropout improves test error on CIFAR-10 from 15.60 to 12.61"}
+    ]
+  }],
   "hypotheses": [{
     "id": "h1",
     "statement": "提案する正則化項は画像分類 CNN の汎化性能を改善する。",
+    "grounded_on": ["s1.p1"],
     "assumptions": [
       "test accuracy の差が汎化性能の差を表す (c1, c2)",
       "CIFAR-10 と CIFAR-100 で成り立てば画像分類 CNN 一般で成り立つ (c1, c2)",
@@ -242,6 +362,7 @@ classDiagram
       "id": "c1",
       "statement": "CIFAR-10 で提案手法の test accuracy が ResNet-18 を 1.0 pt 以上上回る。",
       "rationale": "汎化性能の代理指標として test accuracy を、代表的 CNN として ResNet-18 を用いた直接比較。",
+      "cites_passages": ["s1.p2"],
       "verifier": {"kind": "seyval"},
       "criterion": {"metric": "accuracy", "subject": "proposed-resnet18-cifar10",
                     "reference": "comparative-1-resnet18-cifar10", "op": ">=", "margin": 0.01},

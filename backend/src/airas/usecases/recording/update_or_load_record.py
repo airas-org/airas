@@ -190,14 +190,15 @@ def runs_with_reports(root: Path, record: ResearchRecord) -> set[str]:
     }
 
 
+def file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def load_eval_inputs_ref(root: Path, run_id: str) -> InputRef | None:
     for path in sorted(
         (root / RESULTS_DIR / run_id / _EVAL_INPUTS_DIRNAME).glob("*.json")
     ):
-        return InputRef(
-            path=str(path.relative_to(root)),
-            sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
-        )
+        return InputRef(path=str(path.relative_to(root)), sha256=file_sha256(path))
     return None
 
 

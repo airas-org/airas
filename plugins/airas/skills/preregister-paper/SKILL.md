@@ -42,11 +42,13 @@ changes *when* the paper is written and how Results are stated.
    ```
    hypotheses: [{
      "id": "h1", "statement": "the hypothesis, in prose",
+     "grounded_on": ["s1.p2", ...],
      "assumptions": ["what must be granted for the claims together to
                       imply h1, naming the claims concerned", ...],
      "claims": [{
        "id": "c1", "statement": "one assertive sentence",
        "rationale": "why c1 holding is evidence for h1, and for which part",
+       "cites_passages": ["s1.p2", ...],
        "verifier": {"kind": "seyval"},
        "criterion": {"metric": "accuracy", "subject": "proposed-...",
                      "reference": "comparative-1-...", "op": ">=",
@@ -61,6 +63,13 @@ changes *when* the paper is written and how Results are stated.
      "tables": [...], "notes": [...]
    }]
    ```
+
+   `grounded_on` and `cites_passages` (also on designs and runs, and
+   `reference_passage` on a criterion whose `reference` is a constant
+   read from a paper) name passages registered with `register_sources`
+   — the prior work's own words the declaration rests on. The gate
+   refuses a passage no source declares, and one registered after the
+   declaration that names it, so register and declare passages first.
 
    `run_id` names the results directory the run will produce and must be
    unique across the record — a run belongs to exactly one claim, and

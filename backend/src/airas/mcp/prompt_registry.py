@@ -23,7 +23,7 @@ import json
 from typing import Any, Optional
 
 from jinja2 import Environment
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experiment_history import ExperimentHistory
@@ -35,6 +35,7 @@ from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.paper import PaperContent
 from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.core.types.research_record import LiteratureSource
 from airas.core.types.research_study import ResearchStudy
 from airas.resources.datasets.language.prompt_engineering import (
     PROMPT_ENGINEERING_DATASETS,
@@ -123,8 +124,13 @@ class _PaperWritingInputs(BaseModel):
     research_hypothesis: ResearchHypothesis
     experiment_history: ExperimentHistory
     experiment_code: ExperimentCode
-    research_study_list: list[ResearchStudy]
-    references_bib: str
+    research_study_list: list[ResearchStudy] = Field(default_factory=list)
+    references_bib: str = ""
+    literature: list[LiteratureSource] = Field(
+        default_factory=list,
+        description="record.json's literature; when given, the note lists each "
+        "source's passages to cite and research_study_list is not used",
+    )
 
 
 class _LatexConversionInputs(BaseModel):
@@ -224,8 +230,10 @@ def _experiment_analysis(inputs: _ExperimentAnalysisInputs) -> dict[str, Any]:
 def _paper_writing(inputs: _PaperWritingInputs) -> dict[str, Any]:
     # Built once and handed to both readers: the note renders it, and the
     # warning below reports what it could not resolve.
-    mapped_studies = map_studies_to_bibtex(
-        inputs.research_study_list, inputs.references_bib
+    mapped_studies = (
+        []
+        if inputs.literature
+        else map_studies_to_bibtex(inputs.research_study_list, inputs.references_bib)
     )
     note = generate_note(
         research_hypothesis=inputs.research_hypothesis,
@@ -234,6 +242,7 @@ def _paper_writing(inputs: _PaperWritingInputs) -> dict[str, Any]:
         research_study_list=inputs.research_study_list,
         references_bib=inputs.references_bib,
         mapped_studies=mapped_studies,
+        literature=inputs.literature or None,
     )
     prompt = _render(write_prompt, {"note": note, "tips_dict": section_tips_prompt})
     result: dict[str, Any] = {
@@ -286,12 +295,13 @@ def _latex_conversion(inputs: _LatexConversionInputs) -> dict[str, Any]:
             "<< background >>, << method >>, << experimental_setup >>, "
             "<< results >>, << conclusion >> — replace each marker with the "
             "corresponding section and save the result as "
-            ".research/latex/{template}/main.tex. 3) Write the bibliography "
-            "from generate_bibfile to "
-            ".research/latex/{template}/references.bib, overwriting the "
-            "placeholder the template ships — without this every \\cite "
-            "renders as '?'. 4) Check the result with verify_latex before "
-            "publishing, then push both files with git."
+            ".research/latex/{template}/main.tex. 3) The bibliography: when "
+            "the record has literature, register_sources already wrote "
+            ".research/latex/{template}/references.bib and the gate "
+            "regenerates it — leave it alone; otherwise write generate_bibfile's "
+            "output there, overwriting the placeholder the template ships — "
+            "without this every \\cite renders as '?'. 4) Check the result "
+            "with verify_latex before publishing, then push both files with git."
         ),
     }
 

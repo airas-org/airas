@@ -20,6 +20,7 @@ from airas.core.types.map_record_to_publication import PaperValue, TableSpec
 from airas.core.types.research_record import (
     LeanClaim,
     LeanResult,
+    LiteratureSource,
     ResearchRecord,
     SeyvalClaim,
     active,
@@ -296,6 +297,49 @@ def _lean_evidence_lines(claim: LeanClaim) -> list[str]:
     return lines
 
 
+def _passages(ids: list[str]) -> str:
+    return ", ".join(_tt(pid) for pid in ids)
+
+
+def _cited_passages_line(claim: Any) -> str | None:
+    parts = [_passages(claim.cites_passages)] if claim.cites_passages else []
+    if isinstance(claim, SeyvalClaim) and claim.criterion.reference_passage:
+        parts.append(f"criterion: {_tt(claim.criterion.reference_passage)}")
+    for design, run in claim.runs():
+        if design.cites_passages:
+            parts.append(f"{_tt(design.id)}: {_passages(design.cites_passages)}")
+        if run.cites_passages:
+            parts.append(f"{_tt(run.run_id)}: {_passages(run.cites_passages)}")
+    return rf"  \emph{{Cites:}} {'; '.join(parts)}." if parts else None
+
+
+def _literature_lines(literature: list[LiteratureSource]) -> list[str]:
+    # The (statement, quote) pairs reach the reviewer through the PDF: the
+    # declarations above name passages, these are the passages verbatim.
+    lines = [r"\noindent\textbf{Sources.}"]
+    for source in literature:
+        year = f" ({source.year})" if source.year else ""
+        lines.append(
+            rf"\noindent\textbf{{{source.id.upper()}}} {_tt(source.bibkey)}: "
+            + latex_text(source.title)
+            + f"{year}."
+        )
+        passages = active(source.passages, "id")
+        if not passages:
+            continue
+        lines.append(r"\begin{itemize}")
+        for passage in passages:
+            where = "" if passage.anchor == "text" else f" {passage.anchor}"
+            lines.append(
+                rf"\item[{_tt(passage.id)}] ({passage.node_type}{where}) "
+                + "``"
+                + latex_text(passage.quote)
+                + "''"
+            )
+        lines.append(r"\end{itemize}")
+    return lines
+
+
 def render_claims_tex(record: ResearchRecord, metrics_data: dict[str, Any]) -> str:
     # Deterministic from (record, metrics) alone — no commit link — so the
     # freeze commit can carry it before any run exists.
@@ -305,13 +349,17 @@ def render_claims_tex(record: ResearchRecord, metrics_data: dict[str, Any]) -> s
         lines += [
             rf"\noindent\textbf{{{hypothesis.id.upper()}.}} "
             + latex_text(hypothesis.statement),
-            r"\begin{enumerate}",
         ]
+        if hypothesis.grounded_on:
+            lines.append(rf"\emph{{Grounded on:}} {_passages(hypothesis.grounded_on)}.")
+        lines.append(r"\begin{enumerate}")
         for claim in active(hypothesis.claims, "id"):
             lines.append(
                 rf"\item[\textbf{{{claim.id.upper()}}}] {latex_text(claim.statement)}"
             )
             lines.append(rf"  \emph{{Rationale:}} {latex_text(claim.rationale)}")
+            if cited := _cited_passages_line(claim):
+                lines.append(cited)
             if isinstance(claim, SeyvalClaim):
                 c = claim.criterion
                 reference = (
@@ -345,6 +393,8 @@ def render_claims_tex(record: ResearchRecord, metrics_data: dict[str, Any]) -> s
             lines.append(r"\begin{itemize}")
             lines += [rf"\item {latex_text(a)}" for a in hypothesis.assumptions]
             lines.append(r"\end{itemize}")
+    if literature := record.active_literature():
+        lines += _literature_lines(literature)
     return "\n".join(lines) + "\n"
 
 

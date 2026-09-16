@@ -28,6 +28,7 @@ The paper should contain the following sections with specific requirements:
     - Single citation: [@vaswani-2017-attention]
     - Multiple citations: [@vaswani-2017-attention; @devlin-2018-bert]
     - With page numbers: [@vaswani-2017-attention, p. 23]
+    - A quoted passage listed under the paper: [@vaswani-2017-attention, s1.p2]
 - The "Reference Candidates" section in the context provides papers with their citation keys
 - **You do NOT need to cite all papers listed in Reference Candidates**. Only cite papers that are directly relevant to your research
 - Cite papers selectively when:
@@ -37,7 +38,8 @@ The paper should contain the following sections with specific requirements:
     - Supporting claims with prior research
 - Each citation must be contextually relevant and enhance the academic rigor of the paper
 - Always use the [@key] format with @ symbol and square brackets
-- Only use citation keys explicitly provided in the "Reference Candidates" section
+- Only use citation keys explicitly provided in the "Reference Candidates" section — never invent a key
+- When the sentence rests on a passage listed under the paper, cite that passage's id; the paper's verification checks the passage is the one cited
 
 ## Mathematical and Technical Content Standards
 - When beneficial for clarity, describe mathematical equations, parameter settings, and procedures in a structured and easy-to-follow way, using natural language or numbered steps

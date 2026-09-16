@@ -9,7 +9,7 @@ from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.logging_utils import setup_logging
 from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.usecases.retrieve.fetch_paper_fulltext_subgraph.nodes.download_pdf_text import (
-    download_pdf_text,
+    download_pdf_pages,
 )
 
 setup_logging()
@@ -58,6 +58,10 @@ class FetchPaperFulltextSubgraphOutputState(ExecutionTimeState):
     resolved_from: Optional[str]
     total_chars: int
     truncated: bool
+    # The URL the text came from and its pages untruncated, line breaks
+    # kept: what a fulltext snapshot is written from.
+    pdf_url: Optional[str]
+    pages: list[str]
 
 
 # (url, resolved_from) pairs, in the order they should be downloaded.
@@ -156,9 +160,10 @@ class FetchPaperFulltextSubgraph:
             if not url or url in already_tried:
                 continue
             already_tried.add(url)
-            text = await download_pdf_text(url)
+            pages = await download_pdf_pages(url)
+            text = " ".join(pages).replace("\n", " ").strip()
             if text:
-                return self._as_fulltext(text, resolved_from, state)
+                return self._as_fulltext(text, resolved_from, state, url, pages)
             logger.info(f"No text extracted from {url}")
         return None
 
@@ -194,6 +199,8 @@ class FetchPaperFulltextSubgraph:
                 **_truncate(fallback_abstract, state.get("max_chars")),
                 "status": "abstract_only",
                 "resolved_from": "semantic_scholar_abstract",
+                "pdf_url": None,
+                "pages": [],
             }
         return {
             "text": "",
@@ -201,16 +208,24 @@ class FetchPaperFulltextSubgraph:
             "resolved_from": None,
             "total_chars": 0,
             "truncated": False,
+            "pdf_url": None,
+            "pages": [],
         }
 
     @staticmethod
     def _as_fulltext(
-        text: str, resolved_from: Optional[str], state: FetchPaperFulltextSubgraphState
+        text: str,
+        resolved_from: Optional[str],
+        state: FetchPaperFulltextSubgraphState,
+        pdf_url: str,
+        pages: list[str],
     ) -> dict:
         return {
             **_truncate(text, state.get("max_chars")),
             "status": "fulltext",
             "resolved_from": resolved_from,
+            "pdf_url": pdf_url,
+            "pages": pages,
         }
 
     def build_graph(self):

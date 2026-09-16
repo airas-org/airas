@@ -12,12 +12,16 @@ from typing import Any, get_args
 
 from pydantic import ValidationError
 
-from airas.core.research_paths import RECORD_FILENAME, RECORD_PATH
+from airas.core.research_paths import (
+    RECORD_FILENAME,
+    RECORD_PATH,
+    REFERENCES_BIB_FILENAME,
+)
 from airas.core.types.latex import LATEX_TEMPLATE_NAME, LatexBuildReport
 from airas.core.types.map_record_to_publication import TableSpec
 from airas.core.types.paper_verification import PaperVerification
 from airas.core.types.record_verification import RecordVerification
-from airas.core.types.research_record import ResearchRecord
+from airas.core.types.research_record import PASSAGE_ID_PATTERN, ResearchRecord
 from airas.infra.local_git import (
     normalize_git_url,
     remote_origin_url,
@@ -45,6 +49,7 @@ from airas.usecases.publication.open_in_overleaf_subgraph.nodes.collect_latex_pr
     select_engine,
 )
 from airas.usecases.recording._run_provenance import StoreFactory
+from airas.usecases.recording.sources import render_references_bib
 from airas.usecases.recording.update_or_load_record import (
     load_metrics_data,
     load_record,
@@ -350,6 +355,67 @@ def scan_main_tex(main_tex: str) -> tuple[list[str], list[str]]:
     return unverified, used_keys
 
 
+_CITE = re.compile(r"\\cite[pt]?\*?(?:\[([^\]]*)\])?\{([^}]*)\}")
+
+
+def scan_citations(main_tex: str) -> list[tuple[str | None, list[str]]]:
+    """(locator, keys) of every \\cite, comments stripped."""
+    # Comments go line by line; the scan runs over the whole text, since a
+    # \\cite may span lines.
+    text = "\n".join(_strip_comment(line) for line in main_tex.splitlines())
+    return [
+        (locator.strip() or None, [k.strip() for k in keys.split(",") if k.strip()])
+        for locator, keys in _CITE.findall(text)
+    ]
+
+
+def _verify_citations(
+    record: ResearchRecord, main_tex: str
+) -> tuple[list[str], list[str]]:
+    """Every cited key is a registered source and every passage locator one
+    of that source's passages. Returns (problems, bibkeys never cited)."""
+    by_key = {source.bibkey: source for source in record.active_literature()}
+    passages = record.passage_index()
+    problems: dict[str, None] = {}
+    cited: set[str] = set()
+    for locator, keys in scan_citations(main_tex):
+        for key in keys:
+            if key in by_key:
+                cited.add(key)
+            else:
+                problems[
+                    f"main.tex cites '{key}', which no source in record.json "
+                    "declares (register_sources adds one)"
+                ] = None
+        if not (locator and re.fullmatch(PASSAGE_ID_PATTERN, locator)):
+            continue
+        if len(keys) != 1:
+            problems[
+                f"main.tex cites passage '{locator}' against several keys "
+                f"({', '.join(keys)}) — a passage belongs to one source"
+            ] = None
+        elif locator not in passages or passages[locator][0].bibkey != keys[0]:
+            problems[
+                f"main.tex cites '{keys[0]}' at '{locator}', which is not a "
+                "passage of that source"
+            ] = None
+    return list(problems), [key for key in by_key if key not in cited]
+
+
+def _verify_references_bib(latex_dir: Path, record: ResearchRecord) -> list[str]:
+    path = latex_dir / REFERENCES_BIB_FILENAME
+    if not path.is_file():
+        return [f"{REFERENCES_BIB_FILENAME} is missing (register_sources writes it)"]
+    if path.read_text(encoding="utf-8") != render_references_bib(
+        record.active_literature()
+    ):
+        return [
+            f"{REFERENCES_BIB_FILENAME} differs from its regeneration from the "
+            "record's literature (register_sources writes it)"
+        ]
+    return []
+
+
 def _verify_claims(
     latex_dir: Path, record: ResearchRecord, metrics_data: dict[str, Any]
 ) -> list[str]:
@@ -489,7 +555,7 @@ async def verify_paper(
         )
     root = Path(local_path).expanduser().resolve()
 
-    problems, unverified = await asyncio.to_thread(
+    problems, unverified, uncited = await asyncio.to_thread(
         _verify_mapping, root, template, record
     )
     if require_record and not (root / RECORD_PATH).is_file():
@@ -518,6 +584,7 @@ async def verify_paper(
         record=record,
         problems=problems,
         unverified=unverified,
+        uncited_sources=uncited,
         build=build,
         pdf=pdf,
     )
@@ -525,10 +592,11 @@ async def verify_paper(
 
 def _verify_mapping(
     root: Path, template: str, record_result: RecordVerification
-) -> tuple[list[str], list[str]]:
+) -> tuple[list[str], list[str], list[str]]:
     """Every mapped artifact matches its regeneration from the record.
 
-    Returns (problems, \\unverified claims for human review).
+    Returns (problems, \\unverified claims for human review, registered
+    sources the paper never cites).
     """
     latex_dir = root / ".research" / "latex" / template
     values_tex_path = latex_dir / VALUES_TEX_FILENAME
@@ -537,8 +605,12 @@ def _verify_mapping(
 
     unverified: list[str] = []
     used_keys: list[str] = []
-    if main_tex_path.is_file():
-        unverified, used_keys = scan_main_tex(main_tex_path.read_text(encoding="utf-8"))
+    uncited: list[str] = []
+    main_tex = (
+        main_tex_path.read_text(encoding="utf-8") if main_tex_path.is_file() else ""
+    )
+    if main_tex:
+        unverified, used_keys = scan_main_tex(main_tex)
     required = [main_tex_path]
     if record_result.stage == "results":
         required.append(values_tex_path)
@@ -550,12 +622,15 @@ def _verify_mapping(
         record = load_record(str(root))
     except (ValidationError, ValueError):
         # The record's own verification already reports this.
-        return problems, unverified
+        return problems, unverified, uncited
     try:
         metrics_data = load_metrics_data(str(root))
     except ValueError:
         metrics_data = {}
     problems += _verify_claims(latex_dir, record, metrics_data)
+    if record.active_literature():
+        cited_problems, uncited = _verify_citations(record, main_tex)
+        problems += cited_problems + _verify_references_bib(latex_dir, record)
     if record_result.stage == "prereg":
         # A values.tex carried over without runs would put unverifiable
         # numbers in the PDF.
@@ -563,7 +638,7 @@ def _verify_mapping(
             problems.append(f"{VALUES_TEX_FILENAME} exists but no run outputs exist")
         if (latex_dir / TABLES_DIR_NAME).is_dir():
             problems.append(f"{TABLES_DIR_NAME}/ exists but no run outputs exist")
-        return problems, unverified
+        return problems, unverified, uncited
 
     paper_values, undefined_keys = resolve_paper_values(record, metrics_data, used_keys)
     if undefined_keys:
@@ -584,7 +659,7 @@ def _verify_mapping(
             )
     problems += _verify_tables(latex_dir, record.active_tables(), metrics_data)
     problems += _verify_charts(record, str(root), metrics_data)
-    return problems, unverified
+    return problems, unverified, uncited
 
 
 def build_paper(

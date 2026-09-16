@@ -30,7 +30,7 @@ ABSTRACT = "An abstract nobody should settle for."
 
 _DOWNLOAD = (
     "airas.usecases.retrieve.fetch_paper_fulltext_subgraph"
-    ".fetch_paper_fulltext_subgraph.download_pdf_text"
+    ".fetch_paper_fulltext_subgraph.download_pdf_pages"
 )
 
 
@@ -61,7 +61,8 @@ async def _run(client, downloads, **inputs) -> tuple[dict, list[str]]:
     """Drive both nodes the way the compiled graph does."""
     subgraph = FetchPaperFulltextSubgraph(semantic_scholar_client=client)
     state = {"arxiv_id": None, "doi": None, "pdf_url": None, **inputs}
-    with patch(_DOWNLOAD, new=AsyncMock(side_effect=downloads)) as download:
+    pages = [[text] if text else [] for text in downloads]
+    with patch(_DOWNLOAD, new=AsyncMock(side_effect=pages)) as download:
         state.update(await subgraph._resolve_pdf_url(state))
         result = await subgraph._download_and_extract(state)
     return result, [call.args[0] for call in download.await_args_list]

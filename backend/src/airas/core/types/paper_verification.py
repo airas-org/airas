@@ -14,5 +14,8 @@ class PaperVerification(BaseModel):
     # \unverified{...} claims in main.tex, surfaced for human review — they
     # are not failures, and nothing else carries them.
     unverified: list[str] = Field(default_factory=list)
+    # Registered sources main.tex never cites: read and set aside, or
+    # forgotten — for the author to say, not a failure.
+    uncited_sources: list[str] = Field(default_factory=list)
     build: LatexBuildReport | None = None
     pdf: str | None = None

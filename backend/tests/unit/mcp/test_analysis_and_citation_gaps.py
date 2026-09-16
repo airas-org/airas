@@ -126,6 +126,48 @@ def test_no_warning_when_every_study_is_citable():
     assert "warnings" not in result
 
 
+def _paper_prompt_with_literature() -> dict:
+    return build_generation_prompt(
+        "paper_writing",
+        {
+            "research_hypothesis": HYPOTHESIS.model_dump(),
+            "experiment_history": {"cycles": []},
+            "experiment_code": {"files": {"src/main.py": "print()"}},
+            "research_study_list": [{"title": "PoseBusters"}],
+            "references_bib": BIB,
+            "literature": [
+                {
+                    "id": "s1",
+                    "title": "DiffDock",
+                    "bibkey": "diffdock2023",
+                    "passages": [
+                        {
+                            "id": "s1.p1",
+                            "node_type": "result",
+                            "quote": "DiffDock reaches 38% top-1 success.",
+                        }
+                    ],
+                }
+            ],
+        },
+    )
+
+
+def test_the_note_lists_each_passage_with_its_locator_syntax():
+    prompt = _paper_prompt_with_literature()["prompt"]
+
+    assert "[@diffdock2023]" in prompt
+    assert 's1.p1 (result): "DiffDock reaches 38% top-1 success."' in prompt
+    assert "[@citation_key, s1.p2]" in prompt
+
+
+def test_literature_from_the_record_replaces_the_do_not_cite_path():
+    result = _paper_prompt_with_literature()
+
+    assert "warnings" not in result
+    assert "PoseBusters" not in result["prompt"]
+
+
 def test_a_long_run_log_does_not_take_over_the_prompt():
     """A training run's stdout can dwarf everything else in the prompt.
 

@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import json
 import os
+import re
 import sys
 import threading
 import webbrowser
@@ -29,6 +30,7 @@ from airas.usecases.recording.codex_hooks import install_codex_hooks
 from airas.usecases.recording.research_trace import (
     capture,
     is_experiment_repository,
+    record_access,
     record_step,
     write_derived_from,
 )
@@ -141,10 +143,18 @@ def _run_hook(args: argparse.Namespace) -> None:
     # The pointer from session-start carries model and plugin root; later
     # events fall back to what they carry themselves.
     pointer = read_pointer(fresh.cwd) or fresh
+    tool_input = payload.get("tool_input") or {}
     if args.hook_command == "step":
-        step = (payload.get("tool_input") or {}).get("skill")
-        if step:
+        if step := tool_input.get("skill"):
             record_step(fresh.cwd, pointer, step)
+    elif args.hook_command == "access":
+        # Read carries the path; a Bash command is scanned for paths under
+        # the sources directory.
+        paths = [tool_input["file_path"]] if tool_input.get("file_path") else []
+        paths += re.findall(
+            r"\.research/sources/[^\s'\"]+", tool_input.get("command") or ""
+        )
+        record_access(fresh.cwd, pointer, paths)
     else:
         capture(fresh.cwd, pointer)
 
@@ -196,6 +206,7 @@ def main() -> None:
     for name, help_text in (
         ("session-start", "SessionStart: record where the live session is"),
         ("step", "PostToolUse(Skill): record the step the agent entered"),
+        ("access", "PostToolUse(Read|Bash): record registered source files read"),
         ("capture", "Stop: capture the agent state and commit a fork point"),
     ):
         sub = hook_commands.add_parser(name, help=f"{help_text} (hook JSON on stdin)")

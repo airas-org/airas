@@ -1,5 +1,5 @@
 {
-  "description": "Record the research trace and fork points: where the live session is, which step the agent entered, and the agent's state committed at the end of every turn.",
+  "description": "Record the research trace and fork points: where the live session is, which step the agent entered, which registered source files it read, and the agent's state committed at the end of every turn.",
   "hooks": {
     "SessionStart": [
       {
@@ -19,6 +19,16 @@
           {
             "type": "command",
             "command": "uvx airas==0.4.0 hook step --harness claude",
+            "timeout": 60
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uvx airas==0.4.0 hook access --harness claude",
             "timeout": 60
           }
         ]

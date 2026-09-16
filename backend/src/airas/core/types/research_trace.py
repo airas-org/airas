@@ -10,11 +10,15 @@ from pydantic import BaseModel, Field
 # step はスキルに入ったとき（Claude Code の Skill 呼び出し）、capture はターン
 # 終了ごとの AgentState の取り込みと commit。
 class ResearchTraceEvent(BaseModel):
-    kind: Literal["step", "capture"]
+    kind: Literal["step", "capture", "access"]
     timestamp: str
     session_id: str
     head: Optional[str] = Field(default=None, description="HEAD when the event fired")
     step: Optional[str] = Field(default=None, description="Skill entered (kind=step)")
+    paths: list[str] = Field(
+        default_factory=list,
+        description="Registered source files the agent read (kind=access)",
+    )
     iteration: Optional[int] = Field(
         default=None, ge=1, description="How many times this step has begun"
     )

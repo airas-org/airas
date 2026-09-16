@@ -21,7 +21,9 @@ from airas.core.types.research_record import (
     ClaimDeclaration,
     Criterion,
     Hypothesis,
+    LiteratureSource,
     Prediction,
+    QuotedPassage,
     ResearchRecord,
     SeyvalClaim,
     SeyvalDesign,
@@ -41,6 +43,7 @@ from airas.usecases.publication.map_record_to_publication import (
     resolve_paper_values,
 )
 from airas.usecases.publication.verify_paper import scan_main_tex, verify_paper
+from airas.usecases.recording.sources import render_references_bib, write_fulltext
 from airas.usecases.recording.update_or_load_record import (
     load_metrics_data,
     load_record,
@@ -805,3 +808,215 @@ def test_import_time_hashes_may_not_change_under_the_same_execution(
     manifest_path.write_text(json.dumps(manifest))
     result = _verify(str(repo), require_history=True)
     assert any("dropped the declaration" in p for p in result.problems), result.problems
+
+
+# ------------------------------------------------------------ the literature
+
+
+PAGES = [
+    "Attention Is All You Need\nWe propose the Transformer.",
+    "We apply dropout to the output of each sub-layer.\nThe rate is 0.1.",
+]
+QUOTE = "We apply dropout to the output of each sub-layer."
+
+
+def _source(repo: Path, confirmed: bool = True) -> LiteratureSource:
+    return LiteratureSource(
+        id="s1",
+        title="Attention Is All You Need",
+        authors=["Ashish Vaswani"],
+        year=2017,
+        bibkey="vaswani-2017-attention",
+        verified_by="airas_db" if confirmed else "",
+        verified_at="2026-09-15T00:00:00+00:00",
+        fulltext=write_fulltext(repo, "s1", PAGES),
+        parser="pymupdf test",
+        passages=[QuotedPassage(id="s1.p1", node_type="method", quote=QUOTE)],
+    )
+
+
+def _grounded_repo(tmp_path: Path, **source_kw: Any) -> tuple[Path, ResearchRecord]:
+    _init(tmp_path)
+    record = _record()
+    record.literature.append(_source(tmp_path, **source_kw))
+    record.hypotheses[0].grounded_on = ["s1.p1"]
+    _c1(record).cites_passages = ["s1.p1"]
+    save_record(str(tmp_path), record)
+    return tmp_path, record
+
+
+def test_a_hypothesis_grounded_on_a_registered_passage_passes(tmp_path: Path) -> None:
+    repo, _ = _grounded_repo(tmp_path)
+    _commit(repo, "prereg")
+    result = _verify(str(repo))
+    assert result.ok, result.problems
+
+
+def test_grounds_naming_a_passage_no_source_declares_fail(tmp_path: Path) -> None:
+    repo, record = _grounded_repo(tmp_path)
+    record.hypotheses[0].grounded_on.append("s1.p9")
+    save_record(str(repo), record)
+    result = _verify(str(repo))
+    assert any("hypothesis h1" in p and "'s1.p9'" in p for p in result.problems)
+
+
+def test_a_quote_not_in_the_snapshot_fails(tmp_path: Path) -> None:
+    repo, record = _grounded_repo(tmp_path)
+    record.literature[0].passages[0].quote = "Dropout of 0.1 is applied."
+    save_record(str(repo), record)
+    result = _verify(str(repo))
+    assert any("passage s1.p1" in p and "verbatim" in p for p in result.problems)
+
+
+def test_a_snapshot_edited_after_registration_fails(tmp_path: Path) -> None:
+    repo, record = _grounded_repo(tmp_path)
+    path = repo / record.literature[0].fulltext.path
+    path.write_text(path.read_text() + " ")
+    result = _verify(str(repo))
+    assert any("sha256" in p for p in result.problems)
+
+
+def test_a_source_no_registry_verified_fails(tmp_path: Path) -> None:
+    repo, _ = _grounded_repo(tmp_path, confirmed=False)
+    result = _verify(str(repo))
+    assert any("no registry verified it" in p for p in result.problems)
+
+
+def test_a_passage_registered_after_the_hypothesis_that_names_it_fails(
+    tmp_path: Path,
+) -> None:
+    _init(tmp_path)
+    record = ResearchRecord(literature=[_source(tmp_path)])
+    record.literature[0].passages.clear()
+    save_record(str(tmp_path), record)
+    _commit(tmp_path, "register the source")
+
+    record.hypotheses = _record().hypotheses
+    record.hypotheses[0].grounded_on = ["s1.p1"]
+    save_record(str(tmp_path), record)
+    grounded = _commit(tmp_path, "prereg naming a passage that is not there yet")
+
+    record.literature[0].passages.append(
+        QuotedPassage(id="s1.p1", node_type="method", quote=QUOTE)
+    )
+    save_record(str(tmp_path), record)
+    _commit(tmp_path, "the passage, after the fact")
+
+    # The worktree alone is consistent; the history is what convicts it.
+    result = _verify(str(tmp_path))
+    assert not result.ok
+    assert all(p.startswith(grounded[:12]) for p in result.problems), result.problems
+    assert any("s1.p1" in p for p in result.problems)
+
+
+# ------------------------------------------ a paper that cites the literature
+
+
+def _write_cited_paper(repo: Path, body: str, bib: str | None = None) -> None:
+    latex_dir = repo / ".research" / "latex" / "mdpi"
+    latex_dir.mkdir(parents=True)
+    (latex_dir / "main.tex").write_text(
+        "\\documentclass{article}\n\\begin{document}\n" + body + "\n\\end{document}\n"
+    )
+    record = load_record(str(repo))
+    (latex_dir / "claims.tex").write_text(render_claims_tex(record, {}))
+    (latex_dir / "references.bib").write_text(
+        render_references_bib(record.active_literature()) if bib is None else bib
+    )
+
+
+def test_a_citation_of_a_registered_passage_passes(tmp_path: Path) -> None:
+    repo, _ = _grounded_repo(tmp_path)
+    _write_cited_paper(repo, r"Dropout helps \cite[s1.p1]{vaswani-2017-attention}.")
+    result = _verify_paper(str(repo))
+    assert result.ok, result.record.problems + result.problems
+    assert result.uncited_sources == []
+
+
+def test_a_citation_of_an_unregistered_key_fails(tmp_path: Path) -> None:
+    repo, _ = _grounded_repo(tmp_path)
+    _write_cited_paper(repo, r"As shown \cite{made-up-2020-key}.")
+    result = _verify_paper(str(repo))
+    assert any("'made-up-2020-key'" in p and "no source" in p for p in result.problems)
+
+
+def test_a_passage_locator_that_is_not_the_sources_fails(tmp_path: Path) -> None:
+    repo, _ = _grounded_repo(tmp_path)
+    _write_cited_paper(repo, r"See \cite[s1.p9]{vaswani-2017-attention}.")
+    result = _verify_paper(str(repo))
+    assert any("at 's1.p9'" in p for p in result.problems)
+
+
+def test_a_passage_cited_against_several_keys_fails(tmp_path: Path) -> None:
+    repo, _ = _grounded_repo(tmp_path)
+    _write_cited_paper(repo, r"See \cite[s1.p1]{vaswani-2017-attention,other}.")
+    result = _verify_paper(str(repo))
+    assert any("several keys" in p for p in result.problems)
+
+
+def test_a_hand_edited_references_bib_fails(tmp_path: Path) -> None:
+    repo, _ = _grounded_repo(tmp_path)
+    _write_cited_paper(
+        repo,
+        r"\cite{vaswani-2017-attention}",
+        bib="@article{vaswani-2017-attention,}\n",
+    )
+    result = _verify_paper(str(repo))
+    assert any("references.bib differs" in p for p in result.problems)
+
+
+def test_sources_never_cited_are_reported_not_failed(tmp_path: Path) -> None:
+    repo, _ = _grounded_repo(tmp_path)
+    _write_cited_paper(repo, "No citations at all.")
+    result = _verify_paper(str(repo))
+    assert result.ok, result.record.problems + result.problems
+    assert result.uncited_sources == ["vaswani-2017-attention"]
+
+
+def test_a_source_declared_twice_fails(tmp_path: Path) -> None:
+    repo, record = _grounded_repo(tmp_path)
+    record.literature.append(record.literature[0].model_copy(deep=True))
+    save_record(str(repo), record)
+    result = _verify(str(repo))
+    assert any("source s1: declared twice" in p for p in result.problems)
+
+
+def test_a_source_without_a_snapshot_fails(tmp_path: Path) -> None:
+    repo, record = _grounded_repo(tmp_path)
+    record.literature[0].fulltext = None
+    record.literature[0].passages.clear()
+    record.hypotheses[0].grounded_on.clear()
+    _c1(record).cites_passages.clear()
+    save_record(str(repo), record)
+    result = _verify(str(repo))
+    assert any("fulltext snapshot must be" in p for p in result.problems)
+
+
+def test_a_snapshot_outside_its_own_directory_fails(tmp_path: Path) -> None:
+    repo, record = _grounded_repo(tmp_path)
+    (repo / "elsewhere.txt").write_text(PAGES[1])
+    record.literature[0].fulltext.path = "elsewhere.txt"
+    save_record(str(repo), record)
+    result = _verify(str(repo))
+    assert any("fulltext snapshot must be" in p for p in result.problems)
+
+
+def test_a_citation_spanning_lines_is_still_checked(tmp_path: Path) -> None:
+    repo, _ = _grounded_repo(tmp_path)
+    _write_cited_paper(repo, "See \\cite[s1.p1]{\n  made-up-2020-key\n}.")
+    result = _verify_paper(str(repo))
+    assert any("'made-up-2020-key'" in p for p in result.problems)
+
+
+def test_two_sources_sharing_a_bibkey_fail(tmp_path: Path) -> None:
+    repo, record = _grounded_repo(tmp_path)
+    twin = record.literature[0].model_copy(
+        deep=True, update={"id": "s2", "passages": []}
+    )
+    record.literature.append(twin)
+    save_record(str(repo), record)
+    result = _verify(str(repo))
+    assert any(
+        "bibkey 'vaswani-2017-attention' is also source s1's" in p
+        for p in result.problems
+    )

@@ -1,7 +1,10 @@
 import re
+from logging import getLogger
 
 from airas.core.types.paper import PaperContent
 from airas.usecases.publication.nodes.parse_bibtex_to_dict import parse_bibtex_to_dict
+
+logger = getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Figure patterns
@@ -60,8 +63,11 @@ def _convert_citation_format(
         if match and optional_arg is None:
             optional_arg = match.group(2).strip()
 
-        if key in references_bib_dict:
-            citation_keys.append(key)
+        # Kept even when the bib lacks it: the gate reports an unknown key,
+        # a silently dropped citation it cannot.
+        if key not in references_bib_dict:
+            logger.warning(f"Citation key '{key}' is not in references.bib")
+        citation_keys.append(key)
 
     if not citation_keys:
         return ""

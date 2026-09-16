@@ -11,6 +11,7 @@ from airas.core.types.experiment_history import (
     ExperimentHistory,
 )
 from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.core.types.research_record import LiteratureSource, active
 from airas.core.types.research_study import ResearchStudy
 from airas.usecases.publication.nodes.parse_bibtex_to_dict import parse_bibtex_to_dict
 
@@ -100,6 +101,23 @@ def unmatched_citation_titles(mapped_studies: list[dict[str, Any]]) -> list[str]
     return [study["title"] for study in mapped_studies if not study["citation_key"]]
 
 
+def literature_candidates(literature: list[LiteratureSource]) -> list[dict[str, Any]]:
+    """The record's sources in the shape the note renders: bibkey plus the
+    passages to cite, in place of a summary."""
+    return [
+        {
+            "title": source.title,
+            "citation_key": source.bibkey,
+            "content": "\n".join(
+                f'- {p.id} ({p.node_type}): "{p.quote}"'
+                for p in active(source.passages, "id")
+            )
+            or "(no passages declared)",
+        }
+        for source in literature
+    ]
+
+
 def generate_note(
     research_hypothesis: ResearchHypothesis,
     experiment_history: ExperimentHistory,
@@ -107,8 +125,11 @@ def generate_note(
     research_study_list: list[ResearchStudy],
     references_bib: str,
     mapped_studies: list[dict[str, Any]] | None = None,
+    literature: list[LiteratureSource] | None = None,
 ) -> str:
-    if mapped_studies is None:
+    if literature:
+        mapped_studies = literature_candidates(literature)
+    elif mapped_studies is None:
         mapped_studies = map_studies_to_bibtex(research_study_list, references_bib)
 
     # Find the final cycle (complete) for main results
@@ -211,6 +232,7 @@ This section lists papers available for citation.
 - The **Citation Key** (e.g., `[@vaswani-2017-attention]`) matches the entry in the BibTeX references.
 - Select and use the appropriate Citation Key when citing these works in the text.
 - You do NOT need to cite all papers listed here. Only cite papers that are relevant to your research.
+- Quoted passages, when listed under a paper with ids like `s1.p2`, are the exact places it may be cited for. When a sentence rests on one, cite the passage: `[@citation_key, s1.p2]` — one key per passage citation.
 
 {% for paper in mapped_studies %}
 ### {{ paper.title }}
