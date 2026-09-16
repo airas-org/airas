@@ -16,7 +16,7 @@ from airas.research_record.store import (
 from airas.usecases.literature import register_sources as register_sources_usecase
 
 PAGES = [
-    "Attention Is All You Need\nWe propose the Transformer.",
+    "ATTENTION IS ALL YOU NEED\nWe propose the Transformer.",
     "We apply dropout to the output of each sub-layer.\nThe rate is 0.1.",
 ]
 DB_RECORD = {

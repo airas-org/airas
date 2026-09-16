@@ -48,6 +48,12 @@ def test_whitespace_line_breaks_and_ligatures_do_not_break_a_quote() -> None:
     assert quote_in(fulltext, "An efficient method for software.")
 
 
+def test_a_word_hyphenated_at_a_line_end_is_matched_joined() -> None:
+    fulltext = _fulltext(["SAM improves model gen-\neralization across datasets."])
+    assert quote_in(fulltext, "SAM improves model generalization across datasets.")
+    assert quote_in(fulltext, "state-of-the-art") is False
+
+
 def test_a_paraphrase_is_not_found() -> None:
     assert not quote_in(_fulltext(), "Dropout of 0.1 is applied.")
 

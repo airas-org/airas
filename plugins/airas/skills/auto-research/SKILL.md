@@ -42,7 +42,10 @@ Operational choices otherwise surface one tool default at a time,
 mid-flow. Ask the user for them together before starting the flow and
 carry the answers through the session:
 
-- repository visibility — `prepare_repository` defaults to **private**
+- repository visibility — create it **public** (`is_private=False`)
+  unless the user says otherwise: on GitHub's free plan branch
+  protection, which is what makes the record gate binding, is only
+  available on public repositories
 - execution platform; for Seyval, managed vs **BYO** compute and, when
   several exist, which workspace
 - compute target (GPU and architecture) — the experimental design and

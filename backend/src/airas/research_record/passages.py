@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import unicodedata
 from typing import Any
 
@@ -15,8 +16,13 @@ def _normalize(text: str) -> str:
 
 
 def quote_in(fulltext: str, quote: str) -> bool:
+    # A word the extractor broke with a hyphen at the line end ("gen-\ner-
+    # alization") is matched joined as well as as written.
     needle = _normalize(quote)
-    return bool(needle) and needle in _normalize(fulltext)
+    return bool(needle) and (
+        needle in _normalize(fulltext)
+        or needle in _normalize(re.sub(r"-\n(?=\w)", "", fulltext))
+    )
 
 
 def add_passages(source: LiteratureSource, passages: list[dict[str, Any]]) -> None:
