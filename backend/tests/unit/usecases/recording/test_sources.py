@@ -102,6 +102,10 @@ def test_bibkeys_are_disambiguated_against_registered_sources() -> None:
     title, authors = "Attention Is All You Need", ["Ashish Vaswani"]
     assert unique_bibkey(title, authors, 2017, set()) == "vaswani-2017-attention"
     assert (
+        unique_bibkey("Éléments de géométrie", ["Rafael Müller"], 2019, set())
+        == "muller-2019-elements"
+    )
+    assert (
         unique_bibkey(title, authors, 2017, {"vaswani-2017-attention"})
         == "vaswani-2017-attentiona"
     )

@@ -250,9 +250,9 @@ async def verify_latex(
 
     Pass `output_path` to keep the PDF this build produced — the build
     directory is temporary otherwise, and `pdf_path` in the result says
-    where it landed. For a Japanese paper that is the only way to get a PDF
-    at all: `compile_latex` runs pdflatex on GitHub Actions, which cannot
-    typeset CJK.
+    where it landed. `compile_latex` runs pdflatex on GitHub Actions and
+    cannot typeset CJK; a Japanese paper's PDF comes from here or from the
+    Publish Paper workflow.
 
     Requires a local TeX distribution. A Japanese document is built with
     lualatex (`texlive-luatex`, `texlive-lang-japanese`); everything else

@@ -222,8 +222,9 @@ class TestEngineSelection:
             {
                 "main.tex": (
                     "\\documentclass[11pt]{article}\n"
+                    # luatexja's default (HaranoAji) ships with texlive-lang-japanese;
+                    # IPAex does not.
                     "\\usepackage{luatexja-fontspec}\n"
-                    "\\setmainjfont{IPAexMincho}\n"
                     "\\title{集約スコアは系ごとの失敗を隠蔽する}\n"
                     "\\begin{document}\\maketitle\n"
                     "\\section{はじめに}本研究では、集約指標の妥当性を検証する。\n"
@@ -240,7 +241,7 @@ class TestEngineSelection:
 class TestKeepingThePdf:
     """The build directory is temporary, so the PDF has to be asked for.
 
-    For a Japanese paper this is the only way to get one: compile_latex
+    For a Japanese paper this is one of two ways to get one: compile_latex
     runs pdflatex on GitHub Actions, which cannot typeset CJK.
     """
 
@@ -279,3 +280,21 @@ class TestKeepingThePdf:
 
         assert not report.ok
         assert report.pdf_path is not None
+
+
+@pytest.mark.skipif(shutil.which("epstopdf") is None, reason="requires epstopdf")
+def test_an_eps_the_document_includes_is_converted_before_the_build():
+    # A minimal EPS: one filled square.
+    eps = (
+        b"%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 10 10\n"
+        b"0 0 10 10 rectfill\nshowpage\n%%EOF\n"
+    )
+    report = verify_latex_build(
+        {
+            "main.tex": _document("\\includegraphics{logo.eps}"),
+            "logo.eps": eps,
+            "references.bib": BIB,
+        }
+    )
+    assert report.ok, (report.errors, report.missing_figures)
+    assert report.missing_figures == []

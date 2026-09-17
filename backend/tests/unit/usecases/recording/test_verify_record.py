@@ -1014,12 +1014,11 @@ def test_a_citation_no_judgment_covers_fails_the_gate(tmp_path: Path) -> None:
     _write_cited_paper(repo, CITED)
     result = _verify_paper(str(repo))
     assert not result.ok
+    # The hypothesis and claim cite s1.p1 too; declarations are not judged.
     assert result.unjudged_citations == [
-        r"main.tex \cite[s1.p1]{vaswani-2017-attention} cites s1.p1",
-        "hypothesis h1 cites s1.p1",
-        "claim c1 cites s1.p1",
+        r"main.tex \cite[s1.p1]{vaswani-2017-attention} cites s1.p1"
     ]
-    assert sum("no judgment covers" in p for p in result.problems) == 3
+    assert sum("no judgment covers" in p for p in result.problems) == 1
     assert result.unsupported_citations == []
 
 
@@ -1028,25 +1027,18 @@ def test_the_judge_reads_every_citation_and_the_gate_reads_the_judgments(
 ) -> None:
     repo, _ = _grounded_repo(tmp_path)
     _write_cited_paper(repo, CITED + "\n\nUnrelated paragraph.")
-    judge = _Judge(lambda where: where.startswith("hypothesis"))
+    judge = _Judge(lambda where: False)
 
-    assert _judge(repo, judge) == 3
+    assert _judge(repo, judge) == 1
     assert _git(repo, "log", "-1", "--format=%s") == "record: judge citations"
     assert [p.split("## Citing text (")[1].split(")")[0] for p in judge.prompts] == [
         r"main.tex \cite[s1.p1]{vaswani-2017-attention}",
-        "hypothesis h1",
-        "claim c1",
     ]
     # The judge sees the quote in its snapshot, and the paragraph, not the paper.
     assert all("The rate is 0.1." in p for p in judge.prompts)
     assert "Unrelated" not in judge.prompts[0]
-    assert "Rationale:" in judge.prompts[2]
     judgments = load_record(str(repo)).literature[0].passages[0].judgments
-    assert [(j.supported, j.model) for j in judgments] == [
-        (False, "judge-1"),
-        (True, "judge-1"),
-        (False, "judge-1"),
-    ]
+    assert [(j.supported, j.model) for j in judgments] == [(False, "judge-1")]
 
     result = _verify_paper(str(repo))
     assert result.ok, result.record.problems + result.problems
@@ -1054,7 +1046,6 @@ def test_the_judge_reads_every_citation_and_the_gate_reads_the_judgments(
     assert result.unsupported_citations == [
         r"main.tex \cite[s1.p1]{vaswani-2017-attention} cites s1.p1: "
         r"read main.tex \cite[s1.p1]{vaswani-2017-attention} (judge-1)",
-        "claim c1 cites s1.p1: read claim c1 (judge-1)",
     ]
 
     # Judged once: nothing to read again.
@@ -1070,9 +1061,7 @@ def test_the_judge_reads_every_citation_and_the_gate_reads_the_judgments(
     assert result.unjudged_citations == [
         r"main.tex \cite[s1.p1]{vaswani-2017-attention} cites s1.p1"
     ]
-    assert result.unsupported_citations == [
-        "claim c1 cites s1.p1: read claim c1 (judge-1)"
-    ]
+    assert result.unsupported_citations == []
 
 
 def test_a_clipped_quote_reaches_the_judge_with_what_it_dropped(
@@ -1096,8 +1085,9 @@ def test_a_clipped_quote_reaches_the_judge_with_what_it_dropped(
             ],
         )
     )
-    record.hypotheses[0].grounded_on = ["s1.p1"]
-    (citation,) = collect_citations(tmp_path, record, "")
+    (citation,) = collect_citations(
+        tmp_path, record, r"Dropout helps \cite[s1.p1]{nobody-2020-negative}."
+    )
     assert citation.context == "We do not find that dropout improves accuracy."
 
 
@@ -1106,7 +1096,7 @@ def test_a_citation_of_an_undeclared_passage_is_left_to_the_gate(
 ) -> None:
     repo, record = _grounded_repo(tmp_path)
     cited = collect_citations(repo, record, r"See \cite[s1.p9]{key}.")
-    assert [c.where for c in cited] == ["hypothesis h1", "claim c1"]
+    assert cited == []
 
 
 def test_a_source_declared_twice_fails(tmp_path: Path) -> None:
