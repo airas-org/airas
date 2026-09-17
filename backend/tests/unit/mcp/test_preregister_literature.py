@@ -472,3 +472,23 @@ async def test_passages_without_a_source_are_refused(tmp_path: Path) -> None:
         await record_tools.append_to_record(
             str(_repo(tmp_path)), passages=[{"node_type": "claim", "quote": "q"}]
         )
+
+
+async def test_a_failed_commit_leaves_the_clone_as_it_was(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """record.json, claims.tex, references.bib and the snapshot are all written
+    before the commit; a commit that fails must take them all back, or the
+    record would point at files that are gone."""
+    from airas.research_record.update import preregister_record as prereg
+
+    repo = _repo(tmp_path)
+
+    def _boom(*_a: Any, **_k: Any) -> str:
+        raise RuntimeError("git commit failed: no identity")
+
+    monkeypatch.setattr(prereg, "commit_paths", _boom)
+    with pytest.raises(RuntimeError, match="git commit failed"):
+        await _preregister(repo, [DB_PAPER])
+    _untouched(repo)
+    assert not (repo / ".research" / "latex").exists()

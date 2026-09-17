@@ -1,12 +1,10 @@
 import asyncio
-import contextlib
-import shutil
 from pathlib import Path
 from typing import Any
 
 import httpx
 
-from airas.core.research_paths import RECORD_PATH, SOURCES_DIR
+from airas.core.research_paths import RECORD_PATH, REFERENCES_BIB_FILENAME
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.research_record import (
     Hypothesis,
@@ -16,10 +14,13 @@ from airas.core.types.research_record import (
 from airas.infra.airas_db_index import AirasDbPaperSearchIndex
 from airas.infra.airas_records_index import AirasRecordsIndex
 from airas.infra.arxiv_client import ArxivClient
-from airas.infra.local_git import commit_paths
+from airas.infra.local_git import commit_paths, restore_paths
 from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.research_record.read.load_record import load_record, record_path
-from airas.research_record.render.render_claims_tex import write_claims_tex
+from airas.research_record.render.render_claims_tex import (
+    CLAIMS_TEX_FILENAME,
+    write_claims_tex,
+)
 from airas.research_record.render.render_references_bib import write_references_bib
 from airas.research_record.update._add_literatures import add_literatures
 from airas.research_record.update._add_quoted_passages import add_quoted_passages
@@ -44,13 +45,6 @@ def _registered(sources: list[LiteratureSource]) -> dict[str, Any]:
         }
         for s in sources
     }
-
-
-def _discard(root: Path, snapshots: list[str]) -> None:
-    for relpath in snapshots:
-        shutil.rmtree((root / relpath).parent, ignore_errors=True)
-    with contextlib.suppress(OSError):
-        (root / SOURCES_DIR).rmdir()
 
 
 async def preregister_record(
@@ -120,7 +114,16 @@ async def preregister_record(
                 root, paths, "prereg: declare the research record"
             )
         except Exception:
-            _discard(root, snapshots)
+            latex = f".research/latex/{latex_template_name}"
+            restore_paths(
+                root,
+                [
+                    RECORD_PATH,
+                    f"{latex}/{CLAIMS_TEX_FILENAME}",
+                    f"{latex}/{REFERENCES_BIB_FILENAME}",
+                    *snapshots,
+                ],
+            )
             raise
         return {
             "record_path": str(path),

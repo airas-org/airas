@@ -1237,6 +1237,237 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/verification/sessions:
+    get:
+      tags:
+      - verification
+      summary: List Sessions
+      operationId: list_sessions_airas_v1_verification_sessions_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationSessionListResponse'
+    post:
+      tags:
+      - verification
+      summary: Create Session
+      operationId: create_session_airas_v1_verification_sessions_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationSessionCreateRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationSessionResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/verification/sessions/{verification_id}:
+    get:
+      tags:
+      - verification
+      summary: Get Session
+      operationId: get_session_airas_v1_verification_sessions__verification_id__get
+      parameters:
+      - name: verification_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Verification Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationSessionResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - verification
+      summary: Update Session
+      operationId: update_session_airas_v1_verification_sessions__verification_id__patch
+      parameters:
+      - name: verification_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Verification Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationSessionUpdateRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationSessionResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - verification
+      summary: Delete Session
+      operationId: delete_session_airas_v1_verification_sessions__verification_id__delete
+      parameters:
+      - name: verification_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Verification Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/verification/propose-policies:
+    post:
+      tags:
+      - verification
+      summary: Propose Policies
+      operationId: propose_policies_airas_v1_verification_propose_policies_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposePoliciesRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposePoliciesResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/verification/generate-method:
+    post:
+      tags:
+      - verification
+      summary: Generate Method
+      operationId: generate_method_airas_v1_verification_generate_method_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateMethodRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateMethodResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/verification/generate-experiment-code:
+    post:
+      tags:
+      - verification
+      summary: Generate Experiment Code
+      operationId: generate_experiment_code_airas_v1_verification_generate_experiment_code_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateExperimentCodeRequestBody'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateExperimentCodeResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /airas/v1/verification/experiment-code-status/{github_owner}/{repository_name}/{workflow_run_id}:
+    get:
+      tags:
+      - verification
+      summary: Get Experiment Code Status
+      operationId: get_experiment_code_status_airas_v1_verification_experiment_code_status__github_owner___repository_name___workflow_run_id__get
+      parameters:
+      - name: github_owner
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Github Owner
+      - name: repository_name
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Repository Name
+      - name: workflow_run_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Run Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentCodeStatusResponseBody'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /airas/v1/credentials:
     get:
       tags:
@@ -2184,6 +2415,21 @@ components:
             'config/run/run1.yaml')
       type: object
       title: ExperimentCode
+    ExperimentCodeStatusResponseBody:
+      properties:
+        status:
+          type: string
+          title: Status
+        conclusion:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Conclusion
+      type: object
+      required:
+      - status
+      - conclusion
+      title: ExperimentCodeStatusResponseBody
     ExperimentCycle-Input:
       properties:
         experimental_design:
@@ -2761,6 +3007,101 @@ components:
       - references_bib
       - execution_time
       title: GenerateBibfileSubgraphResponseBody
+    GenerateExperimentCodeLLMMapping:
+      properties:
+        dispatch_experiment_code_generation:
+          $ref: '#/components/schemas/NodeLLMConfig'
+      type: object
+      required:
+      - dispatch_experiment_code_generation
+      title: GenerateExperimentCodeLLMMapping
+    GenerateExperimentCodeRequestBody:
+      properties:
+        user_query:
+          type: string
+          title: User Query
+        what_to_verify:
+          type: string
+          title: What To Verify
+        experiment_settings:
+          additionalProperties:
+            type: string
+          type: object
+          title: Experiment Settings
+        steps:
+          items:
+            type: string
+          type: array
+          title: Steps
+        modification_notes:
+          type: string
+          title: Modification Notes
+        repository_name:
+          type: string
+          title: Repository Name
+        github_owner:
+          type: string
+          title: Github Owner
+        branch_name:
+          type: string
+          title: Branch Name
+        github_actions_agent:
+          type: string
+          enum:
+          - claude_code
+          - open_code
+          title: Github Actions Agent
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateExperimentCodeLLMMapping'
+          - type: 'null'
+        verification_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Verification Id
+      type: object
+      required:
+      - user_query
+      - what_to_verify
+      - experiment_settings
+      - steps
+      - modification_notes
+      - repository_name
+      - github_owner
+      - branch_name
+      - github_actions_agent
+      title: GenerateExperimentCodeRequestBody
+    GenerateExperimentCodeResponseBody:
+      properties:
+        dispatched:
+          type: boolean
+          title: Dispatched
+        workflow_run_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Workflow Run Id
+        github_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Url
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - dispatched
+      - workflow_run_id
+      - github_url
+      - execution_time
+      title: GenerateExperimentCodeResponseBody
     GenerateExperimentalDesignLLMMapping:
       properties:
         generate_experimental_design:
@@ -2914,6 +3255,57 @@ components:
       - latex_text
       - execution_time
       title: GenerateLatexSubgraphResponseBody
+    GenerateMethodRequestBody:
+      properties:
+        user_query:
+          type: string
+          title: User Query
+        selected_policy:
+          $ref: '#/components/schemas/ProposedMethodSchema'
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateVerificationMethodLLMMapping'
+          - type: 'null'
+        verification_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Verification Id
+      type: object
+      required:
+      - user_query
+      - selected_policy
+      title: GenerateMethodRequestBody
+    GenerateMethodResponseBody:
+      properties:
+        what_to_verify:
+          type: string
+          title: What To Verify
+        experiment_settings:
+          additionalProperties:
+            type: string
+          type: object
+          title: Experiment Settings
+        steps:
+          items:
+            type: string
+          type: array
+          title: Steps
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - what_to_verify
+      - experiment_settings
+      - steps
+      - execution_time
+      title: GenerateMethodResponseBody
     GenerateQueriesLLMMapping:
       properties:
         generate_queries:
@@ -2922,6 +3314,14 @@ components:
       required:
       - generate_queries
       title: GenerateQueriesLLMMapping
+    GenerateVerificationMethodLLMMapping:
+      properties:
+        generate_verification_method:
+          $ref: '#/components/schemas/NodeLLMConfig'
+      type: object
+      required:
+      - generate_verification_method
+      title: GenerateVerificationMethodLLMMapping
     GitHubConfig:
       properties:
         github_owner:
@@ -3838,6 +4238,95 @@ components:
       - is_branch_ready
       - execution_time
       title: PrepareRepositorySubgraphResponseBody
+    ProposePoliciesRequestBody:
+      properties:
+        user_query:
+          type: string
+          title: User Query
+        llm_mapping:
+          anyOf:
+          - $ref: '#/components/schemas/ProposeVerificationPolicyLLMMapping'
+          - type: 'null'
+        verification_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Verification Id
+      type: object
+      required:
+      - user_query
+      title: ProposePoliciesRequestBody
+    ProposePoliciesResponseBody:
+      properties:
+        feasible:
+          type: boolean
+          title: Feasible
+        infeasible_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Infeasible Reason
+        proposed_methods:
+          items:
+            $ref: '#/components/schemas/ProposedMethodSchema'
+          type: array
+          title: Proposed Methods
+        execution_time:
+          additionalProperties:
+            items:
+              type: number
+            type: array
+          type: object
+          title: Execution Time
+      type: object
+      required:
+      - feasible
+      - infeasible_reason
+      - proposed_methods
+      - execution_time
+      title: ProposePoliciesResponseBody
+    ProposeVerificationPolicyLLMMapping:
+      properties:
+        propose_verification_policy:
+          $ref: '#/components/schemas/NodeLLMConfig'
+      type: object
+      required:
+      - propose_verification_policy
+      title: ProposeVerificationPolicyLLMMapping
+    ProposedMethodSchema:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        what_to_verify:
+          type: string
+          title: What To Verify
+        method:
+          type: string
+          title: Method
+        pros:
+          items:
+            type: string
+          type: array
+          title: Pros
+          default: []
+        cons:
+          items:
+            type: string
+          type: array
+          title: Cons
+          default: []
+      type: object
+      required:
+      - id
+      - title
+      - what_to_verify
+      - method
+      title: ProposedMethodSchema
     PushGitHubRequestBody:
       properties:
         github_config:
@@ -4917,6 +5406,219 @@ components:
       - msg
       - type
       title: ValidationError
+    VerificationSessionCreateRequest:
+      properties:
+        title:
+          type: string
+          title: Title
+          default: 名称未設定
+      type: object
+      title: VerificationSessionCreateRequest
+    VerificationSessionListResponse:
+      properties:
+        sessions:
+          items:
+            $ref: '#/components/schemas/VerificationSessionResponse'
+          type: array
+          title: Sessions
+      type: object
+      required:
+      - sessions
+      title: VerificationSessionListResponse
+    VerificationSessionResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        query:
+          type: string
+          title: Query
+        created_by:
+          type: string
+          title: Created By
+        created_at:
+          type: string
+          title: Created At
+        updated_at:
+          type: string
+          title: Updated At
+        phase:
+          type: string
+          title: Phase
+        proposed_methods:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ProposedMethodSchema'
+            type: array
+          - type: 'null'
+          title: Proposed Methods
+        selected_method_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Selected Method Id
+        verification_method:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Verification Method
+        plan:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Plan
+        repository_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Repository Name
+        github_owner:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Owner
+        github_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Url
+        workflow_run_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Workflow Run Id
+        modification_notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Modification Notes
+        code_generation_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code Generation Status
+        code_generation_conclusion:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code Generation Conclusion
+        implementation:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Implementation
+        paper_draft:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Paper Draft
+      type: object
+      required:
+      - id
+      - title
+      - query
+      - created_by
+      - created_at
+      - updated_at
+      - phase
+      title: VerificationSessionResponse
+    VerificationSessionUpdateRequest:
+      properties:
+        title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Title
+        query:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Query
+        phase:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Phase
+        proposed_methods:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ProposedMethodSchema'
+            type: array
+          - type: 'null'
+          title: Proposed Methods
+        selected_method_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Selected Method Id
+        verification_method:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Verification Method
+        plan:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Plan
+        repository_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Repository Name
+        github_owner:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Owner
+        github_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Url
+        workflow_run_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Workflow Run Id
+        modification_notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Modification Notes
+        code_generation_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code Generation Status
+        code_generation_conclusion:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code Generation Conclusion
+        implementation:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Implementation
+        paper_draft:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Paper Draft
+      type: object
+      title: VerificationSessionUpdateRequest
     WandbConfig:
       properties:
         entity:

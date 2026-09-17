@@ -1,13 +1,11 @@
 import asyncio
-import contextlib
-import shutil
 from pathlib import Path
 from typing import Any
 
 import httpx
 from pydantic import TypeAdapter
 
-from airas.core.research_paths import RECORD_PATH, SOURCES_DIR
+from airas.core.research_paths import RECORD_PATH, REFERENCES_BIB_FILENAME
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.map_record_to_publication import TableSpec
 from airas.core.types.research_record import (
@@ -21,7 +19,12 @@ from airas.core.types.run_provenance import RunProvenanceManifest
 from airas.infra.airas_db_index import AirasDbPaperSearchIndex
 from airas.infra.airas_records_index import AirasRecordsIndex
 from airas.infra.arxiv_client import ArxivClient
-from airas.infra.local_git import commit_paths, normalize_git_url, remote_origin_url
+from airas.infra.local_git import (
+    commit_paths,
+    normalize_git_url,
+    remote_origin_url,
+    restore_paths,
+)
 from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.research_record.read.derive_results import (
     ClaimStatus,
@@ -36,7 +39,10 @@ from airas.research_record.read.read_run_outputs import (
     runs_with_reports,
 )
 from airas.research_record.read.scan_main_tex import scan_main_tex
-from airas.research_record.render.render_claims_tex import write_claims_tex
+from airas.research_record.render.render_claims_tex import (
+    CLAIMS_TEX_FILENAME,
+    write_claims_tex,
+)
 from airas.research_record.render.render_paper_values import (
     VALUES_TEX_FILENAME,
     record_link_commit,
@@ -70,13 +76,6 @@ def _registered(sources: list[LiteratureSource]) -> dict[str, Any]:
         }
         for s in sources
     }
-
-
-def _discard(root: Path, snapshots: list[str]) -> None:
-    for relpath in snapshots:
-        shutil.rmtree((root / relpath).parent, ignore_errors=True)
-    with contextlib.suppress(OSError):
-        (root / SOURCES_DIR).rmdir()
 
 
 def _append_run_results(
@@ -209,7 +208,18 @@ async def append_to_record(
         try:
             return _append(record, root, snapshots)
         except Exception:
-            _discard(root, snapshots)
+            latex = f".research/latex/{latex_template_name}"
+            restore_paths(
+                root,
+                [
+                    RECORD_PATH,
+                    f"{latex}/{CLAIMS_TEX_FILENAME}",
+                    f"{latex}/{REFERENCES_BIB_FILENAME}",
+                    f"{latex}/{VALUES_TEX_FILENAME}",
+                    f"{latex}/{TABLES_DIR_NAME}",
+                    *snapshots,
+                ],
+            )
             raise
 
     def _append(

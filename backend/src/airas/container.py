@@ -7,6 +7,7 @@ from dependency_injector import containers, providers
 from hishel import CacheOptions, SpecificationPolicy
 from hishel.httpx import AsyncCacheClient, SyncCacheClient
 
+from airas.dashboard.api.verification_session_store import VerificationService
 from airas.infra.airas_db_index import AirasDbPaperSearchIndex
 from airas.infra.airas_records_client import AirasRecordsClient
 from airas.infra.airas_records_index import AirasRecordsIndex
@@ -150,6 +151,8 @@ class Container(containers.DeclarativeContainer):
     airas_records_index: providers.Singleton[AirasRecordsIndex] = providers.Singleton(
         AirasRecordsIndex, airas_records_client
     )
+
+    verification_service = providers.Singleton(VerificationService)
 
     ## ---  Autonomous Research Service ---
     e2e_research_service = providers.Singleton(InMemoryE2EResearchService)

@@ -25,6 +25,7 @@ from airas.dashboard.api.routes.v1 import (
     papers,
     repositories,
     topic_open_ended_research,
+    verification,
 )
 
 
@@ -83,6 +84,7 @@ def create_app() -> FastAPI:
         paper_reproduction.router,
         topic_open_ended_research.router,
         hypothesis_driven_research.router,
+        verification.router,
         credentials.router,
     ]
     for router in v1_routers:

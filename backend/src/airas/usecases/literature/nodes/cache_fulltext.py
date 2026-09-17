@@ -27,6 +27,6 @@ def cache_fulltext(pdf_url: str, pages: list[str], cache_dir: Path = CACHE_DIR) 
 
 def cached_fulltext(pdf_url: str, cache_dir: Path = CACHE_DIR) -> list[str] | None:
     path = cache_path(pdf_url, cache_dir)
-    if not path.is_file():
+    if not path.is_file() or path.stat().st_mtime < time.time() - _TTL_SECONDS:
         return None
     return path.read_text(encoding="utf-8").split(PAGE_SEPARATOR)

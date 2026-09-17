@@ -109,6 +109,21 @@ def commit_paths(repo_root: Path, paths: list[str], message: str) -> str:
     return _text(repo_root, "rev-parse", "HEAD") or ""
 
 
+def restore_paths(repo_root: Path, paths: list[str]) -> None:
+    """Put `paths` back to what HEAD holds: tracked files are checked out,
+    untracked ones (and untracked files under a directory) are removed."""
+    tracked = _text(repo_root, "ls-files", "--", *paths)
+    if tracked:
+        _run(repo_root, "checkout", "--", *tracked.split("\n"))
+    _run(repo_root, "clean", "-fdq", "--", *paths)
+    # git clean leaves the directories it emptied
+    for path in paths:
+        parent = (repo_root / path).parent
+        while parent != repo_root and parent.is_dir() and not any(parent.iterdir()):
+            parent.rmdir()
+            parent = parent.parent
+
+
 def normalize_git_url(url: str) -> str:
     url = url.strip().removesuffix(".git")
     match = re.match(r"git@([^:]+):(.+)$", url) or re.match(
