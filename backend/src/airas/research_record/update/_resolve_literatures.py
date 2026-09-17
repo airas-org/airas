@@ -86,12 +86,18 @@ async def _airas_record(
             f"'{record_id}': not in airas-records-db (search_papers with "
             'sources="airas_records" lists what is)'
         )
+    sha = record_id.rsplit("@", 1)[-1]
+    if not re.fullmatch(r"[0-9a-f]{40}", sha) or found.commit != sha:
+        raise ValueError(
+            f"'{record_id}': the store's commit {found.commit!r} is not the sha "
+            "in the id — a study is pinned by the exact commit its id names"
+        )
     # The record as the gate saw it, and claims.tex — the verdicts in prose —
     # from whichever template the study used.
     metadata, pages = await asyncio.to_thread(
         fetch_fulltext_from_repository,
         found.url,
-        found.commit,
+        sha,
         [RECORD_PATH],
         [f".research/latex/{t}/claims.tex" for t in get_args(LATEX_TEMPLATE_NAME)],
     )

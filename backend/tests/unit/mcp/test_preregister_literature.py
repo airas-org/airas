@@ -492,3 +492,22 @@ async def test_a_failed_commit_leaves_the_clone_as_it_was(
         await _preregister(repo, [DB_PAPER])
     _untouched(repo)
     assert not (repo / ".research" / "latex").exists()
+
+
+async def test_a_study_whose_store_commit_differs_from_its_id_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _Drifted(_Records):
+        async def get(self, record_id: str) -> RecordEntry | None:
+            found = await super().get(record_id)
+            return (
+                found.__class__(**{**found.__dict__, "commit": "c" * 40})
+                if found
+                else None
+            )
+
+    monkeypatch.setattr(record_tools, "_records_index", _Drifted())
+    repo = _repo(tmp_path)
+    with pytest.raises(ValueError, match="not the sha in the id"):
+        await _preregister(repo, [{"airas_record": STUDY}])
+    _untouched(repo)
