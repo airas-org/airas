@@ -1,5 +1,3 @@
-"""Searching papers across sources in parallel, merged into one list."""
-
 from __future__ import annotations
 
 import asyncio
@@ -9,26 +7,16 @@ from collections.abc import Awaitable, Callable
 from typing import Any, TypedDict
 
 from airas.core.types.paper_search import PAPER_SEARCH_SOURCES, PaperSearchResult
+from airas.infra.airas_db_index import AirasDbPaperSearchIndex
+from airas.infra.airas_records_index import AirasRecordsIndex
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.semantic_scholar_client import SemanticScholarClient
-from airas.usecases.literature.search_airas_records import (
-    AirasRecordsIndex,
-    search_airas_records,
-)
-from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
-    AirasDbPaperSearchIndex,
-)
-from airas.usecases.retrieve.search_papers_subgraph.nodes.search_airas_db import (
-    search_airas_db,
-)
-from airas.usecases.retrieve.search_papers_subgraph.nodes.search_arxiv import (
-    search_arxiv,
-)
-from airas.usecases.retrieve.search_papers_subgraph.nodes.search_openalex import (
-    search_openalex,
-)
-from airas.usecases.retrieve.search_papers_subgraph.nodes.search_semantic_scholar import (
+from airas.usecases.literature.nodes.search_airas_db import search_airas_db
+from airas.usecases.literature.nodes.search_airas_records import search_airas_records
+from airas.usecases.literature.nodes.search_arxiv import search_arxiv
+from airas.usecases.literature.nodes.search_openalex import search_openalex
+from airas.usecases.literature.nodes.search_semantic_scholar import (
     search_semantic_scholar,
 )
 

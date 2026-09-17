@@ -23,17 +23,15 @@ from airas.dashboard.api.schemas.topic_open_ended_research import (
     TopicOpenEndedResearchStatusResponseBody,
     TopicOpenEndedResearchUpdateRequestBody,
 )
+from airas.infra.airas_db_index import AirasDbPaperSearchIndex
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
 from airas.infra.litellm_client import LiteLLMClient
-from airas.usecases.autonomous_research.e2e_research_service_protocol import (
+from airas.workflows.autonomous_research.e2e_research_service_protocol import (
     E2EResearchServiceProtocol,
 )
-from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research import (
+from airas.workflows.autonomous_research.topic_open_ended_research.topic_open_ended_research import (
     TopicOpenEndedResearch,
-)
-from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
-    AirasDbPaperSearchIndex,
 )
 
 logger = logging.getLogger(__name__)

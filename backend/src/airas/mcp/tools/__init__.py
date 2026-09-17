@@ -6,11 +6,10 @@ Importing a module here is what registers its tools on the shared
 
 from airas.mcp.tools import (
     capabilities,
-    design,
-    discovery,
     execution,
     figures,
-    history,
+    hypothesis_and_design,
+    literature,
     publication,
     record,
     repository,
@@ -19,11 +18,10 @@ from airas.mcp.tools import (
 
 __all__ = [
     "capabilities",
-    "design",
-    "discovery",
     "execution",
     "figures",
-    "history",
+    "hypothesis_and_design",
+    "literature",
     "publication",
     "record",
     "repository",

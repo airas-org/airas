@@ -57,20 +57,22 @@ local stage.
    declaration with `append_to_record` and re-run — never type the
    number. A number no declaration can produce (e.g. quoted from a
    cited paper) must be wrapped as `\unverified{...}`.
-   Citations: every `\cite` key must be a source registered with
-   `register_sources`; a sentence that rests on a registered passage
+   Citations: every `\cite` key must be a source in the record (pinned
+   at preregistration, or appended since with
+   `append_to_record(literature=[...])`); a sentence that rests on a
+   registered passage
    cites it as `\cite[s1.p2]{key}` (the writer's `[@key, s1.p2]`), and
    the gate checks the passage belongs to that source. Registered
    sources the paper never cites are listed in `uncited_sources` for
-   you to judge, not failed. Once the text is settled, `judge_citations`
-   has a model read every passage citation against the passage in its
-   snapshot and writes the judgments into the record. `verify_paper_values`
-   then fails on any citation no judgment covers as the text now stands
-   (`unjudged_citations`; CI runs the same judge before its paper gate),
-   and lists what the model found overstated, clipped or reversed in
-   `unsupported_citations` — review those like `unverified`. Re-run
-   `judge_citations` after a rewrite.
-   Bibliography: `register_sources` wrote
+   you to judge, not failed. Once the text is settled, run
+   `verify_paper_values` with a `model`: it has that model read every
+   unjudged passage citation against the passage in its snapshot, writes
+   the judgments into the record, and then reports what the model found
+   overstated, clipped or reversed in `unsupported_citations` — review
+   those like `unverified`. Without a `model` (as CI runs it) a citation
+   no judgment covers as the text now stands fails the check
+   (`unjudged_citations`), so re-run with `model` after a rewrite.
+   Bibliography: `preregister_record` wrote
    `.research/latex/{template}/references.bib` from the record and the
    gate regenerates it — never edit it; only a repository without
    registered sources uses `generate_bibfile`.
@@ -160,14 +162,11 @@ shortcut that settles the question.
    rendering failure (a citation, a figure), not an integrity one;
    fix it the same way.
 
-6. **Persist**: `upload_research_history`, so a later session can
-   restore with `download_research_history`.
-
-7. **Optional, on request — editable export**: `open_in_overleaf`
+6. **Optional, on request — editable export**: `open_in_overleaf`
    (pass `local_path` to export without pushing). Say explicitly that
    this copy is **outside the verification guarantee**: editable,
    never read back, not covered by the CI-verified artifact. Each
    click creates a new project.
 
 **Output**: a green verification run whose CI-built PDF and report the
-user has been handed, plus persisted research state.
+user has been handed.

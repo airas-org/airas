@@ -10,10 +10,10 @@ from airas.dashboard.api.schemas.interactive_repo_agent import (
     DispatchInteractiveRepoAgentResponseBody,
 )
 from airas.infra.github_client import GithubClient
-from airas.usecases.assisted_research.cancel_interactive_repo_agent_subgraph.cancel_interactive_repo_agent_subgraph import (
+from airas.workflows.assisted_research.cancel_interactive_repo_agent_subgraph.cancel_interactive_repo_agent_subgraph import (
     CancelInteractiveRepoAgentSubgraph,
 )
-from airas.usecases.assisted_research.dispatch_interactive_repo_agent_subgraph.dispatch_interactive_repo_agent_subgraph import (
+from airas.workflows.assisted_research.dispatch_interactive_repo_agent_subgraph.dispatch_interactive_repo_agent_subgraph import (
     DispatchInteractiveRepoAgentSubgraph,
 )
 

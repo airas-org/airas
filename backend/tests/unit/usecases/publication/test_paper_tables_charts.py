@@ -29,16 +29,17 @@ from airas.core.types.research_record import (
     SeyvalVerifier,
     VerifierKind,
 )
-from airas.usecases.publication.map_record_to_publication import (
+from airas.research_record.render.render_charts import (
     CHART_DIR,
-    chart_result_dirs,
     render_chart_bytes,
-    render_table_tex,
     renderer_version,
     substitute_chart_refs,
-    table_result_dirs,
 )
-from airas.usecases.publication.verify_paper import _verify_charts, _verify_tables
+from airas.research_record.render.render_tables import render_table_tex
+from airas.research_record.verify._verify_paper_files import (
+    _verify_charts,
+    _verify_tables,
+)
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 
@@ -79,10 +80,6 @@ def test_table_fails_on_unknown_metric() -> None:
     )
     with pytest.raises(ValueError, match="run_2.f1"):
         render_table_tex(spec, METRICS_DATA)
-
-
-def test_table_result_dirs_lists_row_runs() -> None:
-    assert table_result_dirs([TABLE], METRICS_DATA) == {"run_1", "run_2"}
 
 
 def _write_tables(latex_dir: Path) -> None:
@@ -310,11 +307,6 @@ def test_verify_charts_reports_missing_declared_chart(tmp_path: Path) -> None:
     assert any("declared but missing" in p for p in problems)
 
 
-def test_chart_result_dirs_come_from_declarations(tmp_path: Path) -> None:
-    _, record = _write_chart(tmp_path)
-    assert chart_result_dirs(record, METRICS_DATA) == {"run_1", "run_2"}
-
-
 def test_verify_charts_ignores_repo_without_charts(tmp_path: Path) -> None:
     assert _verify_charts(_chart_record(), str(tmp_path), METRICS_DATA) == []
 
@@ -322,7 +314,6 @@ def test_verify_charts_ignores_repo_without_charts(tmp_path: Path) -> None:
 def test_nested_declared_chart_verifies(tmp_path: Path) -> None:
     _, record = _write_chart(tmp_path, "extra/accuracy.svg")
     assert _verify_charts(record, str(tmp_path), METRICS_DATA) == []
-    assert chart_result_dirs(record, METRICS_DATA) == {"run_1", "run_2"}
 
 
 def test_render_chart_bytes_rejects_unknown_format() -> None:
@@ -349,7 +340,7 @@ def test_png_charts_render_and_verify(tmp_path: Path) -> None:
 
 
 # ------------------------------------------------ zero-based marks are clipped
-from airas.usecases.publication.map_record_to_publication import (  # noqa: E402
+from airas.research_record.render.render_charts import (  # noqa: E402
     clip_zero_based_marks,
 )
 

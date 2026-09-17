@@ -18,9 +18,9 @@ from airas.core.types.research_record import (
     SeyvalVerifier,
     VerifierKind,
 )
-from airas.usecases.publication.map_record_to_publication import (
+from airas.research_record.render.render_claims_tex import render_claims_tex
+from airas.research_record.render.render_paper_values import (
     latex_text,
-    render_claims_tex,
     render_values_tex,
 )
 

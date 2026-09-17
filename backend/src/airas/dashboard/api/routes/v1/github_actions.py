@@ -18,7 +18,7 @@ from airas.infra.github.poll_github_actions_subgraph.poll_github_actions_subgrap
     PollGithubActionsSubgraph,
 )
 from airas.infra.github_client import GithubClient
-from airas.usecases.repository.set_github_actions_secrets_subgraph import (
+from airas.workflows.repository.set_github_actions_secrets_subgraph import (
     SetGithubActionsSecretsSubgraph,
 )
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from enum import StrEnum
+from pathlib import Path
 from typing import (
     Annotated,
     Any,
@@ -17,6 +18,7 @@ from typing import (
 
 from pydantic import BaseModel, Discriminator, Field, Tag, model_validator
 
+from airas.core.research_paths import RECORD_PATH
 from airas.core.types.map_record_to_publication import TableSpec
 
 HYPOTHESIS_ID_PATTERN = r"^h[1-9][0-9]*$"
@@ -499,6 +501,17 @@ class Hypothesis(BaseModel):
 class ResearchRecord(BaseModel):
     literature: list[LiteratureSource] = Field(default_factory=list)
     hypotheses: list[Hypothesis] = Field(default_factory=list)
+
+    def save(self, local_repo_path: str) -> Path:
+        path = Path(local_repo_path).expanduser().resolve() / RECORD_PATH
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # Defaults are omitted so the file reads as what was declared;
+        # containment compares model dumps, not text.
+        path.write_text(
+            self.model_dump_json(indent=2, exclude_defaults=True) + "\n",
+            encoding="utf-8",
+        )
+        return path
 
     def active_literature(self) -> list[LiteratureSource]:
         return active(self.literature, "id")

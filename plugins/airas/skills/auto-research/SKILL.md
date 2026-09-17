@@ -17,9 +17,9 @@ after which.
 Run these skills in order:
 
 - `setup-repository` — experiment repo created and cloned
-- `discover-papers` — literature into a study list
-- `hypothesize-and-design` — falsifiable hypothesis; run ids and
-  metrics settled; research context committed
+- `search-papers` — literature found and downloaded
+- `hypothesize-and-design` — papers read, falsifiable hypothesis; run
+  ids and metrics settled; loops back to `search-papers` as needed
 - `preregister-paper` — the full paper written and committed **before
   any experiment**; this commit is the freeze point
 - `write-experiment-code` — code to the execution and airas-eval

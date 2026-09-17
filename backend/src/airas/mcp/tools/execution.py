@@ -423,8 +423,8 @@ async def analyze_experiment(
 ) -> dict[str, Any]:
     """Analyze experiment results against the hypothesis and design.
 
-    Takes the outputs of `generate_hypothesis`, `generate_experimental_design`,
-    and `fetch_experiment_results`, and returns a structured analysis
+    Takes the hypothesis, the experimental design and the output of
+    `fetch_experiment_results`, and returns a structured analysis
     (findings, whether the hypothesis is supported, and suggested next
     steps). For `experiment_code`, read the code from your local clone and
     pass `{"files": {"<relative path>": "<content>", ...}}`. `model`

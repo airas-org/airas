@@ -13,21 +13,25 @@ description: Create an AIRAS experiment repository from the template and clone i
    (`~/.airas/credentials.json`) with
    admin rights on the repository.
 
-   It also provisions the Actions secrets and protects `main` in the
-   same call. Both matter more than they look. Without
-   `SEYVAL_API_KEY` the provenance cross-check **degrades to a skip
-   rather than a failure**, so an unprovisioned repository looks like
-   it is passing. Without branch protection, a red CI run can simply
-   be pushed past, and every guarantee in the record becomes advisory.
+   It also protects `main` in the same call. Without branch
+   protection, a red CI run can simply be pushed past, and every
+   guarantee in the record becomes advisory.
 
-2. **Read `warnings`, `secrets_set` and `branch_protected` in the
-   result.** Neither failure aborts the creation, so a repository can
-   come back usable and unenforced. If `branch_protected` is false,
-   say so to the user rather than continuing as though the record were
-   protected; `set_github_actions_secrets` and `protect_branch` fix
-   each independently.
+2. **Read `warnings` and `branch_protected` in the result.** A failed
+   protection does not abort the creation, so a repository can come
+   back usable and unenforced. If `branch_protected` is false, say so
+   to the user rather than continuing as though the record were
+   protected. The repair is to run `prepare_repository` again once the
+   cause is fixed (admin rights, a public repository): it is safe on the
+   repository it already created and redoes only what is missing.
 
-3. **Work through a staging ref, not by pushing to `main`.** A commit
+3. `set_github_actions_secrets` — copies this machine's API keys into
+   the repository's Actions secrets. Without `SEYVAL_API_KEY` there,
+   the provenance cross-check **degrades to a skip rather than a
+   failure**, so an unprovisioned repository looks like it is passing.
+   Run it again whenever a key is added or rotated.
+
+4. **Work through a staging ref, not by pushing to `main`.** A commit
    reaches the protected branch only once the record gate is green on
    that exact sha, and the check cannot run on a commit nobody has
    pushed. So push local `main` to a scratch ref, wait for the gate,
@@ -44,18 +48,16 @@ description: Create an AIRAS experiment repository from the template and clone i
    `main`: both rewrite commits, and verification asks whether each
    run's recorded commit is an ancestor of HEAD.
 
-4. Look over the clone: the `.github/` workflows, `Makefile` and empty
+5. Look over the clone: the `.github/` workflows, `Makefile` and empty
    `src/` stubs are what the experiment code will be held to. The
    contract itself — run-id naming, CLI shape, sanity/pilot/full
    semantics, the files you may touch — is stated in
    `write-experiment-code`, not in the repository.
-5. The repository is the home of all research state. Artifacts
-   produced from here on (hypothesis, design, declarations, results)
-   are committed here as they are made — `.research/research_history.json`
-   ships empty and the repository's own workflows read the research
-   context from it, so commit context there as soon as it exists
-   (`upload_research_history` commits it against the pushed branch).
-   If a hypothesis and design already exist, commit them now.
+6. The repository is the home of all research state. Everything
+   produced from here on (sources, hypothesis, declarations, results)
+   goes into `.research/record.json` through the record tools and is
+   committed as it is made, so a fresh session restores from the clone
+   alone.
 
 **Output**: a pushed clone, ready to receive research state, from
 which a fresh session can continue without this conversation.
