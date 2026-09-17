@@ -149,7 +149,7 @@ PASSAGE_ID_PATTERN = r"^s[1-9][0-9]*\.p[1-9][0-9]*$"
 # appears (prose, a table, a figure caption) is the anchor, kept apart.
 PassageNodeType = Literal["claim", "result", "method", "setup", "gap", "definition"]
 PassageAnchor = Literal["text", "table", "figure", "code"]
-Registry = Literal["airas_db", "doi.org", "arxiv", "git", "airas_records"]
+Registry = Literal["doi.org", "arxiv", "git", "airas_records"]
 
 
 class CitationJudgment(BaseModel):
@@ -198,11 +198,9 @@ class LiteratureSource(BaseModel):
         default=None, description="repository, airas_record: the commit read"
     )
     bibkey: str
-    verified_by: Literal["", "airas_db", "doi.org", "arxiv", "git", "airas_records"] = (
-        Field(
-            default="",
-            description="Registry that confirmed the source exists at registration",
-        )
+    verified_by: Literal["", "doi.org", "arxiv", "git", "airas_records"] = Field(
+        default="",
+        description="Registry that confirmed the source exists at registration",
     )
     verified_at: str = Field(default="", description="ISO-8601 UTC")
     fulltext: Optional[InputRef] = None

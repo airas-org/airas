@@ -13,7 +13,10 @@ description: Author search queries, search papers with the AIRAS MCP tools and d
    `airas_records` source is the research AIRAS itself produced whose
    gate passed: query it first with `verdict="refuted"` to learn what has
    already failed on the topic, and cite a study through its
-   `external_ids.airas_record`.
+   `external_ids.airas_record`. The `airas_db` source is for finding
+   papers only: its rows carry no DOI or arXiv id, and `preregister_record`
+   pins a paper by one of those, so look the identifier up (the same
+   title on arXiv, or the venue's DOI) before you rely on such a row.
 3. **Download** the promising rows with `fetch_paper_fulltext`, passing
    **both** `doi` and `pdf_url` when the row has both — a DOI alone
    often returns abstract-only. On `status="fulltext"` the whole text

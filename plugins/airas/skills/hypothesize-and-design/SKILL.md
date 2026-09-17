@@ -17,7 +17,11 @@ refine until the hypothesis rests on passages you have actually read.
    quote): `preregister_record` takes exactly these, and assigns ids in
    the order given (`s1`, `s2`, …; `p1`, `p2`, … within a source), so
    note which passages the hypothesis answers (its gap) and which the
-   design follows for `grounded_on` and `cites_passages`.
+   design follows for `grounded_on` and `cites_passages`. A quote is
+   matched against the snapshot ignoring line breaks, end-of-line
+   hyphenation and ligatures, so copy it as the extracted text has it;
+   keep it to one passage on one page (pages are separated by form
+   feeds and a quote cannot span two).
 2. **Author the hypothesis** yourself: one statement, the gap in the
    read papers it answers, and what would refute it. Write the prose in
    Japanese; metric names stay English identifiers (parsed downstream).

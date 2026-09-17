@@ -20,15 +20,14 @@ PAGES = [
     "ATTENTION IS ALL YOU NEED\nWe propose the Transformer.",
     "We apply dropout to the output of each sub-layer.\nThe rate is 0.1.",
 ]
-DB_RECORD = {
-    "id": "e369",
+DB_PAPER = {
+    "doi": "10.5555/3295222.3295349",
     "title": "Attention Is All You Need",
     "authors": ["Ashish Vaswani"],
-    "year": "2017",
-    "conference": "neurips",
-    "paper_url": "https://example.org/attention.pdf",
+    "year": 2017,
+    "venue": "neurips",
+    "pdf_url": "https://example.org/attention.pdf",
 }
-DB_PAPER = {"airas_db": "e369"}
 REPO = {
     "url": "https://github.com/acme/trainer",
     "commit": "a" * 40,
@@ -98,11 +97,6 @@ async def _preregister(repo: Path, literature: list[dict[str, Any]], grounded_on
     )
 
 
-class _Index:
-    async def get(self, record_id: str) -> dict[str, Any] | None:
-        return DB_RECORD if record_id == "e369" else None
-
-
 class _Records:
     async def get(self, record_id: str) -> RecordEntry | None:
         if record_id != STUDY:
@@ -129,8 +123,6 @@ class _Fetch:
 
 async def _verify(**kw: Any) -> tuple[dict[str, str], str]:
     registries = {}
-    if kw["airas_db_record"] is not None:
-        registries["airas_db"] = "found" if kw["airas_db_record"] else "not_found"
     if kw["doi"]:
         registries["doi.org"] = "found" if kw["doi"] != "10.1/nope" else "not_found"
     return registries, "2026-09-15T00:00:00+00:00"
@@ -162,7 +154,6 @@ def _snapshot(
 
 @pytest.fixture(autouse=True)
 def _offline(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(record_tools, "_search_index", _Index())
     monkeypatch.setattr(record_tools, "_records_index", _Records())
     monkeypatch.setattr(record_tools, "_semantic_scholar_client", lambda: object())
     monkeypatch.setattr(record_tools, "_arxiv_client", lambda: object())
@@ -179,20 +170,20 @@ def _untouched(repo: Path) -> None:
     assert _git(repo, "status", "--porcelain") == ""
 
 
-async def test_a_db_paper_is_pinned_in_the_freeze_commit(tmp_path: Path) -> None:
+async def test_a_paper_is_pinned_in_the_freeze_commit(tmp_path: Path) -> None:
     repo = _repo(tmp_path)
 
     result = await _preregister(repo, [DB_PAPER])
 
     assert result["sources"]["s1"]["bibkey"] == "vaswani-2017-attention"
-    assert result["sources"]["s1"]["verified_by"] == "airas_db"
-    assert _Fetch.calls[0]["pdf_url"] == DB_RECORD["paper_url"]
+    assert result["sources"]["s1"]["verified_by"] == "doi.org"
+    assert _Fetch.calls[0]["pdf_url"] == DB_PAPER["pdf_url"]
     snapshot = repo / ".research" / "sources" / "s1" / "fulltext.txt"
     assert snapshot.read_text(encoding="utf-8") == PAGE_SEPARATOR.join(PAGES)
     record = load_record(str(repo))
     source = record.literature[0]
     assert (source.url, source.venue, source.year) == (
-        DB_RECORD["paper_url"],
+        DB_PAPER["pdf_url"],
         "neurips",
         2017,
     )
@@ -511,3 +502,32 @@ async def test_a_study_whose_store_commit_differs_from_its_id_is_refused(
     with pytest.raises(ValueError, match="not the sha in the id"):
         await _preregister(repo, [{"airas_record": STUDY}])
     _untouched(repo)
+
+
+async def test_a_title_whose_spaces_the_extractor_dropped_still_matches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def pages(*_: Any) -> dict[str, Any]:
+        return {
+            "status": "fulltext",
+            "pages": [
+                "Knowledge Distillation \u2248Label Smoothing: Fact or Fallacy?\n"
+                + PAGES[0]
+            ],
+            "pdf_url": "https://example.org/kd.pdf",
+        }
+
+    monkeypatch.setattr(verify_module, "_fulltext_pages", pages)
+    repo = _repo(tmp_path)
+    result = await _preregister(
+        repo,
+        [
+            {
+                **DB_PAPER,
+                "title": "Knowledge Distillation \u2248 Label Smoothing: Fact or Fallacy?",
+            }
+        ],
+    )
+    assert result["sources"]["s1"]["title"].startswith(
+        "Knowledge Distillation \u2248 Label"
+    )

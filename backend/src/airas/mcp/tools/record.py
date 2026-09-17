@@ -7,7 +7,6 @@ from airas.mcp.context import (
     _arxiv_client,
     _async_session,
     _records_index,
-    _search_index,
     _semantic_scholar_client,
 )
 from airas.research_record.update.append_to_record import (
@@ -59,14 +58,14 @@ async def preregister_record(
       }]
 
     `literature` is what the hypothesis rests on, pinned in the same
-    commit. Each entry is a paper (`doi` / `arxiv_id` / an `airas_db` id
-    from `search_papers`, with `title`, `authors`, `year`, `venue`,
+    commit. Each entry is a paper (`doi` / `arxiv_id` from `search_papers`,
+    with `title`, `authors`, `year`, `venue`,
     `pdf_url`, and the `fulltext_path` `fetch_paper_fulltext` returned), a
     repository (`url`, a full 40-hex `commit`, `files`) or a study AIRAS
     produced (`airas_record`), each with `passages`:
     `[{"node_type": "gap|claim|result|method|setup|definition", "quote":
     "<copied verbatim from the full text>", "anchor"?}]`. A registry
-    (doi.org, arXiv, airas_db, git) must confirm each source exists, its
+    (doi.org, arXiv, git) must confirm each source exists, its
     text is snapshotted under `.research/sources/<id>/`, and every quote is
     checked against that snapshot. Sources get ids in the order given
     (`s1`, `s2`, …) and passages `p1`, `p2`, … within each, so a
@@ -143,7 +142,6 @@ async def preregister_record(
         hypotheses,
         latex_template_name,
         literature=literature,
-        search_index=_search_index,
         records_index=_records_index,
         arxiv_client=_arxiv_client(),
         semantic_scholar_client=_semantic_scholar_client(),
@@ -205,7 +203,6 @@ async def append_to_record(
         source_id=source_id,
         passages=passages,
         literature=literature,
-        search_index=_search_index,
         records_index=_records_index,
         arxiv_client=_arxiv_client(),
         semantic_scholar_client=_semantic_scholar_client(),

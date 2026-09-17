@@ -40,13 +40,18 @@ changes *when* the paper is written and how Results are stated.
    the `literature` and the `hypotheses` together. This writes
    `.research/record.json` — the machine-readable original the whole
    verification system keys on — and pins each source: a registry
-   (doi.org, arXiv, airas_db, git) confirms it exists, its full text is
+   (doi.org, arXiv, git) confirms it exists, its full text is
    copied to `.research/sources/<id>/fulltext.txt`, and every quote is
    checked against that snapshot. `literature` entries are papers
-   (`doi` / `arxiv_id` / `airas_db` with `title`, `authors`, `year`,
+   (`doi` / `arxiv_id` with `title`, `authors`, `year`,
    `venue`, `pdf_url`, `fulltext_path`), repositories (`url`, a full
    40-hex `commit`, `files`) or studies AIRAS produced (`airas_record`),
    each with `passages: [{"node_type": ..., "quote": "<verbatim>"}]`.
+   A quote that the snapshot does not contain (line breaks, hyphenation
+   and ligatures are normalised away; a paraphrase or a quote spanning
+   two pages is not) makes the call fail and roll back, so nothing is
+   frozen until every quote is found — and CI runs the same check on
+   the pushed commit.
    Sources are numbered in the order given (`s1`, `s2`, …) and passages
    `p1`, `p2`, … within each. The record is a tree, read as
    "to support this hypothesis, these claims; to verify this claim,
