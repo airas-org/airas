@@ -1,6 +1,6 @@
 ---
 name: analyze-results
-description: Read imported experiment results, author the analysis with AIRAS's curated prompt, and produce the figures (verifiable charts and method diagrams). Use to analyze experiment outputs or make the paper's figures.
+description: Read imported experiment results, author the analysis, and produce the figures (verifiable charts and method diagrams). Use to analyze experiment outputs or make the paper's figures.
 ---
 
 # Analyze results & make figures
@@ -25,12 +25,12 @@ Needs imported results under `.research/results/` in a clone.
    in yourself) and `provenance`. Commit the evaluation outputs.
 2. **Read the results**: `fetch_experiment_results` (reads the
    repository).
-3. **Author the analysis** via
-   `get_generation_prompt("experiment_analysis", ...)`, passing the
-   experiment code from the clone as
-   `{"files": {"<path>": "<content>"}}`. Write it in Japanese. Report
-   what the numbers show, including when they do not show what was
-   hoped — the analysis is evidence, not advocacy.
+3. **Author the analysis** yourself, against the hypothesis and the
+   design in the record: for each claim, what its metric shows and
+   whether the preregistered criterion is met, then what the numbers
+   show beyond the claims — including when they do not show what was
+   hoped. Read the experiment code in the clone before explaining a
+   result. Write it in Japanese. The analysis is evidence, not advocacy.
 4. **Result charts**: build a Vega-Lite spec and `render_chart` it
    (pass the clone as `local_path`) to
    `.research/results/chart/<name>.png` — PNG, not PDF. Data numbers
@@ -55,5 +55,5 @@ Needs imported results under `.research/results/` in a clone.
    the full relative path you were given — two runs can each produce
    `accuracy.pdf`, and only the full path resolves.
 
-**Output**: an analysis in `.research/research_history.json` and
-committed, verifiable figures.
+**Output**: an analysis written into the clone, and committed,
+verifiable figures.

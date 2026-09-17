@@ -86,22 +86,42 @@ def commits_with_parents(
     return edges
 
 
-def commit_paths(repo_root: Path, paths: list[str], message: str) -> str | None:
-    # Commits exactly `paths` (anything else staged is left alone); None on
-    # failure. Unchanged paths return the current HEAD — already committed
-    # is what callers care about.
+def commit_paths(repo_root: Path, paths: list[str], message: str) -> str:
+    """Commit exactly `paths` (anything else staged is left alone). Unchanged
+    paths answer the current HEAD — already committed is what callers care
+    about."""
     status = _run(repo_root, "status", "--porcelain", "--", *paths)
     if status is None or status.returncode != 0:
-        return None
+        raise RuntimeError(f"git status failed under {repo_root}: is it a clone?")
     if not status.stdout.strip():
-        return _text(repo_root, "rev-parse", "HEAD")
+        return _text(repo_root, "rev-parse", "HEAD") or ""
     add = _run(repo_root, "add", "--", *paths)
-    if add is None or add.returncode != 0:
-        return None
-    commit = _run(repo_root, "commit", "-m", message, "--", *paths)
+    commit = (
+        _run(repo_root, "commit", "-m", message, "--", *paths)
+        if add and add.returncode == 0
+        else None
+    )
     if commit is None or commit.returncode != 0:
-        return None
-    return _text(repo_root, "rev-parse", "HEAD")
+        raise RuntimeError(
+            "files were written but git commit failed — the record must live "
+            "in a git clone with a commit identity configured"
+        )
+    return _text(repo_root, "rev-parse", "HEAD") or ""
+
+
+def restore_paths(repo_root: Path, paths: list[str]) -> None:
+    """Put `paths` back to what HEAD holds: tracked files are checked out,
+    untracked ones (and untracked files under a directory) are removed."""
+    tracked = _text(repo_root, "ls-files", "--", *paths)
+    if tracked:
+        _run(repo_root, "checkout", "--", *tracked.split("\n"))
+    _run(repo_root, "clean", "-fdq", "--", *paths)
+    # git clean leaves the directories it emptied
+    for path in paths:
+        parent = (repo_root / path).parent
+        while parent != repo_root and parent.is_dir() and not any(parent.iterdir()):
+            parent.rmdir()
+            parent = parent.parent
 
 
 def normalize_git_url(url: str) -> str:

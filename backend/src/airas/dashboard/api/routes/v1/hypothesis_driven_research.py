@@ -25,10 +25,10 @@ from airas.dashboard.api.schemas.hypothesis_driven_research import (
 )
 from airas.infra.github_client import GithubClient
 from airas.infra.litellm_client import LiteLLMClient
-from airas.usecases.autonomous_research.e2e_research_service_protocol import (
+from airas.workflows.autonomous_research.e2e_research_service_protocol import (
     E2EResearchServiceProtocol,
 )
-from airas.usecases.autonomous_research.hypothesis_driven_research.hypothesis_driven_research import (
+from airas.workflows.autonomous_research.hypothesis_driven_research.hypothesis_driven_research import (
     HypothesisDrivenResearch,
 )
 

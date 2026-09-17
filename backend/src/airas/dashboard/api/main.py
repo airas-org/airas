@@ -24,7 +24,6 @@ from airas.dashboard.api.routes.v1 import (
     paper_reproduction,
     papers,
     repositories,
-    research_history,
     topic_open_ended_research,
     verification,
 )
@@ -79,7 +78,6 @@ def create_app() -> FastAPI:
         repositories.router,
         bibfile.router,
         latex.router,
-        research_history.router,
         github_actions.router,
         github.router,
         interactive_repo_agent.router,

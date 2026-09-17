@@ -94,10 +94,6 @@ export type { GenerateQueriesLLMMapping } from './models/GenerateQueriesLLMMappi
 export type { GenerateVerificationMethodLLMMapping } from './models/GenerateVerificationMethodLLMMapping';
 export type { GitHubConfig } from './models/GitHubConfig';
 export type { GitHubConfigRequest } from './models/GitHubConfigRequest';
-export type { GithubDownloadRequest } from './models/GithubDownloadRequest';
-export type { GithubDownloadResponse } from './models/GithubDownloadResponse';
-export type { GithubUploadRequest } from './models/GithubUploadRequest';
-export type { GithubUploadResponse } from './models/GithubUploadResponse';
 export type { HTTPValidationError } from './models/HTTPValidationError';
 export type { HypothesisDrivenResearchListItemResponse } from './models/HypothesisDrivenResearchListItemResponse';
 export type { HypothesisDrivenResearchListResponseBody } from './models/HypothesisDrivenResearchListResponseBody';
@@ -134,8 +130,7 @@ export type { PushLatexSubgraphResponseBody } from './models/PushLatexSubgraphRe
 export type { RefineExperimentalDesignLLMMapping } from './models/RefineExperimentalDesignLLMMapping';
 export type { RefineExperimentalDesignSubgraphRequestBody } from './models/RefineExperimentalDesignSubgraphRequestBody';
 export type { RefineExperimentalDesignSubgraphResponseBody } from './models/RefineExperimentalDesignSubgraphResponseBody';
-export type { ResearchHistory_Input } from './models/ResearchHistory_Input';
-export type { ResearchHistory_Output } from './models/ResearchHistory_Output';
+export type { ResearchHistory } from './models/ResearchHistory';
 export type { ResearchHypothesis } from './models/ResearchHypothesis';
 export type { ResearchStudy } from './models/ResearchStudy';
 export { RetrieveDatasetsSubgraphRequestBody } from './models/RetrieveDatasetsSubgraphRequestBody';
@@ -194,6 +189,5 @@ export { ModelsService } from './services/ModelsService';
 export { PaperReproductionService } from './services/PaperReproductionService';
 export { PapersService } from './services/PapersService';
 export { RepositoriesService } from './services/RepositoriesService';
-export { ResearchHistoryService } from './services/ResearchHistoryService';
 export { TopicOpenEndedResearchService } from './services/TopicOpenEndedResearchService';
 export { VerificationService } from './services/VerificationService';

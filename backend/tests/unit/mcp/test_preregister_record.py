@@ -20,9 +20,7 @@ from airas.core.types.research_record import (
     VerifierKind,
 )
 from airas.mcp.tools import record as record_tools
-from airas.research_record.store import (
-    load_record,
-)
+from airas.research_record.read.load_record import load_record
 
 
 def _git(repo: Path, *args: str) -> str:

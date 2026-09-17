@@ -88,7 +88,7 @@ In Claude Code, invoke the orchestrator skill and give it a topic:
 /airas:auto-research
 ```
 
-It walks through the flow below, asking you to settle the operational choices (repository visibility, execution platform, compute target) once up front. Other MCP clients can start from the server's `start_research` prompt or call the tools directly.
+It walks through the flow below, asking you to settle the operational choices (repository visibility, execution platform, compute target) once up front. Other MCP clients call the tools directly; each tool's description says what comes before and after it, and the [MCP documentation](docs/development/MCP.mdx) walks the flow.
 
 ## The auto-research flow
 
@@ -97,7 +97,7 @@ It walks through the flow below, asking you to settle the operational choices (r
 | Step | Skill | What it leaves in the repository |
 | --- | --- | --- |
 | 1 | `setup-repository` | An experiment repository created from [airas-template](https://github.com/airas-org/airas-template), cloned, with Actions secrets provisioned and `main` protected. All research state lives here from now on. |
-| 2 | `discover-papers` | A study list distilled from multi-source paper search, including [airas-papers-db](https://github.com/airas-org/airas-papers-db), and full-text reading. |
+| 2 | `search-papers` | Papers found across sources, including [airas-papers-db](https://github.com/airas-org/airas-papers-db), and their full text downloaded for the next step to read. |
 | 3 | `hypothesize-and-design` | A falsifiable hypothesis and an experimental design that fixes run ids, metrics, models, datasets, and the compute environment. |
 | 4 | `preregister-paper` | The full paper, written **before any experiment**, as numbered claims with criteria and predicted intervals. Its commit is the freeze point; `.research/record.json` is created here. |
 | 5 | `write-experiment-code` | Experiment code against a fixed execution contract (Hydra entrypoint, `sanity` / `pilot` / `full` modes), environment fixed by lockfile and Dockerfile. Metrics are produced by [airas-eval](https://github.com/airas-org/airas-eval), not by the code itself. |
@@ -117,7 +117,7 @@ It walks through the flow below, asking you to settle the operational choices (r
 
 Experiments run through the same three MCP tools on either backend: `dispatch_experiment` starts the run, `get_experiment_run_status` follows it, and `import_run_outputs` copies its outputs from where the backend keeps them (Seyval's storage, or the workflow's artifact on **GitHub Actions**) into `.research/results/` with a provenance manifest. The record gate cross-checks the committed bytes against that same store, and once the store has dropped the run, against the sha256 hashes the import recorded. **Seyval** (bring-your-own Slurm compute) and **GitHub Actions** are supported; a backend for machines you run yourself (RunPod, a lab cluster) is not yet, since it needs a store the agent cannot rewrite.
 
-Generation steps need no LLM key: `get_generation_prompt` hands the agent the curated prompt and output schema, and the agent authors the artifact itself. The same steps also exist as backend-LLM tools (`generate_hypothesis`, `generate_paper`, ...) for use outside the flow; those need a provider key (`get_available_llms` lists the models your keys allow). Supported providers: OpenAI, Anthropic, Google Gemini, OpenRouter, Amazon Bedrock, and Vercel AI Gateway.
+The flow needs no LLM key: the agent authors the hypothesis, design, analysis and paper itself, guided by the skills. Backend-LLM tools for some of the same steps (`analyze_experiment`, `generate_paper`, ...) and `get_generation_prompt`, which hands a client the prompts they use, exist for use outside the flow; the former need a provider key (`get_available_llms` lists the models your keys allow). Supported providers: OpenAI, Anthropic, Google Gemini, OpenRouter, Amazon Bedrock, and Vercel AI Gateway.
 
 ## Companion repositories
 
@@ -135,14 +135,14 @@ The `auto-research` flow uses the following tools; the skills above are thin con
 
 | Step | Tools |
 | --- | --- |
-| `setup-repository` | `prepare_repository`, `set_github_actions_secrets`, `protect_branch`, `upload_research_history` |
-| `discover-papers` | `search_papers`, `fetch_paper_fulltext`, `get_input_schema`, `register_sources`, `append_to_record` |
-| `hypothesize-and-design` | `retrieve_models`, `retrieve_datasets`, `get_generation_prompt` |
+| `setup-repository` | `prepare_repository`, `set_github_actions_secrets` |
+| `search-papers` | `search_papers`, `fetch_paper_fulltext` |
+| `hypothesize-and-design` | `retrieve_models`, `retrieve_datasets`, `search_huggingface_hub` |
 | `preregister-paper` | `preregister_record`, `append_to_record`, `update_record`, `verify_latex` |
 | `write-experiment-code` | `get_library_docs` |
 | `run-experiments` | `dispatch_experiment`, `get_experiment_run_status`, `import_run_outputs`, `fetch_experiment_results` |
 | `analyze-results` | `fetch_experiment_results`, `render_chart`, `render_diagram`, `append_to_record`, `update_record` |
-| `publish-paper` | `generate_bibfile`, `verify_latex`, `judge_citations`, `open_in_overleaf`, `get_workflow_runs`, `download_research_history` |
+| `publish-paper` | `generate_bibfile`, `verify_latex`, `verify_paper_values`, `open_in_overleaf`, `get_workflow_runs` |
 
 See the [MCP documentation](docs/development/MCP.mdx) for descriptions, credentials per tool, and configuration options.
 
@@ -152,6 +152,7 @@ See the [MCP documentation](docs/development/MCP.mdx) for descriptions, credenti
 uvx airas                 # MCP server on stdio (default)
 uvx airas verify-record   # check .research/record.json against run outputs, git history, and the platform
 uvx airas verify-paper    # verify the paper's values and provenance against the record — no PDF build (the CI gate)
+uvx airas verify-paper --model <name>   # the same, judging every unjudged citation against its passage first and writing the judgments into the record
 uvx airas publish-paper   # build the paper's PDF for publishing (values already verified by the gate)
 ```
 

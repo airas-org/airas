@@ -11,6 +11,8 @@ import json
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from airas.core.research_paths import RECORD_PATH
 from airas.core.types.research_record import (
     ClaimDeclaration,
@@ -30,14 +32,11 @@ from airas.core.types.run_provenance import (
     RunProvenanceManifest,
 )
 from airas.infra.local_git import commit_paths
-from airas.research_record.derive_results import (
-    compute_claim_statuses,
+from airas.research_record.read.derive_results import compute_claim_statuses
+from airas.research_record.read.load_record import load_record
+from airas.research_record.verify._verify_record_history import (
+    _verify_append_only as verify_append_only,
 )
-from airas.research_record.store import (
-    load_record,
-    save_record,
-)
-from airas.research_record.verify import verify_append_only
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 
@@ -113,7 +112,7 @@ def _c1(record: ResearchRecord) -> ClaimDeclaration:
 
 def test_commit_paths_commits_only_the_given_paths(tmp_path: Path) -> None:
     _init_repo(tmp_path)
-    save_record(str(tmp_path), _record(_claim()))
+    _record(_claim()).save(str(tmp_path))
     (tmp_path / "unrelated.txt").write_text("left uncommitted")
 
     sha = commit_paths(tmp_path, [RECORD_PATH], "prereg: declare")
@@ -121,12 +120,14 @@ def test_commit_paths_commits_only_the_given_paths(tmp_path: Path) -> None:
     assert "unrelated.txt" in _git(tmp_path, "status", "--porcelain")
     # No changes on the paths: returns the current HEAD instead of failing.
     assert commit_paths(tmp_path, [RECORD_PATH], "noop") == sha
-    # Not a git repo: degrades to None.
-    assert commit_paths(tmp_path / "nowhere", [RECORD_PATH], "x") is None
+    # Not a git repo: refused, not silently skipped.
+    with pytest.raises(RuntimeError, match="is it a clone"):
+        commit_paths(tmp_path / "nowhere", [RECORD_PATH], "x")
     # A pathspec matching nothing is fatal to git add, so callers must only
     # pass paths they actually wrote.
     (tmp_path / "touched.txt").write_text("changed")
-    assert commit_paths(tmp_path, ["touched.txt", "never/written"], "x") is None
+    with pytest.raises(RuntimeError, match="git commit failed"):
+        commit_paths(tmp_path, ["touched.txt", "never/written"], "x")
     assert "touched.txt" in _git(tmp_path, "status", "--porcelain")
 
 
@@ -135,7 +136,7 @@ def test_commit_paths_commits_only_the_given_paths(tmp_path: Path) -> None:
 
 def test_a_claim_whose_runs_all_have_results_is_verified(tmp_path: Path) -> None:
     _init_repo(tmp_path)
-    save_record(str(tmp_path), _record(_claim()))
+    _record(_claim()).save(str(tmp_path))
     freeze = _commit_all(tmp_path, "prereg")
     _write_results(tmp_path, freeze)
     _commit_all(tmp_path, "results")
@@ -161,26 +162,26 @@ def test_a_claim_with_two_runs_needs_both(tmp_path: Path) -> None:
 def test_appending_a_claim_after_results_is_allowed(tmp_path: Path) -> None:
     """Containment permits it; whether it counts as preregistered is TODO."""
     _init_repo(tmp_path)
-    save_record(str(tmp_path), _record())
+    _record().save(str(tmp_path))
     freeze = _commit_all(tmp_path, "prereg without the claim")
     _write_results(tmp_path, freeze)
     _commit_all(tmp_path, "results")
 
     record = load_record(str(tmp_path))
     record.hypotheses[0].claims.append(_claim())
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     _commit_all(tmp_path, "claim added afterwards")
     assert verify_append_only(tmp_path, record, require_history=True) == []
 
 
 def test_a_reworded_claim_violates_containment(tmp_path: Path) -> None:
     _init_repo(tmp_path)
-    save_record(str(tmp_path), _record(_claim()))
+    _record(_claim()).save(str(tmp_path))
     _commit_all(tmp_path, "prereg")
 
     record = load_record(str(tmp_path))
     _c1(record).statement = "Proposed is competitive with baseline."  # softened
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
 
     problems = verify_append_only(tmp_path, record, require_history=True)
     assert any("statement" in p for p in problems)
@@ -188,7 +189,7 @@ def test_a_reworded_claim_violates_containment(tmp_path: Path) -> None:
 
 def test_changed_run_conditions_violate_containment(tmp_path: Path) -> None:
     _init_repo(tmp_path)
-    save_record(str(tmp_path), _record(_claim()))
+    _record(_claim()).save(str(tmp_path))
     _commit_all(tmp_path, "prereg")
 
     record = load_record(str(tmp_path))
@@ -199,14 +200,14 @@ def test_changed_run_conditions_violate_containment(tmp_path: Path) -> None:
 
 def test_legitimate_append_keeps_earlier_claims_verified(tmp_path: Path) -> None:
     _init_repo(tmp_path)
-    save_record(str(tmp_path), _record(_claim()))
+    _record(_claim()).save(str(tmp_path))
     freeze = _commit_all(tmp_path, "prereg")
     _write_results(tmp_path, freeze)
     _commit_all(tmp_path, "results")
 
     record = load_record(str(tmp_path))
     record.hypotheses[0].claims.append(_claim("c2", run_id="ablation"))
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     _commit_all(tmp_path, "append exploratory claim")
 
     assert verify_append_only(tmp_path, record, require_history=True) == []
@@ -217,7 +218,7 @@ def test_verified_true_then_false_is_a_violation(tmp_path: Path) -> None:
     _init_repo(tmp_path)
     record = _record(_claim())
     _c1(record).verified = True
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     _commit_all(tmp_path, "verified")
 
     record = load_record(str(tmp_path))
@@ -230,7 +231,7 @@ def test_verified_true_then_false_is_a_violation(tmp_path: Path) -> None:
 
 
 def test_no_git_repo_reports_unavailable(tmp_path: Path) -> None:
-    save_record(str(tmp_path), _record(_claim()))
+    _record(_claim()).save(str(tmp_path))
     record = load_record(str(tmp_path))
     problems = verify_append_only(tmp_path, record, require_history=True)
     assert any("could not be checked" in p for p in problems)
@@ -241,9 +242,9 @@ def test_shallow_clone_reports_unavailable(tmp_path: Path) -> None:
     origin = tmp_path / "origin"
     origin.mkdir()
     _init_repo(origin)
-    save_record(str(origin), _record(_claim()))
+    _record(_claim()).save(str(origin))
     _commit_all(origin, "prereg")
-    save_record(str(origin), _record(_claim(), _claim("c2", run_id="ablation")))
+    _record(_claim(), _claim("c2", run_id="ablation")).save(str(origin))
     _commit_all(origin, "append")
 
     clone = tmp_path / "clone"
@@ -263,7 +264,7 @@ def test_unparseable_committed_record_is_a_violation(tmp_path: Path) -> None:
     (tmp_path / RECORD_PATH).parent.mkdir(parents=True)
     (tmp_path / RECORD_PATH).write_text("{not json")
     _commit_all(tmp_path, "mangled record")
-    save_record(str(tmp_path), _record(_claim()))
+    _record(_claim()).save(str(tmp_path))
     _commit_all(tmp_path, "fixed record")
 
     record = load_record(str(tmp_path))

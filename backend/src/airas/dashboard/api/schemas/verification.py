@@ -3,13 +3,13 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig  # noqa: F401
-from airas.usecases.assisted_research.generate_experiment_code_subgraph.generate_experiment_code_subgraph import (
+from airas.workflows.assisted_research.generate_experiment_code_subgraph.generate_experiment_code_subgraph import (
     GenerateExperimentCodeLLMMapping,
 )
-from airas.usecases.assisted_research.generate_verification_method_subgraph.generate_verification_method_subgraph import (
+from airas.workflows.assisted_research.generate_verification_method_subgraph.generate_verification_method_subgraph import (
     GenerateVerificationMethodLLMMapping,
 )
-from airas.usecases.assisted_research.propose_verification_policy_subgraph.propose_verification_policy_subgraph import (
+from airas.workflows.assisted_research.propose_verification_policy_subgraph.propose_verification_policy_subgraph import (
     ProposeVerificationPolicyLLMMapping,
 )
 

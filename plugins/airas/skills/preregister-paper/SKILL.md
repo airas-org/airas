@@ -25,17 +25,30 @@ changes *when* the paper is written and how Results are stated.
 ## Preconditions
 
 - A local clone of the experiment repository.
-- Hypothesis and experimental design exist — in
-  `.research/research_history.json`, or supplied by the user. The
-  design must fix the run ids (e.g. `proposed`, `baseline`) and the
-  metrics; if it does not, settle those with the user first, because
-  the placeholders below are named after them.
+- Hypothesis and experimental design exist, from
+  `hypothesize-and-design` or supplied by the user. The design must fix
+  the run ids (e.g. `proposed`, `baseline`) and the metrics; if it does
+  not, settle those with the user first, because the placeholders below
+  are named after them.
+- The papers the hypothesis rests on, each with its identifiers, the
+  `fulltext_path` `fetch_paper_fulltext` wrote, and the passages (page
+  and verbatim quote) picked while reading. Nothing is in the record yet.
 
 ## Steps
 
-1. **Create the canonical record with `preregister_record`.** This
-   writes `.research/record.json` — the machine-readable original the
-   whole verification system keys on. The record is a tree, read as
+1. **Create the canonical record with `preregister_record`**, passing
+   the `literature` and the `hypotheses` together. This writes
+   `.research/record.json` — the machine-readable original the whole
+   verification system keys on — and pins each source: a registry
+   (doi.org, arXiv, airas_db, git) confirms it exists, its full text is
+   copied to `.research/sources/<id>/fulltext.txt`, and every quote is
+   checked against that snapshot. `literature` entries are papers
+   (`doi` / `arxiv_id` / `airas_db` with `title`, `authors`, `year`,
+   `venue`, `pdf_url`, `fulltext_path`), repositories (`url`, a full
+   40-hex `commit`, `files`) or studies AIRAS produced (`airas_record`),
+   each with `passages: [{"node_type": ..., "quote": "<verbatim>"}]`.
+   Sources are numbered in the order given (`s1`, `s2`, …) and passages
+   `p1`, `p2`, … within each. The record is a tree, read as
    "to support this hypothesis, these claims; to verify this claim,
    these designs; a design is these runs":
 
@@ -66,10 +79,9 @@ changes *when* the paper is written and how Results are stated.
 
    `grounded_on` and `cites_passages` (also on designs and runs, and
    `reference_passage` on a criterion whose `reference` is a constant
-   read from a paper) name passages registered with `register_sources`
-   — the prior work's own words the declaration rests on. The gate
-   refuses a passage no source declares, and one registered after the
-   declaration that names it, so register and declare passages first.
+   read from a paper) name those passages as `s1.p2` — the prior work's
+   own words the declaration rests on. The gate refuses a passage no
+   source declares.
 
    `run_id` names the results directory the run will produce and must be
    unique across the record — a run belongs to exactly one claim, and
@@ -113,8 +125,9 @@ changes *when* the paper is written and how Results are stated.
    a missing claim.
 
    The tool also writes `claims.tex` — the numbered claim list with each
-   criterion, prediction and (pending) verdict — next to main.tex and
-   commits it with the record.
+   criterion, prediction and (pending) verdict — and `references.bib`
+   next to main.tex, and commits them with the record and the source
+   snapshots as the one freeze commit.
 
 2. **Write `.research/latex/{template}/main.tex` in two parts.**
    The *frozen part* — title, abstract, introduction, related work,

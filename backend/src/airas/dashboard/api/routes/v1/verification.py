@@ -26,18 +26,18 @@ from airas.dashboard.api.schemas.verification import (
     VerificationSessionResponse,
     VerificationSessionUpdateRequest,
 )
+from airas.dashboard.api.verification_session_store import VerificationService
 from airas.infra.github_client import GithubClient
 from airas.infra.litellm_client import LiteLLMClient
-from airas.usecases.assisted_research.generate_experiment_code_subgraph.generate_experiment_code_subgraph import (
+from airas.workflows.assisted_research.generate_experiment_code_subgraph.generate_experiment_code_subgraph import (
     GenerateExperimentCodeSubgraph,
 )
-from airas.usecases.assisted_research.generate_verification_method_subgraph.generate_verification_method_subgraph import (
+from airas.workflows.assisted_research.generate_verification_method_subgraph.generate_verification_method_subgraph import (
     GenerateVerificationMethodSubgraph,
 )
-from airas.usecases.assisted_research.propose_verification_policy_subgraph.propose_verification_policy_subgraph import (
+from airas.workflows.assisted_research.propose_verification_policy_subgraph.propose_verification_policy_subgraph import (
     ProposeVerificationPolicySubgraph,
 )
-from airas.usecases.dashboard.verification_session_store import VerificationService
 
 router = APIRouter(prefix="/verification", tags=["verification"])
 

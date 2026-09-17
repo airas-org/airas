@@ -16,23 +16,15 @@ from airas.core.types.research_record import (
     RenderedChart,
     active,
 )
+from airas.infra.local_git import commit_paths
 from airas.mcp.app import mcp
 from airas.mcp.context import (
     _kroki_client,
 )
-from airas.research_record.lookup import (
-    find_hypothesis,
-)
-from airas.research_record.read_run_outputs import (
-    load_metrics_data,
-)
-from airas.research_record.store import (
-    commit_record_paths,
-    load_record,
-    record_path,
-    save_record,
-)
-from airas.usecases.publication.map_record_to_publication import (
+from airas.research_record.read.find_by_id import find_hypothesis
+from airas.research_record.read.load_record import load_record, record_path
+from airas.research_record.read.read_run_outputs import load_metrics_data
+from airas.research_record.render.render_charts import (
     CHART_DIR,
     clip_zero_based_marks,
     render_chart_bytes,
@@ -144,11 +136,11 @@ async def render_chart(
         next(
             c for c in active(target.charts, "path") if c.path == relative
         ).renders.append(RenderedChart(renderer=renderer_version()))
-        save_record(local_path, record)
+        record.save(local_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
-        commit = commit_record_paths(
-            local_path,
+        commit = commit_paths(
+            Path(local_path).expanduser().resolve(),
             [RECORD_PATH, f"{CHART_DIR}/{relative}"],
             f"record: declare and render chart {relative}",
         )

@@ -8,7 +8,7 @@ from airas.dashboard.api.schemas.repositories import (
     PrepareRepositorySubgraphResponseBody,
 )
 from airas.infra.github_client import GithubClient
-from airas.usecases.repository.prepare_repository_subgraph.prepare_repository_subgraph import (
+from airas.workflows.repository.prepare_repository_subgraph import (
     PrepareRepositorySubgraph,
 )
 

@@ -3,6 +3,12 @@ AIRAS_PAPERS_REPO_BASE_URL = (
     "https://raw.githubusercontent.com/airas-org/airas-papers-db/main/data"
 )
 
+# The store of research records AIRAS itself produced, collected from
+# repositories whose gate passed (manifest.json + records/<owner>/<repo>/<sha>/).
+AIRAS_RECORDS_REPO_BASE_URL = (
+    "https://raw.githubusercontent.com/airas-org/airas-records-db/main"
+)
+
 # Conferences and years to include in the database
 # NOTE: Only uncommented conferences are actively used
 CONFERENCES_AND_YEARS = {

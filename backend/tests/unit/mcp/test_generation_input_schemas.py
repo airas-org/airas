@@ -15,14 +15,12 @@ import pytest
 from pydantic import ValidationError
 
 from airas.core.types.experimental_design import ComputeEnvironment
-from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_study import ResearchStudy
 from airas.mcp.prompt_registry import (
     GENERATION_STEPS,
     build_generation_prompt,
     get_input_json_schema,
 )
-from airas.mcp.tools.history import _reject_unknown_history_keys
 
 HYPOTHESIS_INPUTS = {
     "research_topic": "Whether aggregate docking scores hide per-system failure",
@@ -40,18 +38,6 @@ def test_every_step_publishes_a_schema(step):
 def test_an_unknown_step_names_the_ones_that_exist():
     with pytest.raises(ValueError, match="hypothesis"):
         get_input_json_schema("hypotheses")
-
-
-def test_a_generation_step_error_does_not_offer_a_non_step():
-    """research_history has a schema but is not something to generate.
-
-    Listing it among the available steps would send the caller straight
-    into a second error.
-    """
-    with pytest.raises(ValueError, match="Unknown step") as excinfo:
-        build_generation_prompt("research_history", {})
-
-    assert "research_history" not in str(excinfo.value).split("Available:")[1]
 
 
 def test_the_published_schema_is_the_one_that_validates():
@@ -111,86 +97,3 @@ def test_compute_environment_carries_the_architecture():
     schema = get_input_json_schema("experimental_design")
     compute = schema["$defs"]["ComputeEnvironment"]["properties"]
     assert "arch" in compute
-
-
-class TestResearchHistoryKeys:
-    """The upload accepted eight top-level keys and kept two, reporting success.
-
-    ResearchHistory leaves pydantic's default `extra="ignore"` in place, so
-    the other six vanished during validation and `is_github_upload` came
-    back true. A later session then restores a history with the experiment
-    results, run ids and paper location simply absent.
-    """
-
-    # The exact call from the 2026-08-05 run.
-    SUPPLIED = {
-        "research_topic": "aggregate docking scores",
-        "research_hypothesis": {},
-        "results": {},
-        "runs": [],
-        "paper": {},
-        "compute": {},
-        "primary_metric": "lddt_pli",
-        "known_infrastructure_constraint": "aarch64",
-    }
-
-    def test_keys_that_would_be_dropped_are_rejected(self):
-        with pytest.raises(ValueError) as excinfo:
-            _reject_unknown_history_keys(self.SUPPLIED)
-
-        message = str(excinfo.value)
-        for dropped in ("results", "runs", "paper", "compute", "primary_metric"):
-            assert dropped in message
-        # The escape hatch has to be named, or the caller just deletes data.
-        assert "additional_data" in message
-
-    def test_the_escape_hatch_is_accepted(self):
-        _reject_unknown_history_keys(
-            {
-                "research_topic": "aggregate docking scores",
-                "additional_data": {"runs": [], "primary_metric": "lddt_pli"},
-            }
-        )
-
-    def test_a_declared_field_is_accepted(self):
-        _reject_unknown_history_keys({"experiment_history": {"cycles": []}})
-
-    def test_the_accepted_shape_is_published(self):
-        schema = get_input_json_schema("research_history")
-
-        assert "additional_data" in schema["properties"]
-        assert "experiment_history" in schema["properties"]
-
-    def test_the_parse_side_stays_lenient(self):
-        """Downloading must not fail on a hand-written file with stray keys.
-
-        The skills tell agents to write .research/research_history.json
-        themselves, and github_download swallows a validation failure into
-        an empty history — strictness there would lose everything.
-        """
-        history = ResearchHistory.model_validate(
-            {"research_topic": "t", "something_a_human_added": 1}
-        )
-
-        assert history.research_topic == "t"
-
-    @pytest.mark.asyncio
-    async def test_the_shape_is_published_where_the_client_already_looks(self):
-        """A `dict[str, Any]` parameter publishes nothing the caller can use.
-
-        The tool listing said `additionalProperties: true` with no
-        properties at all, so a client had no way to learn the shape
-        without a second call it had no reason to make.
-        """
-        from airas.mcp.server import mcp
-
-        tool = {t.name: t for t in await mcp.list_tools()}["upload_research_history"]
-        published = tool.inputSchema["$defs"]["_ResearchHistoryInput"]
-
-        assert published["additionalProperties"] is False
-        assert "additional_data" in published["properties"]
-        assert "experiment_history" in published["properties"]
-
-    def test_a_non_object_is_named_rather_than_raising_a_type_error(self):
-        with pytest.raises(ValueError, match="JSON object"):
-            _reject_unknown_history_keys(["research_topic"])

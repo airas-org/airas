@@ -10,21 +10,25 @@ import pytest
 
 from airas.core.research_paths import PAGE_SEPARATOR
 from airas.core.types.research_record import LiteratureSource
-from airas.research_record.passages import (
-    quote_context,
-    quote_in,
-)
-from airas.usecases.literature.bibliography import (
+from airas.research_record.render.render_references_bib import (
     render_references_bib,
     unique_bibkey,
 )
-from airas.usecases.literature.fulltext_snapshot import (
-    snapshot_repository,
-    write_fulltext,
+from airas.research_record.update._add_literatures import (
+    _write_fulltext as write_fulltext,
 )
-from airas.usecases.literature.verify_existence import (
-    airas_db_metadata,
-    verify_existence,
+from airas.research_record.update._resolve_literatures import (
+    _airas_db_metadata as airas_db_metadata,
+)
+from airas.research_record.update._resolve_literatures import (
+    _verify_paper_existence as verify_paper_existence,
+)
+from airas.research_record.verify._verify_quoted_passages import (
+    passage_is_quoted,
+    quote_context,
+)
+from airas.usecases.literature.nodes.fetch_fulltext_from_repository import (
+    fetch_fulltext_from_repository,
 )
 
 PAGES = [
@@ -41,26 +45,28 @@ def _fulltext(pages: list[str] = PAGES) -> str:
 
 
 def test_a_quote_copied_from_the_snapshot_is_found() -> None:
-    assert quote_in(_fulltext(), "The rate is 0.1.")
+    assert passage_is_quoted(_fulltext(), "The rate is 0.1.")
 
 
 def test_whitespace_line_breaks_and_ligatures_do_not_break_a_quote() -> None:
     fulltext = _fulltext(["An eﬃcient\nmethod for  soft­ware."])
-    assert quote_in(fulltext, "An efficient method for software.")
+    assert passage_is_quoted(fulltext, "An efficient method for software.")
 
 
 def test_a_word_hyphenated_at_a_line_end_is_matched_joined() -> None:
     fulltext = _fulltext(["SAM improves model gen-\neralization across datasets."])
-    assert quote_in(fulltext, "SAM improves model generalization across datasets.")
-    assert quote_in(fulltext, "state-of-the-art") is False
+    assert passage_is_quoted(
+        fulltext, "SAM improves model generalization across datasets."
+    )
+    assert passage_is_quoted(fulltext, "state-of-the-art") is False
 
 
 def test_a_paraphrase_is_not_found() -> None:
-    assert not quote_in(_fulltext(), "Dropout of 0.1 is applied.")
+    assert not passage_is_quoted(_fulltext(), "Dropout of 0.1 is applied.")
 
 
 def test_a_quote_spanning_a_page_break_is_found() -> None:
-    assert quote_in(_fulltext(), "a model architecture. We apply dropout")
+    assert passage_is_quoted(_fulltext(), "a model architecture. We apply dropout")
 
 
 def test_a_quotes_context_is_the_text_around_it_in_the_snapshot() -> None:
@@ -79,7 +85,7 @@ def test_the_snapshot_round_trips_through_the_file(tmp_path: Path) -> None:
     ref = write_fulltext(tmp_path, "s1", PAGES)
     assert ref.path == ".research/sources/s1/fulltext.txt"
     written = (tmp_path / ref.path).read_text(encoding="utf-8")
-    assert quote_in(written, "The rate is 0.1.")
+    assert passage_is_quoted(written, "The rate is 0.1.")
 
 
 def test_a_snapshot_is_not_written_through_a_symlink(tmp_path: Path) -> None:
@@ -142,6 +148,25 @@ def test_a_repository_is_a_misc_entry_pinned_to_its_commit() -> None:
     assert "note = {commit 0123abcd}" in bib
 
 
+def test_an_airas_record_is_a_misc_entry_and_its_registry_binds_its_kind() -> None:
+    source = LiteratureSource(
+        id="s3",
+        kind="airas_record",
+        title="SAM on CIFAR, revisited",
+        authors=["auto-res2/sam-cifar (AIRAS)"],
+        year=2026,
+        url="https://github.com/auto-res2/sam-cifar",
+        commit="a" * 40,
+        bibkey="sam-cifar-2026-sam",
+        verified_by="airas_records",
+    )
+    assert render_references_bib([source]).startswith("@misc{sam-cifar-2026-sam,")
+    with pytest.raises(ValueError, match="cannot be verified by git"):
+        source.model_copy(update={"verified_by": "git"}).model_validate(
+            source.model_copy(update={"verified_by": "git"}).model_dump()
+        )
+
+
 # ------------------------------------------------------------ a repository
 
 
@@ -170,23 +195,33 @@ def test_a_repository_snapshot_holds_the_named_files_at_the_commit(
     tmp_path: Path,
 ) -> None:
     repo, commit = _upstream(tmp_path)
-    metadata, pages = snapshot_repository(str(repo), commit, ["src/train.py"])
+    metadata, pages = fetch_fulltext_from_repository(
+        str(repo), commit, ["src/train.py"]
+    )
     assert metadata["title"].endswith("/trainer")
     assert metadata["commit"] == commit
     assert pages == ["==> src/train.py <==\nlr = 3e-4\nsteps = 1000\n"]
-    assert quote_in(PAGE_SEPARATOR.join(pages), "lr = 3e-4")
+    assert passage_is_quoted(PAGE_SEPARATOR.join(pages), "lr = 3e-4")
+
+
+def test_an_optional_file_absent_at_the_commit_is_left_out(tmp_path: Path) -> None:
+    repo, commit = _upstream(tmp_path)
+    _, pages = fetch_fulltext_from_repository(
+        str(repo), commit, ["README.md"], ["src/train.py", "missing.tex"]
+    )
+    assert [p.split(" <==")[0] for p in pages] == ["==> README.md", "==> src/train.py"]
 
 
 def test_a_repository_that_cannot_be_fetched_is_refused(tmp_path: Path) -> None:
     repo, _ = _upstream(tmp_path)
     with pytest.raises(ValueError, match="git fetch failed"):
-        snapshot_repository(str(repo), "0" * 40, ["src/train.py"])
+        fetch_fulltext_from_repository(str(repo), "0" * 40, ["src/train.py"])
 
 
 def test_a_file_missing_at_the_commit_is_refused(tmp_path: Path) -> None:
     repo, commit = _upstream(tmp_path)
     with pytest.raises(ValueError, match="git show failed"):
-        snapshot_repository(str(repo), commit, ["src/missing.py"])
+        fetch_fulltext_from_repository(str(repo), commit, ["src/missing.py"])
 
 
 # ---------------------------------------------------------- airas-papers-db
@@ -237,7 +272,7 @@ def _doi_org(status: int) -> httpx.AsyncClient:
 
 
 async def test_each_identifier_is_asked_of_its_own_registry() -> None:
-    registries, at = await verify_existence(
+    registries, at = await verify_paper_existence(
         airas_db_record={"id": "e369"},
         doi="10.5555/3295222.3295349",
         arxiv_id="1706.03762",
@@ -252,7 +287,7 @@ async def test_an_unknown_identifier_is_not_found_and_an_outage_is_an_error() ->
     def outage(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("boom")
 
-    registries, _ = await verify_existence(
+    registries, _ = await verify_paper_existence(
         airas_db_record={},
         doi="10.1/nope",
         arxiv_id="0000.00000",
@@ -266,7 +301,7 @@ async def test_an_unknown_identifier_is_not_found_and_an_outage_is_an_error() ->
 
 
 async def test_a_doi_answered_with_a_final_page_is_found_too() -> None:
-    registries, _ = await verify_existence(
+    registries, _ = await verify_paper_existence(
         airas_db_record=None,
         doi="10.5555/3295222.3295349",
         arxiv_id=None,
@@ -277,7 +312,7 @@ async def test_a_doi_answered_with_a_final_page_is_found_too() -> None:
 
 
 async def test_a_doi_that_does_not_resolve_is_not_found() -> None:
-    registries, _ = await verify_existence(
+    registries, _ = await verify_paper_existence(
         airas_db_record=None,
         doi="10.1/nope",
         arxiv_id=None,

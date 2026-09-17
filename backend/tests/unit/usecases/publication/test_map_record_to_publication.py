@@ -1,7 +1,7 @@
 """From run outputs to the paper's numbers, and the checks along the way.
 
 The paper's numbers resolve from the files (`<run_id>.<metric>`) and the
-declarations (`<run_id>.params.<key>`); `update_record_with_results` appends what the
+declarations (`<run_id>.params.<key>`); `_append_run_results` appends what the
 runs produced; `verify_paper_record` regenerates values.tex and rejects a
 paper whose numbers drift from either.
 """
@@ -33,23 +33,18 @@ from airas.core.types.run_provenance import (
     ResultsDirProvenance,
     RunProvenanceManifest,
 )
-from airas.research_record.derive_results import (
-    update_record_with_results,
-)
-from airas.research_record.read_run_outputs import (
-    load_metrics_data,
-)
-from airas.research_record.store import (
-    save_record,
-)
-from airas.usecases.publication.map_record_to_publication import (
-    record_blob_url,
-    render_claims_tex,
+from airas.research_record.read.read_run_outputs import load_metrics_data
+from airas.research_record.read.scan_main_tex import scan_main_tex
+from airas.research_record.render.render_claims_tex import render_claims_tex
+from airas.research_record.render.render_paper_values import (
+    _resolve_paper_ref,
     render_values_tex,
-    resolve_paper_ref,
     resolve_paper_values,
 )
-from airas.usecases.publication.verify_paper import scan_main_tex, verify_paper
+from airas.research_record.update.append_to_record import (
+    _append_run_results as update_record_with_results,
+)
+from airas.research_record.verify.verify_paper import verify_paper
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 
@@ -169,14 +164,14 @@ def _generate(tmp_path: Path, mode: str = "full") -> Path:
         manifest.model_dump_json(indent=2) + "\n"
     )
     update_record_with_results(tmp_path, record, metrics_data, manifest)
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
 
     (latex_dir / "main.tex").write_text(MAIN_TEX)
     used_keys = scan_main_tex(MAIN_TEX)[1]
     values, _ = resolve_paper_values(record, metrics_data, used_keys)
     (latex_dir / "values.tex").write_text(render_values_tex(values, None))
     (latex_dir / "claims.tex").write_text(render_claims_tex(record, metrics_data))
-    from airas.usecases.publication.map_record_to_publication import render_table_tex
+    from airas.research_record.render.render_tables import render_table_tex
 
     tables_dir = latex_dir / "tables"
     tables_dir.mkdir()
@@ -195,7 +190,7 @@ def test_paper_refs_resolve_metrics_and_declared_params(tmp_path: Path) -> None:
     record = _record()
     metrics_data = load_metrics_data(str(tmp_path))
 
-    resolve = lambda ref: resolve_paper_ref(record, metrics_data, ref)  # noqa: E731
+    resolve = lambda ref: _resolve_paper_ref(record, metrics_data, ref)  # noqa: E731
     assert resolve("run-1.accuracy") == "0.871"
     assert resolve("run-1.loss.final") == "0.32"
     assert resolve("run-1.params.batch_size") == "128"
@@ -207,14 +202,14 @@ def test_paper_ref_rejects_unknown_run(tmp_path: Path) -> None:
     _make_repo(tmp_path)
     metrics_data = load_metrics_data(str(tmp_path))
     with pytest.raises(ValueError, match="matches no run id"):
-        resolve_paper_ref(_record(), metrics_data, "run-9.accuracy")
+        _resolve_paper_ref(_record(), metrics_data, "run-9.accuracy")
 
 
 def test_param_ref_rejects_an_undeclared_key(tmp_path: Path) -> None:
     _make_repo(tmp_path)
     metrics_data = load_metrics_data(str(tmp_path))
     with pytest.raises(ValueError, match="declares no such parameter"):
-        resolve_paper_ref(_record(), metrics_data, "run-1.params.seed")
+        _resolve_paper_ref(_record(), metrics_data, "run-1.params.seed")
 
 
 def test_undefined_keys_are_reported_not_raised(tmp_path: Path) -> None:
@@ -316,8 +311,8 @@ def test_values_tex_links_each_value_to_the_commit(tmp_path: Path) -> None:
 
 
 def test_no_link_without_an_origin_or_a_commit() -> None:
-    assert record_blob_url(None, "a" * 40) is None
-    assert record_blob_url("https://github.com/o/r", None) is None
+    assert r"\href" not in render_values_tex([], None, "a" * 40)
+    assert r"\href" not in render_values_tex([], "https://github.com/o/r", None)
 
 
 # ------------------------------------------------------------ verification
@@ -379,7 +374,7 @@ def test_prereg_stage_rejects_leftover_values_tex(tmp_path: Path) -> None:
     latex_dir.mkdir(parents=True)
     (latex_dir / "main.tex").write_text(MAIN_TEX)
     (latex_dir / "values.tex").write_text("% stale\n")
-    save_record(str(tmp_path), _record())
+    _record().save(str(tmp_path))
     result = _verify(str(tmp_path))
     assert result.record.stage == "prereg"
     assert not result.ok
@@ -405,7 +400,7 @@ def test_a_paper_without_a_record_passes_only_when_not_required(tmp_path: Path) 
 import subprocess  # noqa: E402
 
 from airas.core.research_paths import RECORD_PATH  # noqa: E402
-from airas.usecases.publication.map_record_to_publication import (  # noqa: E402
+from airas.research_record.render.render_paper_values import (  # noqa: E402
     record_link_commit,
 )
 

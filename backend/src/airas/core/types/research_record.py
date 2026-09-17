@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from enum import StrEnum
+from pathlib import Path
 from typing import (
     Annotated,
     Any,
@@ -17,6 +18,7 @@ from typing import (
 
 from pydantic import BaseModel, Discriminator, Field, Tag, model_validator
 
+from airas.core.research_paths import RECORD_PATH
 from airas.core.types.map_record_to_publication import TableSpec
 
 HYPOTHESIS_ID_PATTERN = r"^h[1-9][0-9]*$"
@@ -147,7 +149,7 @@ PASSAGE_ID_PATTERN = r"^s[1-9][0-9]*\.p[1-9][0-9]*$"
 # appears (prose, a table, a figure caption) is the anchor, kept apart.
 PassageNodeType = Literal["claim", "result", "method", "setup", "gap", "definition"]
 PassageAnchor = Literal["text", "table", "figure", "code"]
-Registry = Literal["airas_db", "doi.org", "arxiv", "git"]
+Registry = Literal["airas_db", "doi.org", "arxiv", "git", "airas_records"]
 
 
 class CitationJudgment(BaseModel):
@@ -174,12 +176,17 @@ class QuotedPassage(BaseModel):
     judgments: list[CitationJudgment] = Field(default_factory=list)
 
 
+# What each registry confirms; the identifier registries confirm a paper.
+_KIND_OF_REGISTRY = {"git": "repository", "airas_records": "airas_record"}
+
+
 class LiteratureSource(BaseModel):
-    """A paper, or a repository at a commit, the research drew on; pinned by
-    its fulltext snapshot (pages, or the registered files)."""
+    """A paper, a repository at a commit, or a research record AIRAS produced,
+    the research drew on; pinned by its fulltext snapshot (pages, or the
+    registered files)."""
 
     id: str = Field(pattern=SOURCE_ID_PATTERN)
-    kind: Literal["paper", "repository"] = "paper"
+    kind: Literal["paper", "repository", "airas_record"] = "paper"
     title: str
     authors: list[str] = Field(default_factory=list)
     year: Optional[int] = None
@@ -188,12 +195,14 @@ class LiteratureSource(BaseModel):
     arxiv_id: Optional[str] = None
     url: Optional[str] = None
     commit: Optional[str] = Field(
-        default=None, description="repository: the commit read"
+        default=None, description="repository, airas_record: the commit read"
     )
     bibkey: str
-    verified_by: Literal["", "airas_db", "doi.org", "arxiv", "git"] = Field(
-        default="",
-        description="Registry that confirmed the source exists at registration",
+    verified_by: Literal["", "airas_db", "doi.org", "arxiv", "git", "airas_records"] = (
+        Field(
+            default="",
+            description="Registry that confirmed the source exists at registration",
+        )
     )
     verified_at: str = Field(default="", description="ISO-8601 UTC")
     fulltext: Optional[InputRef] = None
@@ -208,8 +217,8 @@ class LiteratureSource(BaseModel):
                 f"source {self.id}: passages {', '.join(foreign)} carry another "
                 "source's id"
             )
-        if self.verified_by and (self.verified_by == "git") != (
-            self.kind == "repository"
+        if self.verified_by and _KIND_OF_REGISTRY.get(self.verified_by, "paper") != (
+            self.kind
         ):
             raise ValueError(
                 f"source {self.id}: a {self.kind} cannot be verified by "
@@ -492,6 +501,17 @@ class Hypothesis(BaseModel):
 class ResearchRecord(BaseModel):
     literature: list[LiteratureSource] = Field(default_factory=list)
     hypotheses: list[Hypothesis] = Field(default_factory=list)
+
+    def save(self, local_repo_path: str) -> Path:
+        path = Path(local_repo_path).expanduser().resolve() / RECORD_PATH
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # Defaults are omitted so the file reads as what was declared;
+        # containment compares model dumps, not text.
+        path.write_text(
+            self.model_dump_json(indent=2, exclude_defaults=True) + "\n",
+            encoding="utf-8",
+        )
+        return path
 
     def active_literature(self) -> list[LiteratureSource]:
         return active(self.literature, "id")

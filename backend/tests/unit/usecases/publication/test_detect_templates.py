@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from airas.usecases.publication.verify_paper import detect_templates
+from airas.usecases.publication.detect_templates import detect_templates
 
 
 def test_detects_only_written_known_templates(tmp_path: Path) -> None:

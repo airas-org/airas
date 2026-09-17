@@ -17,9 +17,9 @@ class PaperVerification(BaseModel):
     # Registered sources main.tex never cites: read and set aside, or
     # forgotten — for the author to say, not a failure.
     uncited_sources: list[str] = Field(default_factory=list)
-    # What the record's citation judgments say of the paper as it stands:
-    # citations no judgment covers, and citations judged unsupported. Review
-    # input like the two above; empty when the record holds no judgment.
+    # What the record's citation judgments say of the paper as it stands.
+    # A citation no judgment covers is also a problem; one judged unsupported
+    # is review input like the two above.
     unjudged_citations: list[str] = Field(default_factory=list)
     unsupported_citations: list[str] = Field(default_factory=list)
     build: LatexBuildReport | None = None

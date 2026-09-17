@@ -1,5 +1,3 @@
-"""The canonical research record."""
-
 from typing import Any
 
 from airas.core.credentials import refresh_environment
@@ -8,14 +6,16 @@ from airas.mcp.app import mcp
 from airas.mcp.context import (
     _arxiv_client,
     _async_session,
-    _litellm_client,
+    _records_index,
     _search_index,
     _semantic_scholar_client,
 )
-from airas.usecases.hypothesis import declarations
-from airas.usecases.literature import register_sources as register_sources_usecase
-from airas.usecases.publication import judge_citations as judge_citations_usecase
-from airas.usecases.publication import realize_paper_values
+from airas.research_record.update.append_to_record import (
+    append_to_record as append_to_record_usecase,
+)
+from airas.research_record.update.preregister_record import (
+    preregister_record as preregister_record_usecase,
+)
 
 
 @mcp.tool()
@@ -23,6 +23,7 @@ async def preregister_record(
     local_path: str,
     hypotheses: list[dict[str, Any]],
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+    literature: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Create the research record before any experiment has run.
 
@@ -57,12 +58,22 @@ async def preregister_record(
         "tables": [...], "charts": [...], "notes": [...]
       }]
 
-    A hypothesis's `grounded_on`, a claim's, design's or run's
-    `cites_passages` and a criterion's `reference_passage` name passages of
-    the literature registered earlier with `register_sources` (`"s1.p2"`):
-    what the declaration rests on, in the prior work's own words. The gate
-    refuses a passage no source declares, and one registered after the
-    declaration that names it.
+    `literature` is what the hypothesis rests on, pinned in the same
+    commit. Each entry is a paper (`doi` / `arxiv_id` / an `airas_db` id
+    from `search_papers`, with `title`, `authors`, `year`, `venue`,
+    `pdf_url`, and the `fulltext_path` `fetch_paper_fulltext` returned), a
+    repository (`url`, a full 40-hex `commit`, `files`) or a study AIRAS
+    produced (`airas_record`), each with `passages`:
+    `[{"node_type": "gap|claim|result|method|setup|definition", "quote":
+    "<copied verbatim from the full text>", "anchor"?}]`. A registry
+    (doi.org, arXiv, airas_db, git) must confirm each source exists, its
+    text is snapshotted under `.research/sources/<id>/`, and every quote is
+    checked against that snapshot. Sources get ids in the order given
+    (`s1`, `s2`, …) and passages `p1`, `p2`, … within each, so a
+    hypothesis's `grounded_on`, a claim's, design's or run's
+    `cites_passages` and a criterion's `reference_passage` name them as
+    `"s1.p2"`: what the declaration rests on, in the prior work's own
+    words. The gate refuses a passage no source declares.
 
     `run_id` names the results directory the run will produce and must be
     unique across the whole record — a run belongs to exactly one claim.
@@ -126,8 +137,17 @@ async def preregister_record(
     `\\airasval{<run_id>.params.<key>}`, compile, commit main.tex and push
     to the staging ref — tell the user the freeze sha once it lands.
     """
-    return await declarations.preregister_record(
-        local_path, hypotheses, latex_template_name
+    refresh_environment()
+    return await preregister_record_usecase(
+        local_path,
+        hypotheses,
+        latex_template_name,
+        literature=literature,
+        search_index=_search_index,
+        records_index=_records_index,
+        arxiv_client=_arxiv_client(),
+        semantic_scholar_client=_semantic_scholar_client(),
+        http=_async_session,
     )
 
 
@@ -143,6 +163,7 @@ async def append_to_record(
     source_id: str | None = None,
     passages: list[dict[str, Any]] | None = None,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
+    literature: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Add declarations to the record; nothing already in it ever changes.
 
@@ -166,12 +187,14 @@ async def append_to_record(
     prediction like one preregistered; `claims.tex` is re-rendered and
     committed alongside.
 
-    `passages` append under the source named by `source_id` (shape as in
-    `register_sources`: `{"node_type", "quote", "anchor"?}`); the
-    quote must be copied from that source's `fulltext.txt`, or the append is
-    refused.
+    `literature` appends sources the paper came to rest on after the
+    freeze (same entry shape as `preregister_record`); `passages` append
+    under the source named by `source_id` (`{"node_type", "quote",
+    "anchor"?}`). A quote must be copied from that source's `fulltext.txt`,
+    or the append is refused.
     """
-    return await declarations.append_to_record(
+    refresh_environment()
+    return await append_to_record_usecase(
         local_path,
         hypotheses=hypotheses,
         hypothesis_id=hypothesis_id,
@@ -181,69 +204,13 @@ async def append_to_record(
         notes=notes,
         source_id=source_id,
         passages=passages,
-        latex_template_name=latex_template_name,
-    )
-
-
-@mcp.tool()
-async def register_sources(
-    local_path: str,
-    papers: list[dict[str, Any]] | None = None,
-    repositories: list[dict[str, Any]] | None = None,
-    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
-) -> dict[str, Any]:
-    """Pin the papers and repositories the research draws on, so their
-    passages can be cited.
-
-    A source is an entry of `.research/record.json`'s `literature`, pinned
-    by a fulltext snapshot (`.research/sources/<id>/fulltext.txt`, pages
-    separated by a form feed) whose sha256 the record holds. Each
-    `papers[]` entry is one paper:
-
-      {"airas_db": "<id from search_papers>"}            metadata from the db
-      {"title", "authors", "year", "venue", "pdf_url",   what a web search found
-       "doi"?, "arxiv_id"?, "url"?}
-      + optional "passages": [{"node_type": "claim|result|method|setup|gap|
-        definition", "anchor": "text|table|figure", "quote": "..."}]
-
-    Whatever the origin, the same checks run: the paper must be confirmed
-    by the registry behind an identifier it carries (airas-papers-db for
-    `airas_db`, doi.org for `doi`, the arXiv API for `arxiv_id` — so a
-    paper with none of the three cannot be registered), and its PDF must
-    yield text (resolved from `arxiv_id`/`doi` the way `fetch_paper_fulltext`
-    does, or from `pdf_url`). The tool writes the snapshot, sets the bibkey
-    (`<surname>-<year>-<word>`, the key `\\cite` uses), renders
-    `.research/latex/<template>/references.bib` from the record's literature
-    (the gate regenerates it, so never edit it by hand) and commits record,
-    snapshots and bibliography together; a paper that fails a check is
-    refused and nothing is written. A paper already in the record (same DOI, arXiv id
-    or URL) is left as it is.
-
-    `repositories[]` pins code the research builds on: `{"url", "commit",
-    "files": ["src/model.py", ...], "passages"?}`. The files are read at
-    that commit into the snapshot (one page per file, headed `==> path <==`)
-    and the fetch succeeding is the existence check (`verified_by: "git"`);
-    a passage of a repository quotes lines of a file, with `"anchor":
-    "code"`.
-
-    Quotes are copied from the snapshot, not from the PDF: the gate checks
-    that every passage's `quote` is verbatim in `fulltext.txt` (ligatures,
-    line breaks and soft hyphens aside). Read the snapshot, declare
-    passages here or with
-    `append_to_record(source_id=..., passages=[...])`, then name them in a
-    hypothesis's `grounded_on`, a claim's, design's or run's
-    `cites_passages`, or a criterion's `reference_passage`.
-    """
-    refresh_environment()
-    return await register_sources_usecase.register_sources(
-        local_path,
-        papers,
-        repositories,
-        latex_template_name,
+        literature=literature,
         search_index=_search_index,
+        records_index=_records_index,
         arxiv_client=_arxiv_client(),
         semantic_scholar_client=_semantic_scholar_client(),
         http=_async_session,
+        latex_template_name=latex_template_name,
     )
 
 
@@ -297,39 +264,14 @@ async def update_record(
     surfaced for review.
     """
     refresh_environment()
-    return await realize_paper_values.realize_paper_values(
-        local_path, latex_template_name
+    result = await append_to_record_usecase(
+        local_path, run_results=True, latex_template_name=latex_template_name
     )
-
-
-@mcp.tool()
-async def judge_citations(
-    local_path: str,
-    model: str,
-    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
-) -> dict[str, Any]:
-    """Have a model read every citation of a passage against the passage,
-    and write its judgments into the record.
-
-    The gate checks that a quote is verbatim and that `\\cite[s1.p2]{key}`
-    points at a passage of that source; whether the citing text says what
-    the passage says is a reading, and this asks `model` for it. Each place
-    a passage is cited — the paragraph around a `\\cite[s1.p2]{key}` in
-    main.tex, a claim's statement and rationale for its `cites_passages`, a
-    hypothesis's statement for its `grounded_on` — is read against the
-    quote in its snapshot context, so a quote clipped of its negation is
-    seen with the negation. The judgment (model, supported, reason and a
-    hash of the citing text) is appended to the passage in record.json
-    and committed with claims.tex. A citing text already
-    judged is not read again; a rewritten one is.
-
-    `verify_paper_values` then reports, without a model call, the
-    citations judged unsupported (`unsupported_citations`) and those the
-    judgments do not cover (`unjudged_citations`) — review input like
-    `unverified`, not failures. Run it after the paper is written and
-    again after any rewrite. Requires an LLM provider key.
-    """
-    refresh_environment()
-    return await judge_citations_usecase.judge_citations(
-        local_path, model, latex_template_name, litellm_client=_litellm_client()
+    result["usage"] = (
+        "\\input{values.tex} in the preamble, \\input{tables/<key>.tex} where "
+        "each table belongs, \\input{claims.tex} where the claims are listed, "
+        "then \\airasval{<key>} wherever the paper states a number; the "
+        "realized files are already committed — push to the staging ref and "
+        "let CI decide whether it may reach the protected branch"
     )
+    return result

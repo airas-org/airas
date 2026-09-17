@@ -24,23 +24,23 @@ from airas.infra.github_client import GithubClient
 from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.semantic_scholar_client import SemanticScholarClient
-from airas.usecases.retrieve.fetch_paper_fulltext_subgraph.fetch_paper_fulltext_subgraph import (
-    FetchPaperFulltextSubgraph,
-)
 from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
 )
-from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_from_airas_db_subgraph import (
+from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
+from airas.workflows.literature.fetch_paper_fulltext_subgraph import (
+    FetchPaperFulltextSubgraph,
+)
+from airas.workflows.literature.search_paper_titles_from_airas_db_subgraph import (
     SearchPaperTitlesFromAirasDbSubgraph,
 )
-from airas.usecases.retrieve.search_paper_titles_subgraph.search_paper_titles_from_qdrant_subgraph import (
+from airas.workflows.literature.search_paper_titles_from_qdrant_subgraph import (
     SearchPaperTitlesFromQdrantLLMMapping,
     SearchPaperTitlesFromQdrantSubgraph,
 )
-from airas.usecases.retrieve.search_papers_subgraph.search_papers_subgraph import (
+from airas.workflows.literature.search_papers_subgraph import (
     SearchPapersSubgraph,
 )
-from airas.usecases.writers.write_subgraph.write_subgraph import WriteSubgraph
 
 router = APIRouter(prefix="/papers", tags=["papers"])
 
@@ -126,6 +126,7 @@ async def search_papers(
             semantic_scholar_client=semantic_scholar_client,
             arxiv_client=arxiv_client,
             airas_db_search_index=search_index,
+            airas_records_index=container.airas_records_index(),
         )
         .build_graph()
         .ainvoke(

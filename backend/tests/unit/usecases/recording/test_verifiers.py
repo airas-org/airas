@@ -21,17 +21,11 @@ from airas.core.types.research_record import (
     LlmJudgeResult,
     ResearchRecord,
 )
-from airas.research_record.derive_results import (
-    update_record_with_results,
+from airas.research_record.update.append_to_record import (
+    _append_run_results as update_record_with_results,
 )
-from airas.research_record.store import (
-    save_record,
-)
-from airas.research_record.verify import (
-    RecordVerification,
-    _containment_violations,
-    verify_record,
-)
+from airas.research_record.verify._verify_record_history import _containment_violations
+from airas.research_record.verify.verify_record import RecordVerification, verify_record
 
 
 def record_append_violations(older: ResearchRecord, newer: ResearchRecord) -> list[str]:
@@ -154,7 +148,7 @@ def _c1(record: ResearchRecord) -> ClaimDeclaration:
 
 def _realize(repo: Path, record: ResearchRecord) -> ResearchRecord:
     update_record_with_results(repo, record, {}, None)
-    save_record(str(repo), record)
+    record.save(str(repo))
     _commit(repo, "realize")
     return record
 
@@ -162,7 +156,7 @@ def _realize(repo: Path, record: ResearchRecord) -> ResearchRecord:
 def _lean_repo(tmp_path: Path, report: dict[str, Any] = LEAN_REPORT) -> ResearchRecord:
     _init(tmp_path)
     record = _record(_lean_claim())
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     _commit(tmp_path, "prereg")
     _write(tmp_path, "thm1", "lean.json", report)
     _commit(tmp_path, "check")
@@ -174,7 +168,7 @@ def _judge_repo(tmp_path: Path, verdict: str = "supported") -> ResearchRecord:
     (tmp_path / "rubric.md").write_text("Supported if most participants say so.\n")
     (tmp_path / "evidence.md").write_text("P1: better. P2: better. P3: worse.\n")
     record = _record(_judge_claim())
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     _commit(tmp_path, "prereg")
     _write(
         tmp_path,
@@ -273,7 +267,7 @@ def test_a_sorry_a_drifted_statement_a_foreign_axiom_or_a_failed_build_is_inconc
 def test_an_unreadable_lean_report_leaves_the_claim_unverified(tmp_path: Path) -> None:
     _init(tmp_path)
     record = _record(_lean_claim())
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     _commit(tmp_path, "prereg")
     out = tmp_path / RESULTS_DIR / "thm1"
     out.mkdir(parents=True)
@@ -313,7 +307,7 @@ def test_a_verdict_written_by_hand_before_any_run_fails(tmp_path: Path) -> None:
     _init(tmp_path)
     record = _record(_lean_claim())
     _c1(record).verdict = "supported"
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     _commit(tmp_path, "prereg")
     report = _verify(str(tmp_path))
     assert report.stage == "prereg" and not report.ok
@@ -366,7 +360,7 @@ def test_a_lean_result_names_the_execution_the_manifest_declares(
 
     _init(tmp_path)
     record = _record(_lean_claim())
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     _commit(tmp_path, "prereg")
     _write(tmp_path, "thm1", "lean.json", LEAN_REPORT)
     manifest = RunProvenanceManifest(

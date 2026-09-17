@@ -1,7 +1,7 @@
-from airas.mcp import prompts, tools
+from airas.mcp import tools
 from airas.mcp.app import mcp
 
-__all__ = ["main", "mcp", "prompts", "tools"]
+__all__ = ["main", "mcp", "tools"]
 
 
 def main() -> None:

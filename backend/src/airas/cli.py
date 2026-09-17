@@ -28,13 +28,14 @@ from airas.agent_session.research_trace import (
 )
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.research_trace import DerivedFromRepository
-from airas.research_record.verify import verify_record
-from airas.usecases.publication.verify_paper import (
-    build_paper,
+from airas.infra.litellm_client import LiteLLMClient
+from airas.research_record.verify.verify_paper import verify_paper
+from airas.research_record.verify.verify_record import verify_record
+from airas.usecases.publication.detect_templates import (
     detect_templates,
     paper_directories,
-    verify_paper,
 )
+from airas.usecases.publication.latex_build import build_paper
 
 # "AIRAS" on a phone keypad (per ITU-T E.161); a high port to avoid the
 # crowded 8000 range.
@@ -89,6 +90,8 @@ def _run_verify_paper(args: argparse.Namespace) -> None:
                     args.no_provenance or args.allow_unavailable_provenance
                 ),
                 require_history=not args.allow_unavailable_history,
+                model=args.model,
+                litellm_client=LiteLLMClient() if args.model else None,
             )
         )
         for template in templates
@@ -276,6 +279,13 @@ def main() -> None:
         help=(
             "LaTeX template to verify (repeatable); default: every known "
             "template under .research/latex/ that has a main.tex"
+        ),
+    )
+    verify.add_argument(
+        "--model",
+        help=(
+            "Have this model judge every citation no judgment covers before the "
+            "check, and write the judgments into record.json"
         ),
     )
     verify.add_argument(

@@ -19,13 +19,11 @@ from airas.core.types.research_record import (
     SeyvalVerifier,
     VerifierKind,
 )
-from airas.research_record.derive_results import (
-    compute_claim_statuses,
+from airas.research_record.read.derive_results import compute_claim_statuses
+from airas.research_record.verify._verify_record_declarations import (
+    verify_record_declarations as verify_consistency,
 )
-from airas.research_record.verify import (
-    _containment_violations,
-    verify_consistency,
-)
+from airas.research_record.verify._verify_record_history import _containment_violations
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 PREDICTION = Prediction(low=0.02, high=0.04, basis="pilot")

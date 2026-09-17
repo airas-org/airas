@@ -1,18 +1,3 @@
-"""Credential storage shared by the MCP server and the dashboard.
-
-Credentials live in ``~/.airas/credentials.json`` — a flat JSON object
-mapping credential names to values, e.g.::
-
-    {
-      "OPENAI_API_KEY": "sk-...",
-      "GH_PERSONAL_ACCESS_TOKEN": "ghp_..."
-    }
-
-The file is re-read on every use (MCP tool call / API request), so edits
-take effect immediately without restarting anything. It can be edited by
-hand or through the dashboard's settings page.
-"""
-
 import contextlib
 import json
 import logging
@@ -30,6 +15,27 @@ SETUP_INSTRUCTIONS = (
     '{"OPENAI_API_KEY": "sk-...", "GH_PERSONAL_ACCESS_TOKEN": "ghp_..."} '
     "(chmod 600 recommended). Edits take effect on the next tool call."
 )
+
+# Copied into an experiment repository's Actions secrets when present locally.
+GITHUB_ACTIONS_SECRET_NAMES = [
+    "OPENAI_API_KEY",
+    "GEMINI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "OPENROUTER_API_KEY",
+    "VERCEL_AI_GATEWAY_API_KEY",
+    "RIKYU_API_KEY",
+    "AWS_BEARER_TOKEN_BEDROCK",
+    "WANDB_API_KEY",
+    "HF_TOKEN",
+    "LANGFUSE_SECRET_KEY",
+    "LANGFUSE_PUBLIC_KEY",
+    "LANGFUSE_BASE_URL",
+    "GH_PERSONAL_ACCESS_TOKEN",
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY",
+    # The record gate reads Seyval's per-run storage for the provenance check.
+    "SEYVAL_API_KEY",
+]
 
 
 def load_credentials() -> dict[str, str]:
