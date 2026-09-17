@@ -69,13 +69,23 @@ def _record(
 
 SAM = "auto-res2/sam-cifar@" + "a" * 40
 SPARSE = "auto-res2/sparse-attn@" + "b" * 40
+LOOKALIKE = "auto-res2/lookalike@" + "d" * 40
 
 STORE: dict[str, Any] = {
     "manifest.json": [
         {"id": SAM, "stage": "results", "collected_at": "2026-09-10T00:00:00+00:00"},
         {"id": SPARSE, "stage": "prereg"},
         {"id": "auto-res2/broken@" + "c" * 40, "stage": "results"},
+        {"id": LOOKALIKE, "stage": "prereg"},
     ],
+    # Shares the DOI prefix tokens with SPARSE's paper, and nothing else.
+    f"records/{LOOKALIKE.replace('@', '/')}/record.json": _record(
+        "Something unrelated about optimizers.",
+        "Adam beats SGD here.",
+        None,
+        "Another arXiv paper",
+        "10.48550/arXiv.9999.00001",
+    ),
     f"records/{SAM.replace('@', '/')}/record.json": _record(
         "Sharpness-aware minimization improves generalization on CIFAR-10.",
         "SAM beats SGD on CIFAR-10 accuracy.",
@@ -177,3 +187,29 @@ def test_the_endpoint_runs_the_source_and_refuses_filters_elsewhere() -> None:
     assert result["search_errors"] == {}
     with pytest.raises(ValueError, match="airas_records only"):
         run(sources=["arxiv", "airas_records"], verdict="refuted")
+
+
+def test_an_identifier_finds_exactly_the_study_that_cites_it() -> None:
+    hits = asyncio.run(search_airas_records(_index(), "10.48550/arXiv.1706.03762", 1))
+    assert [h.external_ids["airas_record"] for h in hits] == [SPARSE]
+
+
+def test_a_superseded_claim_is_left_out_of_the_abstract() -> None:
+    from airas.infra.airas_records_index import RecordEntry
+    from airas.usecases.literature.nodes.search_airas_records import _abstract
+
+    record = ResearchRecord.model_validate_json(_record("H", "old wording", None, None))
+    record.hypotheses[0].claims.append(
+        record.hypotheses[0].claims[0].model_copy(update={"statement": "new wording"})
+    )
+    entry = RecordEntry(
+        id=SAM,
+        url="u",
+        commit="a" * 40,
+        stage="prereg",
+        collected_at="",
+        title="t",
+        record=record,
+    )
+    abstract = _abstract(entry)
+    assert "new wording" in abstract and "old wording" not in abstract

@@ -54,6 +54,15 @@ def searchable_text(entry: RecordEntry) -> str:
     )
 
 
+def _identifiers(entry: RecordEntry) -> set[str]:
+    return {
+        v.lower()
+        for s in entry.record.active_literature()
+        for v in (s.doi, s.arxiv_id)
+        if v
+    }
+
+
 def _matches(entry: RecordEntry, verdict: str | None, stage: str | None) -> bool:
     if stage is not None and entry.stage != stage:
         return False
@@ -133,6 +142,13 @@ class AirasRecordsIndex:
         await self._ensure_loaded()
         if self._bm25 is None or self._entries is None:
             return []
+        # A DOI or arXiv id names the studies that built on that paper exactly;
+        # they come first, and never lose to word overlap on "10" or "arxiv".
+        exact = [
+            i
+            for i, e in enumerate(self._entries)
+            if query.strip().lower() in _identifiers(e)
+        ]
         terms = self._tokenize(query)
         scores = self._bm25.get_scores(terms)
         # Matched on overlap, not on score: BM25's idf of a term is zero when
@@ -142,11 +158,11 @@ class AirasRecordsIndex:
             (
                 (score, i)
                 for i, score in enumerate(scores)
-                if self._tokens[i].intersection(terms)
+                if i not in exact and self._tokens[i].intersection(terms)
             ),
             reverse=True,
         )
-        hits = (self._entries[i] for _, i in ranked)
+        hits = (self._entries[i] for i in [*exact, *(i for _, i in ranked)])
         return [e for e in hits if _matches(e, verdict, stage)][:max_results]
 
     async def get(self, record_id: str) -> RecordEntry | None:
