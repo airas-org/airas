@@ -32,10 +32,10 @@ from airas.core.types.research_record import (
     VerifierKind,
     active,
 )
-from airas.research_record.verify import (
-    _containment_violations,
-    verify_consistency,
+from airas.research_record.verify._verify_record_declarations import (
+    verify_record_declarations as verify_consistency,
 )
+from airas.research_record.verify._verify_record_history import _containment_violations
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 

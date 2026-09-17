@@ -7,7 +7,10 @@ from dependency_injector import containers, providers
 from hishel import CacheOptions, SpecificationPolicy
 from hishel.httpx import AsyncCacheClient, SyncCacheClient
 
+from airas.dashboard.api.verification_session_store import VerificationService
+from airas.infra.airas_db_index import AirasDbPaperSearchIndex
 from airas.infra.airas_records_client import AirasRecordsClient
+from airas.infra.airas_records_index import AirasRecordsIndex
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.github_client import GithubClient
 from airas.infra.hugging_face_client import HuggingFaceClient
@@ -15,13 +18,8 @@ from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.openalex_client import OpenAlexClient
 from airas.infra.qdrant_client import QdrantClient
 from airas.infra.semantic_scholar_client import SemanticScholarClient
-from airas.usecases.autonomous_research.in_memory_e2e_research_service import (
+from airas.workflows.autonomous_research.in_memory_e2e_research_service import (
     InMemoryE2EResearchService,
-)
-from airas.usecases.dashboard.verification_session_store import VerificationService
-from airas.usecases.literature.search_airas_records import AirasRecordsIndex
-from airas.usecases.retrieve.search_paper_titles_subgraph.nodes.search_paper_titles_from_airas_db import (
-    AirasDbPaperSearchIndex,
 )
 
 T = TypeVar("T")
@@ -154,7 +152,6 @@ class Container(containers.DeclarativeContainer):
         AirasRecordsIndex, airas_records_client
     )
 
-    ## --- Verification Service ---
     verification_service = providers.Singleton(VerificationService)
 
     ## ---  Autonomous Research Service ---

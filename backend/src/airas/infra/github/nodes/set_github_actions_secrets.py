@@ -1,6 +1,7 @@
 import logging
 import os
 
+from airas.core.credentials import GITHUB_ACTIONS_SECRET_NAMES
 from airas.core.types.github import GitHubConfig
 from airas.infra.github_client import GithubClient, GithubClientError
 
@@ -10,8 +11,10 @@ logger = logging.getLogger(__name__)
 def set_github_actions_secrets(
     github_config: GitHubConfig,
     github_client: GithubClient,
-    secret_names: list[str],
+    secret_names: list[str] | None = None,
 ) -> bool:
+    if secret_names is None:
+        secret_names = GITHUB_ACTIONS_SECRET_NAMES
     try:
         # Get repository public key once for all secrets
         public_key_info = github_client.get_repository_public_key(

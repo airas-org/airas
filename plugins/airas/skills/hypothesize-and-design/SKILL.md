@@ -1,30 +1,38 @@
 ---
 name: hypothesize-and-design
-description: Author a falsifiable research hypothesis and an experimental design that fixes run ids, metrics, models, datasets and the compute environment, using AIRAS's curated prompts. Use to create or rework a hypothesis and its experimental design.
+description: Read the downloaded papers, then author a falsifiable research hypothesis and an experimental design that fixes run ids, metrics, models, datasets and the compute environment. Use to create or rework a hypothesis and its experimental design.
 ---
 
 # Hypothesize & design
 
-Needs a `research_study_list` (prior work to build on) and, for the
-record, the passage ids (`s1.p2`) registered by `discover-papers`: note
-which passages the hypothesis answers (its gap) and which the design
-follows, so `preregister-paper` can declare them as `grounded_on` and
-`cites_passages` — the gate refuses a passage registered after the
-declaration that names it.
+Starts from the search rows and `fulltext_path`s `search-papers` left.
+This is a loop, not a pass: read, hypothesize, notice what the
+literature does not settle, go back to `search-papers` for it, and
+refine until the hypothesis rests on passages you have actually read.
 
-1. **Author the hypothesis** via `get_generation_prompt("hypothesis",
-   ...)` with the study list. Write the prose in Japanese;
-   `primary_metric` / `supporting_metrics` stay English identifiers
-   (parsed downstream).
-2. **Fix the compute target first**: ask the user if it is not known,
+1. **Read** the downloaded papers with your own tools — a paper runs to
+   80k+ characters, so read in parts or search within the file. Keep,
+   per paper the research will rest on, its identifiers, its
+   `fulltext_path` and the passages that matter (page and verbatim
+   quote): `preregister_record` takes exactly these, and assigns ids in
+   the order given (`s1`, `s2`, …; `p1`, `p2`, … within a source), so
+   note which passages the hypothesis answers (its gap) and which the
+   design follows for `grounded_on` and `cites_passages`.
+2. **Author the hypothesis** yourself: one statement, the gap in the
+   read papers it answers, and what would refute it. Write the prose in
+   Japanese; metric names stay English identifiers (parsed downstream).
+   A gap the papers at hand cannot confirm is a reason to search again,
+   not to assume.
+3. **Fix the compute target first**: ask the user if it is not known,
    record GPU and `arch` (`x86_64`/`aarch64`) — the design and later
    the dependency lockfile depend on it.
-3. **Author the design** via
-   `get_generation_prompt("experimental_design", ...)`.
-   `retrieve_models` / `retrieve_datasets` list curated candidates (no
-   key needed); pass those rather than the prompt's built-in
-   language-model defaults for any other field.
-4. **Leave run ids and metrics settled.** Downstream tooling addresses
+4. **Author the design** yourself: the runs to compare (proposed,
+   baselines, ablations), the models and datasets, the metrics, and the
+   compute they need. `retrieve_models` / `retrieve_datasets` list
+   curated candidates (no key needed); prefer those to defaults from
+   memory, and `search_huggingface_hub` when the curated lists lack
+   what the design needs.
+5. **Leave run ids and metrics settled.** Downstream tooling addresses
    every result as `<run_id>.<metric.path>` (e.g. `proposed.accuracy`),
    so a design that leaves run naming open is not finished. State the
    expected magnitude of the effect as an interval (a range, not a
@@ -36,8 +44,8 @@ declaration that names it.
    (its `rationale`), and list what the claims together still assume
    in order to imply the hypothesis (the hypothesis's `assumptions`).
 
-**Output**: hypothesis + experimental design, written to
-`.research/research_history.json` in the experiment repository when one
-exists (state belongs in the clone, not the conversation). This is the
-working draft: `preregister-paper` freezes it into the canonical
+**Output**: hypothesis + experimental design, and the papers they rest
+on with their `fulltext_path` and quoted passages. Write the draft into
+the clone (state belongs there, not in the conversation); nothing is in
+the record yet. `preregister-paper` freezes all of it into the canonical
 `.research/record.json`, after which revision is append-only.

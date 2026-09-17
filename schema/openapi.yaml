@@ -715,56 +715,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/research-history/download:
-    post:
-      tags:
-      - research-history
-      summary: Download Research History
-      operationId: download_research_history_airas_v1_research_history_download_post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GithubDownloadRequest'
-        required: true
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GithubDownloadResponse'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/research-history/upload:
-    post:
-      tags:
-      - research-history
-      summary: Upload Research History
-      operationId: upload_research_history_airas_v1_research_history_upload_post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GithubUploadRequest'
-        required: true
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GithubUploadResponse'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
   /airas/v1/github-actions/polling:
     post:
       tags:
@@ -3408,63 +3358,6 @@ components:
       - branch_name
       title: GitHubConfigRequest
       description: Request body schema for GitHub config (owner is resolved server-side).
-    GithubDownloadRequest:
-      properties:
-        github_config:
-          $ref: '#/components/schemas/GitHubConfig'
-      type: object
-      required:
-      - github_config
-      title: GithubDownloadRequest
-    GithubDownloadResponse:
-      properties:
-        research_history:
-          $ref: '#/components/schemas/ResearchHistory-Output'
-        execution_time:
-          additionalProperties:
-            items:
-              type: number
-            type: array
-          type: object
-          title: Execution Time
-      type: object
-      required:
-      - research_history
-      - execution_time
-      title: GithubDownloadResponse
-    GithubUploadRequest:
-      properties:
-        github_config:
-          $ref: '#/components/schemas/GitHubConfig'
-        research_history:
-          $ref: '#/components/schemas/ResearchHistory-Input'
-        commit_message:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Commit Message
-      type: object
-      required:
-      - github_config
-      - research_history
-      title: GithubUploadRequest
-    GithubUploadResponse:
-      properties:
-        is_github_upload:
-          type: boolean
-          title: Is Github Upload
-        execution_time:
-          additionalProperties:
-            items:
-              type: number
-            type: array
-          type: object
-          title: Execution Time
-      type: object
-      required:
-      - is_github_upload
-      - execution_time
-      title: GithubUploadResponse
     HTTPValidationError:
       properties:
         detail:
@@ -3682,7 +3575,7 @@ components:
           readOnly: true
         research_history:
           anyOf:
-          - $ref: '#/components/schemas/ResearchHistory-Output'
+          - $ref: '#/components/schemas/ResearchHistory'
           - type: 'null'
           readOnly: true
       type: object
@@ -4560,95 +4453,7 @@ components:
       - experimental_design
       - execution_time
       title: RefineExperimentalDesignSubgraphResponseBody
-    ResearchHistory-Input:
-      properties:
-        research_topic:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Research Topic
-          description: Main research topic
-        queries:
-          anyOf:
-          - items:
-              type: string
-            type: array
-          - type: 'null'
-          title: Queries
-          description: List of search queries used for paper retrieval
-        research_study_list:
-          anyOf:
-          - items:
-              $ref: '#/components/schemas/ResearchStudy'
-            type: array
-          - type: 'null'
-          title: Research Study List
-          description: List of main research studies analyzed
-        research_hypothesis:
-          anyOf:
-          - $ref: '#/components/schemas/ResearchHypothesis'
-          - type: 'null'
-          description: Research hypothesis generated
-        experiment_history:
-          anyOf:
-          - $ref: '#/components/schemas/ExperimentHistory-Input'
-          - type: 'null'
-          description: History of experiment cycles (design, results, analysis)
-        experiment_code:
-          anyOf:
-          - $ref: '#/components/schemas/ExperimentCode'
-          - type: 'null'
-          description: Generated experiment code and implementation
-        paper_content:
-          anyOf:
-          - $ref: '#/components/schemas/PaperContent'
-          - type: 'null'
-          description: Generated paper content including sections and text
-        references_bib:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: References Bib
-          description: Bibliography references in BibTeX format
-        latex_text:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Latex Text
-          description: LaTeX formatted paper text
-        paper_url:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Paper Url
-          description: URL to the published or hosted paper
-        full_html:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Full Html
-          description: Full HTML content of the generated paper
-        github_pages_url:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Github Pages Url
-          description: GitHub Pages URL for the published paper
-        paper_review_scores:
-          anyOf:
-          - $ref: '#/components/schemas/PaperReviewScores'
-          - type: 'null'
-          description: Review scores and feedback for the paper
-        additional_data:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: Additional Data
-          description: Additional data fields for future extensions
-      type: object
-      title: ResearchHistory
-    ResearchHistory-Output:
+    ResearchHistory:
       properties:
         research_topic:
           anyOf:
@@ -5441,7 +5246,7 @@ components:
           readOnly: true
         research_history:
           anyOf:
-          - $ref: '#/components/schemas/ResearchHistory-Output'
+          - $ref: '#/components/schemas/ResearchHistory'
           - type: 'null'
           readOnly: true
       type: object

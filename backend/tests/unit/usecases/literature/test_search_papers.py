@@ -68,7 +68,7 @@ def test_sources_are_parsed_and_unknown_ones_refused() -> None:
 
 
 def test_the_graph_path_says_when_it_cannot_search_the_store() -> None:
-    from airas.usecases.retrieve.search_papers_subgraph.search_papers_subgraph import (
+    from airas.workflows.literature.search_papers_subgraph import (
         SearchPapersSubgraph,
     )
 

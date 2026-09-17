@@ -19,10 +19,8 @@ from airas.core.types.research_record import (
     SeyvalVerifier,
     VerifierKind,
 )
-from airas.usecases.literature.search_airas_records import (
-    AirasRecordsIndex,
-    search_airas_records,
-)
+from airas.infra.airas_records_index import AirasRecordsIndex
+from airas.usecases.literature.nodes.search_airas_records import search_airas_records
 from airas.usecases.literature.search_papers import search_papers
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)

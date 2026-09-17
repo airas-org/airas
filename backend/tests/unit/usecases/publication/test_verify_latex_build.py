@@ -12,10 +12,10 @@ from pathlib import Path
 
 import pytest
 
+from airas.usecases.publication.latex_build import verify_latex_build
 from airas.usecases.publication.open_in_overleaf_subgraph.nodes.collect_latex_project_files import (
     select_engine,
 )
-from airas.usecases.publication.verify_paper import verify_latex_build
 
 # Most documents here end in \bibliography{references}, so bibtex runs too.
 requires_tex = pytest.mark.skipif(

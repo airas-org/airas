@@ -33,13 +33,13 @@ A fresh session must be able to resume from the clone alone.
 the freeze commit exists, so the paper is written *before* the experiment
 runs:
 
-    setup_repository → register_sources → declare_passages
+    setup_repository → search_papers → fetch_paper_fulltext
       → generate_hypothesis → generate_design
-      → preregister_record            ← the freeze commit
+      → preregister_record(literature, hypotheses)   ← the freeze commit
       → write_experiment_code
       → dispatch_experiment → import_run_outputs
       → analyze_results
-      → realize_paper_values → verify → publish
+      → update_record → verify → publish
 
 The graphs in `usecases/autonomous_research/` predate this model and run
 experiments before writing the paper. They are not the starting point for

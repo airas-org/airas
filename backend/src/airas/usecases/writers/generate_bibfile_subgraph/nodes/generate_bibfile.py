@@ -6,6 +6,7 @@ import bibtexparser
 from bibtexparser.bibdatabase import BibDatabase
 
 from airas.core.types.research_study import ResearchStudy
+from airas.research_record.render.render_references_bib import unique_bibkey
 
 logger = logging.getLogger(__name__)
 
@@ -23,45 +24,6 @@ def _normalize_arxiv_id(arxiv_id: str) -> str:
     normalized = re.sub(r"\.pdf$", "", normalized)
     normalized = re.sub(r"v\d+$", "", normalized)
     return normalized
-
-
-def _extract_surname(author: str) -> str:
-    # Sources disagree on author formatting: OpenAlex/arXiv return
-    # "Ashish Vaswani" while Semantic Scholar can return "Vaswani, Ashish".
-    author = author.strip()
-    if "," in author:
-        surname = author.split(",", 1)[0]
-    else:
-        parts = author.split()
-        surname = parts[-1] if parts else ""
-    return surname.lower()
-
-
-def _generate_citation_key(title: str, authors: list[str], year) -> str:
-    first_author = ""
-    if authors:
-        first_author = _extract_surname(authors[0]) or "author"
-    else:
-        first_author = "author"
-
-    year_str = str(year) if year else "year"
-
-    title_words = re.findall(r"\b[a-zA-Z]{3,}\b", title.lower()) if title else []
-    first_word = title_words[0] if title_words else "title"
-
-    first_author = re.sub(r"[^a-z0-9]", "", first_author) or "author"
-    first_word = re.sub(r"[^a-z0-9]", "", first_word) or "title"
-
-    citation_key = f"{first_author}-{year_str}-{first_word}"
-    return citation_key
-
-
-def _disambiguation_suffix(occurrence: int) -> str:
-    suffix = ""
-    while occurrence > 0:
-        occurrence, remainder = divmod(occurrence - 1, 26)
-        suffix = chr(ord("a") + remainder) + suffix
-    return suffix
 
 
 def _extract_year(published_date) -> str | None:
@@ -138,38 +100,22 @@ def generate_bibfile(
     if not research_study_list:
         return ""
 
-    seen_citation_keys: dict[str, str] = {}
+    taken: set[str] = set()
     db_research = BibDatabase()
 
     for i, ref in enumerate(research_study_list):
-        entry = _generate_bibfile_entry(ref, i)
+        entry = _generate_bibfile_entry(ref, i, taken)
         if entry is None:
             continue
-
-        base_key = entry["ID"]
-        title = entry.get("title", "")
-        if base_key in seen_citation_keys:
-            occurrence = 1
-            citation_key = f"{base_key}{_disambiguation_suffix(occurrence)}"
-            while citation_key in seen_citation_keys:
-                occurrence += 1
-                citation_key = f"{base_key}{_disambiguation_suffix(occurrence)}"
-            logger.warning(
-                f"Citation key collision on {base_key!r} between "
-                f"{seen_citation_keys[base_key]!r} and {title!r}; "
-                f"emitting the latter as {citation_key!r}."
-            )
-            entry["ID"] = citation_key
-        else:
-            citation_key = base_key
-
+        taken.add(entry["ID"])
         db_research.entries.append(entry)
-        seen_citation_keys[citation_key] = title
 
     return bibtexparser.dumps(db_research).strip()
 
 
-def _generate_bibfile_entry(ref: ResearchStudy, index: int) -> dict | None:
+def _generate_bibfile_entry(
+    ref: ResearchStudy, index: int, taken: set[str]
+) -> dict | None:
     meta_data = ref.meta_data
 
     title = (ref.title or "").strip()
@@ -193,7 +139,11 @@ def _generate_bibfile_entry(ref: ResearchStudy, index: int) -> dict | None:
         )
         return None
 
-    citation_key = _generate_citation_key(title, authors, year)
+    citation_key = unique_bibkey(title, authors, year, taken)
+    if citation_key != unique_bibkey(title, authors, year, set()):
+        logger.warning(
+            f"Citation key collision for {study_label!r}; emitting it as {citation_key!r}."
+        )
 
     entry = {
         "ID": citation_key,

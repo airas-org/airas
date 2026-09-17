@@ -229,11 +229,11 @@ classDiagram
 | 参照解決 | `grounded_on` / `cites_passages` / `reference_passage` の id が既知の passage |
 | 時系列 | 宣言を含む各コミットで、その宣言が名指す passage が既に record にある（後から登録した passage を根拠にできない） |
 | 引用（verify_paper） | main.tex の `\cite` の鍵が登録済み bibkey、`\cite[s1.p2]{key}` の locator がその source の passage、references.bib が再生成と一致。引かれなかった source は `uncited_sources` として報告（失敗ではない） |
-| 文意（verify_paper） | record に judgment が一つでもあれば、今の引用文（main.tex の `\cite[s1.p2]{key}` を含む段落、claim の statement + rationale、hypothesis の statement）ごとに対応する judgment を探す。無いものは `unjudged_citations` として**失敗**、`supported: false` は `unsupported_citations` として報告（失敗ではない）。判定そのものは `judge_citations`（MCP）か `airas judge-citations`（CI）が LLM で行って record に書き、gate は LLM を呼ばない |
+| 文意（verify_paper） | record に judgment が一つでもあれば、今の引用文（main.tex の `\cite[s1.p2]{key}` を含む段落、claim の statement + rationale、hypothesis の statement）ごとに対応する judgment を探す。無いものは `unjudged_citations` として**失敗**、`supported: false` は `unsupported_citations` として報告（失敗ではない）。判定そのものは `verify_paper_values(model=...)`（MCP）か `airas verify-paper --model`（CI）が LLM で行い、record に書いてから同じ呼び出しで集計する |
 
 ### 実在の条件
 
-`register_sources` が識別子ごとに問い合わせる。一つも found が無ければ拒否し、ネットワーク障害は found にならない。
+`preregister_record`（freeze 後は `append_to_record`）が literature の識別子ごとに問い合わせる。一つも found が無ければ拒否し、ネットワーク障害は found にならない。
 
 | 識別子 | found の条件 |
 | --- | --- |
@@ -249,9 +249,9 @@ classDiagram
 
 ## 木構造
 
-- **literature[]** 依拠した文献。`register_sources` が書く
+- **literature[]** 依拠した文献。`preregister_record` の `literature` が書く（freeze 後の追加は `append_to_record`）
   - `id` `"s1"`, `"s2"`, …
-  - `kind` `"paper"` / `"repository"` / `"airas_record"`（AIRAS が生成した研究。`register_sources(papers=[{"airas_record": "owner/repo@sha"}])`）
+  - `kind` `"paper"` / `"repository"` / `"airas_record"`（AIRAS が生成した研究。`literature=[{"airas_record": "owner/repo@sha"}]`）
   - `title` / `authors[]` / `year` / `venue`
   - `doi` / `arxiv_id` / `url`。repository と airas_record は `url` と `commit`
   - `bibkey` `\cite` の鍵（`<surname>-<year>-<word>`）。`references.bib` はここから再生成
@@ -263,7 +263,7 @@ classDiagram
     - `node_type` `claim` / `result` / `method` / `setup` / `gap` / `definition`。何を述べる箇所か（グラフ探索はここで絞る）
     - `anchor` `text` / `table` / `figure` / `code`。どこにあるか。既定 `text`
     - `quote` fulltext.txt からの逐語コピー
-    - **judgments[]** モデルがこの箇所の引用を読んだ結果。`judge_citations` が書く（手では書かない）。append-only
+    - **judgments[]** モデルがこの箇所の引用を読んだ結果。`verify_paper_values` / `airas verify-paper` に model を渡すと書く（手では書かない）。append-only
       - `text_sha256` 引用側の文のハッシュ。書き直せば判定は古くなり、再判定が要る
       - `model` / `supported` / `reason`
 - **hypotheses[]** 仮説の一覧
@@ -345,7 +345,7 @@ classDiagram
 | 生成物 | 元 | 段階 |
 | --- | --- | --- |
 | `claims.tex` | claims の statement / rationale / criterion / prediction / observed / verdict と hypothesis の assumptions。`grounded_on` / `cites_passages` の id と、末尾に Sources（各 source の bibkey・題名と passage の逐語引用） | prereg から（未着は pending） |
-| `references.bib` | literature[]（bibkey ごとに 1 エントリ） | register_sources 時 |
+| `references.bib` | literature[]（bibkey ごとに 1 エントリ） | preregister_record 時 |
 | `values.tex` | `\airasval{<run_id>.<metric>}` の値 | results 以降 |
 | `tables/<key>.tex` | tables[] | results 以降 |
 

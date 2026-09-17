@@ -12,7 +12,7 @@ from airas.core.types.research_history import ResearchHistory
 from airas.core.types.runner import ExperimentRunnerConfig
 from airas.core.types.wandb import WandbConfig
 from airas.dashboard.api.schemas.github import GitHubConfigRequest
-from airas.usecases.autonomous_research.topic_open_ended_research.topic_open_ended_research import (
+from airas.workflows.autonomous_research.topic_open_ended_research.topic_open_ended_research import (
     TopicOpenEndedResearchLLMMapping,
 )
 

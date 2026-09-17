@@ -12,7 +12,6 @@ from airas.core.types.experimental_design import (
 )
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.paper import PaperContent
-from airas.core.types.research_history import ResearchHistory
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_record import LiteratureSource
 from airas.core.types.research_study import ResearchStudy
@@ -275,7 +274,7 @@ def _latex_conversion(inputs: _LatexConversionInputs) -> dict[str, Any]:
             "<< results >>, << conclusion >> — replace each marker with the "
             "corresponding section and save the result as "
             ".research/latex/{template}/main.tex. 3) The bibliography: when "
-            "the record has literature, register_sources already wrote "
+            "the record has literature, preregister_record already wrote "
             ".research/latex/{template}/references.bib and the gate "
             "regenerates it — leave it alone; otherwise write generate_bibfile's "
             "output there, overwriting the placeholder the template ships — "
@@ -295,28 +294,11 @@ _STEP_BUILDERS: dict[str, tuple[type[BaseModel], Any]] = {
 }
 
 
-# Not a generation step, but the same problem: `upload_research_history`
-# takes a dict whose accepted shape was written down nowhere, and pydantic's
-# default `extra="ignore"` discarded every key that missed it. Publishing it
-# here keeps one place to ask "what does this tool want".
-_EXTRA_INPUT_SCHEMAS: dict[str, type[BaseModel]] = {
-    "research_history": ResearchHistory,
-}
-
-_KNOWN_SCHEMAS = (*GENERATION_STEPS, *_EXTRA_INPUT_SCHEMAS)
-
-
 def get_input_json_schema(step: str) -> dict[str, Any]:
     """The JSON Schema of the `inputs` a step expects."""
-    if model := _EXTRA_INPUT_SCHEMAS.get(step):
-        return model.model_json_schema()
     if step not in _STEP_BUILDERS:
-        # Lists the non-step schemas too, because this is the one place they
-        # can be asked for. The generation path below must not: offering
-        # research_history as an "available step" would send the caller
-        # straight into a second error.
         raise ValueError(
-            f"No input schema for '{step}'. Available: {', '.join(_KNOWN_SCHEMAS)}"
+            f"No input schema for '{step}'. Available: {', '.join(GENERATION_STEPS)}"
         )
     return _STEP_BUILDERS[step][0].model_json_schema()
 

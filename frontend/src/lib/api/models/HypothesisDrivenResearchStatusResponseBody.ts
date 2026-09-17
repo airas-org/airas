@@ -2,7 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ResearchHistory_Output } from './ResearchHistory_Output';
+import type { ResearchHistory } from './ResearchHistory';
 import type { Status } from './Status';
 import type { StepType } from './StepType';
 export type HypothesisDrivenResearchStatusResponseBody = {
@@ -18,6 +18,6 @@ export type HypothesisDrivenResearchStatusResponseBody = {
     github_url?: (string | null);
     readonly task_id: string;
     readonly error: (string | null);
-    readonly research_history: (ResearchHistory_Output | null);
+    readonly research_history: (ResearchHistory | null);
 };
 

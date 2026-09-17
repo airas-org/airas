@@ -12,7 +12,7 @@ from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.runner import ExperimentRunnerConfig
 from airas.core.types.wandb import WandbConfig
 from airas.dashboard.api.schemas.github import GitHubConfigRequest
-from airas.usecases.autonomous_research.hypothesis_driven_research.hypothesis_driven_research import (
+from airas.workflows.autonomous_research.hypothesis_driven_research.hypothesis_driven_research import (
     HypothesisDrivenResearchLLMMapping,
 )
 

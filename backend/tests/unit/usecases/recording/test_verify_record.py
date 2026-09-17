@@ -37,31 +37,26 @@ from airas.core.types.run_provenance import (
     ResultsDirProvenance,
     RunProvenanceManifest,
 )
-from airas.research_record.citations import collect_citations
-from airas.research_record.derive_results import (
-    update_record_with_results,
-)
-from airas.research_record.read_run_outputs import (
-    load_metrics_data,
-)
-from airas.research_record.store import (
-    load_record,
-    save_record,
-)
-from airas.research_record.verify import RecordVerification, verify_record
-from airas.usecases.literature.bibliography import (
-    render_references_bib,
-)
-from airas.usecases.literature.fulltext_snapshot import (
-    write_fulltext,
-)
-from airas.usecases.publication.judge_citations import judge_citations
-from airas.usecases.publication.map_record_to_publication import (
-    render_claims_tex,
+from airas.research_record.read.load_record import load_record
+from airas.research_record.read.read_run_outputs import load_metrics_data
+from airas.research_record.read.scan_main_tex import scan_main_tex
+from airas.research_record.render.render_claims_tex import render_claims_tex
+from airas.research_record.render.render_paper_values import (
     render_values_tex,
     resolve_paper_values,
 )
-from airas.usecases.publication.verify_paper import scan_main_tex, verify_paper
+from airas.research_record.render.render_references_bib import render_references_bib
+from airas.research_record.update._add_literatures import (
+    _write_fulltext as write_fulltext,
+)
+from airas.research_record.update.append_to_record import (
+    _append_run_results as update_record_with_results,
+)
+from airas.research_record.verify._verify_citation_meaning import (
+    _collect_citations as collect_citations,
+)
+from airas.research_record.verify.verify_paper import verify_paper
+from airas.research_record.verify.verify_record import RecordVerification, verify_record
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 
@@ -167,7 +162,7 @@ def _realized_repo(tmp_path: Path, proposed_mode: str = "full") -> Path:
     """A repository carried through preregistration, running and realization."""
     _init(tmp_path)
     record = _record()
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     freeze = _commit(tmp_path, "prereg")
 
     manifest = _write_results(tmp_path, freeze, proposed_mode)
@@ -176,7 +171,7 @@ def _realized_repo(tmp_path: Path, proposed_mode: str = "full") -> Path:
     update_record_with_results(
         tmp_path, record, load_metrics_data(str(tmp_path)), manifest
     )
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     _commit(tmp_path, "realize the record")
     return tmp_path
 
@@ -194,7 +189,7 @@ def test_a_repository_with_no_record_fails(tmp_path: Path) -> None:
 
 def test_a_preregistered_record_with_no_runs_passes(tmp_path: Path) -> None:
     _init(tmp_path)
-    save_record(str(tmp_path), _record())
+    _record().save(str(tmp_path))
     _commit(tmp_path, "prereg")
 
     report = _verify(str(tmp_path))
@@ -221,7 +216,7 @@ def test_a_reworded_claim_fails(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
     record = load_record(str(repo))
     _c1(record).statement = "Proposed is competitive with baseline."
-    save_record(str(repo), record)
+    record.save(str(repo))
 
     report = _verify(str(repo))
     assert not report.ok
@@ -233,7 +228,7 @@ def test_a_dropped_result_fails(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
     record = load_record(str(repo))
     _c1(record).designs[0].runs[0].results.clear()
-    save_record(str(repo), record)
+    record.save(str(repo))
 
     report = _verify(str(repo))
     assert not report.ok
@@ -245,7 +240,7 @@ def test_a_claim_declared_after_its_run_is_allowed_for_now(tmp_path: Path) -> No
     run executed is verified once the run's results are in."""
     _init(tmp_path)
     record = _record()
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     freeze = _commit(tmp_path, "prereg")
     manifest = _write_results(tmp_path, freeze)
     _commit(tmp_path, "import")
@@ -271,7 +266,7 @@ def test_a_claim_declared_after_its_run_is_allowed_for_now(tmp_path: Path) -> No
     update_record_with_results(
         tmp_path, record, load_metrics_data(str(tmp_path)), manifest
     )
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     _commit(tmp_path, "post-hoc claim with results")
 
     report = _verify(str(tmp_path))
@@ -318,7 +313,7 @@ def test_a_hand_appended_result_fails(tmp_path: Path) -> None:
             metrics={"accuracy": 0.999},
         )
     )
-    save_record(str(repo), record)
+    record.save(str(repo))
 
     report = _verify(str(repo))
     assert not report.ok
@@ -344,7 +339,7 @@ def test_a_run_dispatched_under_other_conditions_fails(tmp_path: Path) -> None:
 def test_an_inputs_hash_that_is_not_the_file_fails(tmp_path: Path) -> None:
     _init(tmp_path)
     record = _record()
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     freeze = _commit(tmp_path, "prereg")
     manifest = _write_results(tmp_path, freeze)
     inputs_dir = tmp_path / ".research" / "results" / "proposed" / "eval_inputs"
@@ -354,7 +349,7 @@ def test_an_inputs_hash_that_is_not_the_file_fails(tmp_path: Path) -> None:
     update_record_with_results(
         tmp_path, record, load_metrics_data(str(tmp_path)), manifest
     )
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     _commit(tmp_path, "realize")
     assert _verify(str(tmp_path)).ok
 
@@ -374,7 +369,7 @@ def test_the_evaluators_own_inputs_digest_is_not_held_against_the_file_hash(
     """
     _init(tmp_path)
     record = _record()
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     freeze = _commit(tmp_path, "prereg")
     manifest = _write_results(tmp_path, freeze)
     run_dir = tmp_path / ".research" / "results" / "proposed"
@@ -394,7 +389,7 @@ def test_the_evaluators_own_inputs_digest_is_not_held_against_the_file_hash(
     update_record_with_results(
         tmp_path, record, load_metrics_data(str(tmp_path)), manifest
     )
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     _commit(tmp_path, "realize")
 
     report = _verify(str(tmp_path))
@@ -421,7 +416,7 @@ def test_results_in_the_record_without_run_outputs_fail(tmp_path: Path) -> None:
     _c1(record).designs[0].runs[0].results.append(
         SeyvalResult(verifier="seyval", id="made-up", metrics={"accuracy": 0.99})
     )
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     _commit(tmp_path, "prereg with invented results")
 
     report = _verify(str(tmp_path))
@@ -456,7 +451,7 @@ def test_a_reworded_claim_is_reported_as_violated_history(tmp_path: Path) -> Non
     repo = _realized_repo(tmp_path)
     record = load_record(str(repo))
     _c1(record).statement = "softened"
-    save_record(str(repo), record)
+    record.save(str(repo))
     result = _verify(str(repo), require_history=True)
     assert not result.ok
     assert any("statement" in p for p in result.problems)
@@ -490,7 +485,7 @@ def test_unreachable_provenance_fails_where_required(tmp_path: Path) -> None:
 
 
 def test_a_shallow_clone_fails_rather_than_passing_quietly(tmp_path: Path) -> None:
-    save_record(str(tmp_path), _record())
+    _record().save(str(tmp_path))
     result = _verify(str(tmp_path), require_history=True)
     assert not result.ok
     assert any("fetch-depth" in p for p in result.problems)
@@ -610,7 +605,7 @@ def test_a_rerun_that_flips_the_outcome_is_drift_not_a_new_verdict(
     )
     assert statuses[0].verdict == "refuted"
     assert _c1(record).verdict == "supported"  # written once, never back
-    save_record(str(repo), record)
+    record.save(str(repo))
     _commit(repo, "re-run")
 
     result = _verify(str(repo))
@@ -621,7 +616,7 @@ def test_a_rerun_that_flips_the_outcome_is_drift_not_a_new_verdict(
 def test_a_paper_may_list_its_claims_before_any_run(tmp_path: Path) -> None:
     _init(tmp_path)
     record = _record()
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     latex_dir = tmp_path / ".research" / "latex" / "mdpi"
     latex_dir.mkdir(parents=True)
     (latex_dir / "main.tex").write_text(
@@ -662,7 +657,7 @@ def test_an_empty_record_verifies(tmp_path: Path) -> None:
 
 def test_deleting_the_record_after_declaring_it_fails(tmp_path: Path) -> None:
     _init(tmp_path)
-    save_record(str(tmp_path), _record())
+    _record().save(str(tmp_path))
     _commit(tmp_path, "preregister")
     (tmp_path / RECORD_PATH).unlink()
     _commit(tmp_path, "delete the record")
@@ -676,15 +671,15 @@ def test_a_merge_cannot_hide_a_landed_declaration(tmp_path: Path) -> None:
     # git merge -s ours makes the protected tip an ancestor while keeping the
     # rewritten record; git's simplified path walk never listed that tip.
     _init(tmp_path)
-    save_record(str(tmp_path), ResearchRecord())
+    ResearchRecord().save(str(tmp_path))
     base = _commit(tmp_path, "initial empty record")
-    save_record(str(tmp_path), _record())
+    _record().save(str(tmp_path))
     _commit(tmp_path, "frozen original claim")
     _git(tmp_path, "branch", "protected-main")
     _git(tmp_path, "checkout", "-qb", "side", base)
     modified = _record()
     modified.hypotheses[0].claims[0].statement = "CHANGED AFTER FREEZE"
-    save_record(str(tmp_path), modified)
+    modified.save(str(tmp_path))
     _commit(tmp_path, "rewrite claim on side")
     _git(tmp_path, "merge", "-s", "ours", "--no-edit", "protected-main")
 
@@ -735,11 +730,11 @@ def _record_with(claim_ids: list[str]) -> ResearchRecord:
 def _fork(tmp_path: Path) -> str:
     """c1 on the base; `trunk` appends c2; `side` branches from the base."""
     _init(tmp_path)
-    save_record(str(tmp_path), _record_with(["c1"]))
+    _record_with(["c1"]).save(str(tmp_path))
     base = _commit(tmp_path, "c1")
     _git(tmp_path, "branch", "trunk")
     _git(tmp_path, "checkout", "-q", "trunk")
-    save_record(str(tmp_path), _record_with(["c1", "c2"]))
+    _record_with(["c1", "c2"]).save(str(tmp_path))
     _commit(tmp_path, "trunk appends c2")
     _git(tmp_path, "checkout", "-qb", "side", base)
     return base
@@ -769,13 +764,13 @@ def test_a_merge_of_two_concurrent_appends_is_an_append_only_conflict(
     never produces this — and such a merge must be redone as a linear
     append."""
     _fork(tmp_path)
-    save_record(str(tmp_path), _record_with(["c1", "c3"]))
+    _record_with(["c1", "c3"]).save(str(tmp_path))
     _commit(tmp_path, "side appends c3")
     subprocess.run(  # conflicts on record.json; resolved below as the union
         ["git", "-C", str(tmp_path), "merge", "--no-commit", "--no-edit", "trunk"],
         capture_output=True,
     )
-    save_record(str(tmp_path), _record_with(["c1", "c2", "c3"]))
+    _record_with(["c1", "c2", "c3"]).save(str(tmp_path))
     _git(tmp_path, "add", "-A")
     _git(tmp_path, "commit", "-q", "-m", "merge: union of both appends")
 
@@ -852,7 +847,7 @@ def _grounded_repo(tmp_path: Path, **source_kw: Any) -> tuple[Path, ResearchReco
     record.literature.append(find_source(tmp_path, **source_kw))
     record.hypotheses[0].grounded_on = ["s1.p1"]
     _c1(record).cites_passages = ["s1.p1"]
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     return tmp_path, record
 
 
@@ -866,7 +861,7 @@ def test_a_hypothesis_grounded_on_a_registered_passage_passes(tmp_path: Path) ->
 def test_grounds_naming_a_passage_no_source_declares_fail(tmp_path: Path) -> None:
     repo, record = _grounded_repo(tmp_path)
     record.hypotheses[0].grounded_on.append("s1.p9")
-    save_record(str(repo), record)
+    record.save(str(repo))
     result = _verify(str(repo))
     assert any("hypothesis h1" in p and "'s1.p9'" in p for p in result.problems)
 
@@ -874,7 +869,7 @@ def test_grounds_naming_a_passage_no_source_declares_fail(tmp_path: Path) -> Non
 def test_a_quote_not_in_the_snapshot_fails(tmp_path: Path) -> None:
     repo, record = _grounded_repo(tmp_path)
     record.literature[0].passages[0].quote = "Dropout of 0.1 is applied."
-    save_record(str(repo), record)
+    record.save(str(repo))
     result = _verify(str(repo))
     assert any("passage s1.p1" in p and "verbatim" in p for p in result.problems)
 
@@ -899,18 +894,18 @@ def test_a_passage_registered_after_the_hypothesis_that_names_it_fails(
     _init(tmp_path)
     record = ResearchRecord(literature=[find_source(tmp_path)])
     record.literature[0].passages.clear()
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     _commit(tmp_path, "register the source")
 
     record.hypotheses = _record().hypotheses
     record.hypotheses[0].grounded_on = ["s1.p1"]
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     grounded = _commit(tmp_path, "prereg naming a passage that is not there yet")
 
     record.literature[0].passages.append(
         QuotedPassage(id="s1.p1", node_type="method", quote=QUOTE)
     )
-    save_record(str(tmp_path), record)
+    record.save(str(tmp_path))
     _commit(tmp_path, "the passage, after the fact")
 
     # The worktree alone is consistent; the history is what convicts it.
@@ -1007,8 +1002,11 @@ class _Judge:
 CITED = "Dropout is applied everywhere \\cite[s1.p1]{vaswani-2017-attention}."
 
 
-def _judge(repo: Path, judge: _Judge) -> dict[str, Any]:
-    return asyncio.run(judge_citations(str(repo), "judge-1", litellm_client=judge))
+def _judge(repo: Path, judge: _Judge) -> int:
+    """verify_paper with a model judges what is unjudged; returns how many."""
+    before = len(judge.prompts)
+    _verify_paper(str(repo), model="judge-1", litellm_client=judge)
+    return len(judge.prompts) - before
 
 
 def test_a_citation_no_judgment_covers_fails_the_gate(tmp_path: Path) -> None:
@@ -1032,8 +1030,8 @@ def test_the_judge_reads_every_citation_and_the_gate_reads_the_judgments(
     _write_cited_paper(repo, CITED + "\n\nUnrelated paragraph.")
     judge = _Judge(lambda where: where.startswith("hypothesis"))
 
-    written = _judge(repo, judge)
-    assert written["judged"] == 3 and written["commit"]
+    assert _judge(repo, judge) == 3
+    assert _git(repo, "log", "-1", "--format=%s") == "record: judge citations"
     assert [p.split("## Citing text (")[1].split(")")[0] for p in judge.prompts] == [
         r"main.tex \cite[s1.p1]{vaswani-2017-attention}",
         "hypothesis h1",
@@ -1060,7 +1058,7 @@ def test_the_judge_reads_every_citation_and_the_gate_reads_the_judgments(
     ]
 
     # Judged once: nothing to read again.
-    assert _judge(repo, judge)["judged"] == 0
+    assert _judge(repo, judge) == 0
 
     # A rewritten sentence is a new citation until judged.
     latex_dir = repo / ".research" / "latex" / "mdpi"
@@ -1114,7 +1112,7 @@ def test_a_citation_of_an_undeclared_passage_is_left_to_the_gate(
 def test_a_source_declared_twice_fails(tmp_path: Path) -> None:
     repo, record = _grounded_repo(tmp_path)
     record.literature.append(record.literature[0].model_copy(deep=True))
-    save_record(str(repo), record)
+    record.save(str(repo))
     result = _verify(str(repo))
     assert any("source s1: declared twice" in p for p in result.problems)
 
@@ -1125,7 +1123,7 @@ def test_a_source_without_a_snapshot_fails(tmp_path: Path) -> None:
     record.literature[0].passages.clear()
     record.hypotheses[0].grounded_on.clear()
     _c1(record).cites_passages.clear()
-    save_record(str(repo), record)
+    record.save(str(repo))
     result = _verify(str(repo))
     assert any("fulltext snapshot must be" in p for p in result.problems)
 
@@ -1134,7 +1132,7 @@ def test_a_snapshot_outside_its_own_directory_fails(tmp_path: Path) -> None:
     repo, record = _grounded_repo(tmp_path)
     (repo / "elsewhere.txt").write_text(PAGES[1])
     record.literature[0].fulltext.path = "elsewhere.txt"
-    save_record(str(repo), record)
+    record.save(str(repo))
     result = _verify(str(repo))
     assert any("fulltext snapshot must be" in p for p in result.problems)
 
@@ -1152,7 +1150,7 @@ def test_two_sources_sharing_a_bibkey_fail(tmp_path: Path) -> None:
         deep=True, update={"id": "s2", "passages": []}
     )
     record.literature.append(twin)
-    save_record(str(repo), record)
+    record.save(str(repo))
     result = _verify(str(repo))
     assert any(
         "bibkey 'vaswani-2017-attention' is also source s1's" in p

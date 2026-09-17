@@ -7,7 +7,7 @@ import sys
 import threading
 import webbrowser
 from pathlib import Path
-from typing import cast, get_args
+from typing import get_args
 
 from airas.agent_session.agent_state import (
     load_agent_state,
@@ -29,14 +29,13 @@ from airas.agent_session.research_trace import (
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.research_trace import DerivedFromRepository
 from airas.infra.litellm_client import LiteLLMClient
-from airas.research_record.verify import verify_record
-from airas.usecases.publication.judge_citations import judge_citations
-from airas.usecases.publication.verify_paper import (
-    build_paper,
+from airas.research_record.verify.verify_paper import verify_paper
+from airas.research_record.verify.verify_record import verify_record
+from airas.usecases.publication.detect_templates import (
     detect_templates,
     paper_directories,
-    verify_paper,
 )
+from airas.usecases.publication.latex_build import build_paper
 
 # "AIRAS" on a phone keypad (per ITU-T E.161); a high port to avoid the
 # crowded 8000 range.
@@ -91,6 +90,8 @@ def _run_verify_paper(args: argparse.Namespace) -> None:
                     args.no_provenance or args.allow_unavailable_provenance
                 ),
                 require_history=not args.allow_unavailable_history,
+                model=args.model,
+                litellm_client=LiteLLMClient() if args.model else None,
             )
         )
         for template in templates
@@ -112,24 +113,6 @@ def _run_publish_paper(args: argparse.Namespace) -> None:
     ]
     print(json.dumps([r.model_dump() for r in reports], indent=2, ensure_ascii=False))
     sys.exit(0 if all(r.ok for r in reports) else 1)
-
-
-def _run_judge_citations(args: argparse.Namespace) -> None:
-    # Every template verify-paper will read; with no paper yet, the record's
-    # own citations still get judged.
-    templates = args.template or detect_templates(args.local_path) or ["mdpi"]
-    results = [
-        asyncio.run(
-            judge_citations(
-                args.local_path,
-                args.model,
-                cast(LATEX_TEMPLATE_NAME, template),
-                litellm_client=LiteLLMClient(),
-            )
-        )
-        for template in templates
-    ]
-    print(json.dumps(results, indent=2, ensure_ascii=False))
 
 
 def _run_verify_record(args: argparse.Namespace) -> None:
@@ -299,6 +282,13 @@ def main() -> None:
         ),
     )
     verify.add_argument(
+        "--model",
+        help=(
+            "Have this model judge every citation no judgment covers before the "
+            "check, and write the judgments into record.json"
+        ),
+    )
+    verify.add_argument(
         "--no-provenance",
         action="store_true",
         help="Skip the provenance cross-check against the execution backend",
@@ -360,30 +350,6 @@ def main() -> None:
         ),
     )
 
-    judge = subparsers.add_parser(
-        "judge-citations",
-        help=(
-            "Have a model read every citation of a passage against the "
-            "passage and write the judgments into record.json — the paper "
-            "gate (verify-paper) fails on a citation no judgment covers"
-        ),
-    )
-    judge.add_argument(
-        "--local-path",
-        default=".",
-        help="Experiment repository checkout to judge (default: .)",
-    )
-    judge.add_argument("--model", required=True, help="Model name, as for the tools")
-    judge.add_argument(
-        "--template",
-        action="append",
-        choices=get_args(LATEX_TEMPLATE_NAME),
-        help=(
-            "LaTeX template whose main.tex is read (repeatable); default: every "
-            "known template under .research/latex/ that has a main.tex"
-        ),
-    )
-
     publish = subparsers.add_parser(
         "publish-paper",
         help=(
@@ -425,8 +391,6 @@ def main() -> None:
         _run_publish_paper(args)
     elif args.command == "verify-record":
         _run_verify_record(args)
-    elif args.command == "judge-citations":
-        _run_judge_citations(args)
     else:
         # No subcommand (or `mcp`): stdio MCP server, the historical default.
         _run_mcp()
