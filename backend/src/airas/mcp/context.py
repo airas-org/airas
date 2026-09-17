@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from airas.core.credentials import SETUP_INSTRUCTIONS, refresh_environment
 from airas.core.types.llm_provider import LLMProvider
+from airas.infra.airas_db_client import AirasDbClient
 from airas.infra.airas_db_index import AirasDbPaperSearchIndex
 from airas.infra.airas_records_client import AirasRecordsClient
 from airas.infra.airas_records_index import AirasRecordsIndex
@@ -27,10 +28,6 @@ from airas.infra.run_output_store import RunOutputStore, build_store
 from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.infra.seyval_client import SeyvalClient
 
-# BM25 index over the AIRAS papers DB; built lazily on first search and
-# reused for the lifetime of the server process.
-_search_index = AirasDbPaperSearchIndex()
-
 # Process-lifetime HTTP sessions (the stdio server exits with the client,
 # so these are closed by process teardown).
 _GITHUB_TIMEOUT = httpx.Timeout(connect=10.0, read=60.0, write=120.0, pool=5.0)
@@ -41,7 +38,9 @@ _github_async_session = httpx.AsyncClient(
 _sync_session = httpx.Client(follow_redirects=True)
 _async_session = httpx.AsyncClient(follow_redirects=True)
 
-# BM25 index over the research records AIRAS produced; built on first search.
+# BM25 indexes over the AIRAS papers DB and over the research records AIRAS
+# produced; built lazily on first search and reused for the life of the server.
+_search_index = AirasDbPaperSearchIndex(AirasDbClient(async_session=_async_session))
 _records_index = AirasRecordsIndex(AirasRecordsClient(async_session=_async_session))
 
 

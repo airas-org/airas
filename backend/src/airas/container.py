@@ -8,6 +8,7 @@ from hishel import CacheOptions, SpecificationPolicy
 from hishel.httpx import AsyncCacheClient, SyncCacheClient
 
 from airas.dashboard.api.verification_session_store import VerificationService
+from airas.infra.airas_db_client import AirasDbClient
 from airas.infra.airas_db_index import AirasDbPaperSearchIndex
 from airas.infra.airas_records_client import AirasRecordsClient
 from airas.infra.airas_records_index import AirasRecordsIndex
@@ -140,8 +141,13 @@ class Container(containers.DeclarativeContainer):
     )
 
     # --- Search Index ---
+    airas_db_client: providers.Factory[AirasDbClient] = providers.Factory(
+        AirasDbClient,
+        sync_session=sync_session,
+        async_session=async_session,
+    )
     airas_db_search_index: providers.Singleton[AirasDbPaperSearchIndex] = (
-        providers.Singleton(AirasDbPaperSearchIndex)
+        providers.Singleton(AirasDbPaperSearchIndex, airas_db_client)
     )
     airas_records_client: providers.Factory[AirasRecordsClient] = providers.Factory(
         AirasRecordsClient,
