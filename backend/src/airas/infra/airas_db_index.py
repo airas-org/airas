@@ -45,7 +45,10 @@ class AirasDbPaperSearchIndex:
         if not self._bm25 or not self._papers:
             return []
         scores = self._bm25.get_scores(self._tokenize_with_stem(query))
+        # Stable: equal scores keep the store's own order.
         ranked = sorted(
-            ((score, i) for i, score in enumerate(scores) if score > 0), reverse=True
+            ((score, i) for i, score in enumerate(scores) if score > 0),
+            key=lambda item: item[0],
+            reverse=True,
         )
         return [self._papers[i] for _, i in ranked[:max_results]]

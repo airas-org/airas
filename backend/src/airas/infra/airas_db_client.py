@@ -49,7 +49,9 @@ class AirasDbClient(BaseHTTPClient):
         papers: list[dict[str, Any]] = []
         failed = 0
         for path, result in zip(paths, results, strict=True):
-            if isinstance(result, BaseException):
+            if isinstance(result, BaseException) and not isinstance(result, Exception):
+                raise result  # a cancellation is not a file that failed to load
+            if isinstance(result, Exception):
                 failed += 1
                 logger.warning(f"airas-papers-db: {path} not loaded: {result}")
                 continue

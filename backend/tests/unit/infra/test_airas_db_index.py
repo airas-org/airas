@@ -17,12 +17,15 @@ FILES = {
 }
 
 
-def _client(monkeypatch: pytest.MonkeyPatch, files: dict[str, Any]) -> AirasDbClient:
+def _client(
+    monkeypatch: pytest.MonkeyPatch, files: dict[str, Any], requested: list[str]
+) -> AirasDbClient:
     monkeypatch.setattr(
         client_module, "CONFERENCES_AND_YEARS", {"iclr": ["2020"], "acl": ["2021"]}
     )
 
     def handler(request: httpx.Request) -> httpx.Response:
+        requested.append(request.url.path)
         if request.url.path in files:
             return httpx.Response(200, json=files[request.url.path])
         return httpx.Response(404)
@@ -36,14 +39,18 @@ def _client(monkeypatch: pytest.MonkeyPatch, files: dict[str, Any]) -> AirasDbCl
 async def test_every_configured_file_is_fetched_and_a_missing_one_is_skipped(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client = _client(monkeypatch, {k: v for k, v in FILES.items() if "iclr" in k})
+    requested: list[str] = []
+    client = _client(
+        monkeypatch, {k: v for k, v in FILES.items() if "iclr" in k}, requested
+    )
     assert [p["id"] for p in await client.papers()] == ["1", "2"]
+    assert sorted(requested) == sorted(FILES)
 
 
 async def test_the_index_ranks_titles_from_what_the_client_fetched(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    index = AirasDbPaperSearchIndex(_client(monkeypatch, FILES))
+    index = AirasDbPaperSearchIndex(_client(monkeypatch, FILES, []))
     assert await index.search("label smoothing", 5) == [
         "Label Smoothing Meets Noisy Labels"
     ]
