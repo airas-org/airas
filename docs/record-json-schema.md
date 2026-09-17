@@ -27,7 +27,7 @@ classDiagram
         title, authors, year, venue
         doi, arxiv_id, url, commit
         bibkey: str
-        verified_by: airas_db | doi.org | arxiv | git | airas_records
+        verified_by: doi.org | arxiv | git | airas_records
         verified_at: str
         fulltext: InputRef
         parser: str
@@ -237,7 +237,6 @@ classDiagram
 
 | 識別子 | found の条件 |
 | --- | --- |
-| `airas_db` | airas-papers-db の索引にその id のレコードがある。title / authors / year / venue はレコードから取る |
 | `doi` | `HEAD https://doi.org/<doi>`（リダイレクトは追わない）が 2xx か 3xx。404 は not_found |
 | `arxiv_id` | arXiv API がその id で entry を 1 件以上返す |
 | repository | `git fetch --depth 1 <url> <40-hex sha>` が成功し、指定ファイルが `git show` できる |
@@ -364,7 +363,7 @@ classDiagram
     "venue": "JMLR",
     "url": "https://jmlr.org/papers/v15/srivastava14a.html",
     "bibkey": "srivastava-2014-dropout",
-    "verified_by": "airas_db",
+    "verified_by": "doi.org",
     "verified_at": "2026-09-15T09:00:00+00:00",
     "fulltext": {"path": ".research/sources/s1/fulltext.txt", "sha256": "…"},
     "parser": "pymupdf 1.26.0",

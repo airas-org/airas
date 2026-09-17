@@ -14,7 +14,6 @@ import httpx
 from airas.core.research_paths import PAGE_SEPARATOR, RECORD_PATH
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.literature_material import LiteratureMaterial
-from airas.infra.airas_db_index import AirasDbPaperSearchIndex
 from airas.infra.airas_records_index import AirasRecordsIndex
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.semantic_scholar_client import SemanticScholarClient
@@ -28,7 +27,6 @@ from airas.usecases.literature.nodes.fetch_fulltext_from_url import (
     parser_version,
 )
 from airas.usecases.literature.nodes.resolve_pdf_url import lookup_doi, resolve_pdf_url
-from airas.usecases.literature.nodes.search_airas_db import _parse_authors
 
 
 def _now() -> str:
@@ -120,25 +118,20 @@ async def _airas_record(
 async def _paper(
     entry: dict[str, Any],
     *,
-    search_index: AirasDbPaperSearchIndex,
     arxiv_client: ArxivClient,
     semantic_scholar_client: SemanticScholarClient,
     http: httpx.AsyncClient,
 ) -> LiteratureMaterial:
-    db_id = str(entry.get("airas_db") or "") or None
-    db_record = await search_index.get(db_id) if db_id else None
-    metadata = _airas_db_metadata(db_record) if db_record else {}
-    title = metadata.get("title") or (entry.get("title") or "").strip()
+    title = (entry.get("title") or "").strip()
     doi = (entry.get("doi") or "").strip() or None
     arxiv_id = (entry.get("arxiv_id") or "").strip() or None
-    label = title or db_id or doi or arxiv_id
-    if not (db_id or doi or arxiv_id):
+    label = title or doi or arxiv_id
+    if not (doi or arxiv_id):
         raise ValueError(
-            f"'{label}': a paper needs an airas_db id, a doi or an arxiv_id "
-            "so that its existence can be checked"
+            f"'{label}': a paper needs a doi or an arxiv_id so that its "
+            "existence can be checked"
         )
     registries, verified_at = await _verify_paper_existence(
-        airas_db_record={} if db_id and db_record is None else db_record,
         doi=doi,
         arxiv_id=arxiv_id,
         arxiv=arxiv_client,
@@ -148,7 +141,7 @@ async def _paper(
     if not verified_by:
         raise ValueError(f"'{label}': no registry verified it ({registries})")
 
-    pdf_url = entry.get("pdf_url") or metadata.get("url")
+    pdf_url = entry.get("pdf_url")
     fulltext_path = entry.get("fulltext_path")
     if fulltext_path and Path(fulltext_path).is_file():
         pages = Path(fulltext_path).read_text(encoding="utf-8").split(PAGE_SEPARATOR)
@@ -160,8 +153,15 @@ async def _paper(
             )
         pages, pdf_url = fetched["pages"], fetched["pdf_url"]
     # The registry confirmed the identifier; this ties the text to it.
-    # Case-insensitive: title pages are often set in capitals.
-    if title and not passage_is_quoted("".join(pages[:2]).casefold(), title.casefold()):
+    # Case-insensitive (title pages are often set in capitals) and, as a
+    # fallback, space-insensitive: extractors drop the spaces around symbols.
+    head = "".join(pages[:2]).casefold()
+    if title and not (
+        passage_is_quoted(head, title.casefold())
+        or passage_is_quoted(
+            re.sub(r"\s+", "", head), re.sub(r"\s+", "", title.casefold())
+        )
+    ):
         raise ValueError(
             f"'{label}': the PDF's first pages do not carry this title — "
             "is pdf_url the right paper?"
@@ -169,12 +169,12 @@ async def _paper(
     return LiteratureMaterial(
         kind="paper",
         title=title,
-        authors=metadata.get("authors") or entry.get("authors") or [],
-        year=metadata.get("year") or entry.get("year"),
-        venue=metadata.get("venue") or entry.get("venue") or "",
+        authors=entry.get("authors") or [],
+        year=entry.get("year"),
+        venue=entry.get("venue") or "",
         doi=doi,
         arxiv_id=arxiv_id,
-        url=entry.get("url") or metadata.get("url") or pdf_url,
+        url=entry.get("url") or pdf_url,
         pages=pages,
         verified_by=verified_by,
         verified_at=verified_at,
@@ -186,7 +186,6 @@ async def _paper(
 async def resolve_literatures(
     entries: list[dict[str, Any]],
     *,
-    search_index: AirasDbPaperSearchIndex,
     records_index: AirasRecordsIndex,
     arxiv_client: ArxivClient,
     semantic_scholar_client: SemanticScholarClient,
@@ -202,7 +201,6 @@ async def resolve_literatures(
             materials.append(
                 await _paper(
                     entry,
-                    search_index=search_index,
                     arxiv_client=arxiv_client,
                     semantic_scholar_client=semantic_scholar_client,
                     http=http,
@@ -211,35 +209,18 @@ async def resolve_literatures(
     return materials
 
 
-def _airas_db_metadata(record: dict[str, Any]) -> dict[str, Any]:
-    year = record.get("year")
-    paper_url = record.get("paper_url")
-    return {
-        "title": record.get("title") or "",
-        "authors": _parse_authors(record.get("authors")),
-        "year": int(year) if year else None,
-        "venue": record.get("conference") or "",
-        "url": paper_url if paper_url and paper_url != "None" else None,
-    }
-
-
 async def _verify_paper_existence(
     *,
-    airas_db_record: dict[str, Any] | None,
     doi: str | None,
     arxiv_id: str | None,
     arxiv: ArxivClient,
     http: httpx.AsyncClient,
 ) -> tuple[dict[str, str], str]:
     """registry -> found | not_found | 'error: ...' for the registry behind
-    each identifier given, and when it was asked. The same check for a paper
-    from airas-papers-db and for one the agent found on the web."""
+    each identifier given, and when it was asked."""
     # TODO: OpenAlex / Semantic Scholar could confirm and enrich too; skipped
     # because the indexers miss papers the resolvers know.
     registries: dict[str, str] = {}
-    if airas_db_record is not None:
-        registries["airas_db"] = "found" if airas_db_record else "not_found"
-
     if doi:
         try:
             response = await http.head(

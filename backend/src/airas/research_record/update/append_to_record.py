@@ -16,7 +16,6 @@ from airas.core.types.research_record import (
     ResearchRecord,
 )
 from airas.core.types.run_provenance import RunProvenanceManifest
-from airas.infra.airas_db_index import AirasDbPaperSearchIndex
 from airas.infra.airas_records_index import AirasRecordsIndex
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.local_git import (
@@ -169,7 +168,6 @@ async def append_to_record(
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
     literature: list[dict[str, Any]] | None = None,
     *,
-    search_index: AirasDbPaperSearchIndex | None = None,
     records_index: AirasRecordsIndex | None = None,
     arxiv_client: ArxivClient | None = None,
     semantic_scholar_client: SemanticScholarClient | None = None,
@@ -182,7 +180,6 @@ async def append_to_record(
     materials = (
         await resolve_literatures(
             literature,
-            search_index=_required(search_index, "search_index"),
             records_index=_required(records_index, "records_index"),
             arxiv_client=_required(arxiv_client, "arxiv_client"),
             semantic_scholar_client=_required(

@@ -18,9 +18,6 @@ from airas.research_record.update._add_literatures import (
     _write_fulltext as write_fulltext,
 )
 from airas.research_record.update._resolve_literatures import (
-    _airas_db_metadata as airas_db_metadata,
-)
-from airas.research_record.update._resolve_literatures import (
     _verify_paper_existence as verify_paper_existence,
 )
 from airas.research_record.verify._verify_quoted_passages import (
@@ -224,27 +221,6 @@ def test_a_file_missing_at_the_commit_is_refused(tmp_path: Path) -> None:
         fetch_fulltext_from_repository(str(repo), commit, ["src/missing.py"])
 
 
-# ---------------------------------------------------------- airas-papers-db
-
-
-def test_a_db_record_yields_what_a_citation_needs() -> None:
-    record = {
-        "id": "e369",
-        "title": "Attention Is All You Need",
-        "authors": "['Ashish Vaswani', 'Noam Shazeer']",
-        "year": "2017",
-        "conference": "neurips",
-        "paper_url": "None",
-    }
-    assert airas_db_metadata(record) == {
-        "title": "Attention Is All You Need",
-        "authors": ["Ashish Vaswani", "Noam Shazeer"],
-        "year": 2017,
-        "venue": "neurips",
-        "url": None,
-    }
-
-
 # ----------------------------------------------------------- the registries
 
 ATOM = """<?xml version="1.0"?>
@@ -273,13 +249,12 @@ def _doi_org(status: int) -> httpx.AsyncClient:
 
 async def test_each_identifier_is_asked_of_its_own_registry() -> None:
     registries, at = await verify_paper_existence(
-        airas_db_record={"id": "e369"},
         doi="10.5555/3295222.3295349",
         arxiv_id="1706.03762",
         arxiv=_Arxiv(ATOM),
         http=_doi_org(302),
     )
-    assert registries == {"airas_db": "found", "doi.org": "found", "arxiv": "found"}
+    assert registries == {"doi.org": "found", "arxiv": "found"}
     assert at.endswith("+00:00")
 
 
@@ -288,13 +263,11 @@ async def test_an_unknown_identifier_is_not_found_and_an_outage_is_an_error() ->
         raise httpx.ConnectError("boom")
 
     registries, _ = await verify_paper_existence(
-        airas_db_record={},
         doi="10.1/nope",
         arxiv_id="0000.00000",
         arxiv=_Arxiv(EMPTY_ATOM),
         http=httpx.AsyncClient(transport=httpx.MockTransport(outage)),
     )
-    assert registries["airas_db"] == "not_found"
     assert registries["doi.org"].startswith("error: ")
     assert registries["arxiv"] == "not_found"
     assert "found" not in registries.values()
@@ -302,7 +275,6 @@ async def test_an_unknown_identifier_is_not_found_and_an_outage_is_an_error() ->
 
 async def test_a_doi_answered_with_a_final_page_is_found_too() -> None:
     registries, _ = await verify_paper_existence(
-        airas_db_record=None,
         doi="10.5555/3295222.3295349",
         arxiv_id=None,
         arxiv=_Arxiv(EMPTY_ATOM),
@@ -313,7 +285,6 @@ async def test_a_doi_answered_with_a_final_page_is_found_too() -> None:
 
 async def test_a_doi_that_does_not_resolve_is_not_found() -> None:
     registries, _ = await verify_paper_existence(
-        airas_db_record=None,
         doi="10.1/nope",
         arxiv_id=None,
         arxiv=_Arxiv(EMPTY_ATOM),
