@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from pathlib import Path
 
 import bibtexparser
@@ -10,13 +11,19 @@ from airas.core.research_paths import REFERENCES_BIB_FILENAME
 from airas.core.types.research_record import LiteratureSource, ResearchRecord
 
 
+def _ascii(text: str) -> str:
+    # "Müller" keys as muller, not mller.
+    decomposed = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in decomposed if not unicodedata.combining(c))
+
+
 def _citation_key(title: str, authors: list[str], year: int | None) -> str:
     # Sources disagree on author formatting: OpenAlex/arXiv return
     # "Ashish Vaswani" while Semantic Scholar can return "Vaswani, Ashish".
-    author = authors[0].strip() if authors else ""
+    author = _ascii(authors[0].strip()) if authors else ""
     surname = author.split(",", 1)[0] if "," in author else (author.split() or [""])[-1]
     surname = re.sub(r"[^a-z0-9]", "", surname.lower()) or "author"
-    words = re.findall(r"\b[a-zA-Z]{3,}\b", title.lower())
+    words = re.findall(r"\b[a-zA-Z]{3,}\b", _ascii(title).lower())
     return f"{surname}-{year or 'year'}-{words[0] if words else 'title'}"
 
 

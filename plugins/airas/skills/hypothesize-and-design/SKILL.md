@@ -49,7 +49,11 @@ refine until the hypothesis rests on passages you have actually read.
    in order to imply the hypothesis (the hypothesis's `assumptions`).
 
 **Output**: hypothesis + experimental design, and the papers they rest
-on with their `fulltext_path` and quoted passages. Write the draft into
-the clone (state belongs there, not in the conversation); nothing is in
-the record yet. `preregister-paper` freezes all of it into the canonical
-`.research/record.json`, after which revision is append-only.
+on with their `fulltext_path` and quoted passages. Nothing is in the
+record yet: `preregister-paper` freezes all of it into the canonical
+`.research/record.json`, after which revision is append-only. What the
+declarations cannot carry — the gap in prose, why each margin and
+interval was chosen, the compute target, the run-to-claim table — goes
+into the hypothesis's `notes` in that same call, so it is frozen with the
+record and a fresh session reads it from the clone; do not keep a draft
+file beside the record.

@@ -31,7 +31,7 @@ _WINDOW = 500
 
 @dataclass(frozen=True)
 class _Citation:
-    where: str  # "main.tex \cite[s1.p2]{key}", "hypothesis h1", "claim c1"
+    where: str  # "main.tex \cite[s1.p2]{key}"
     text: str
     passage: QuotedPassage
     context: str  # the quote in its snapshot, with the text around it
@@ -45,7 +45,10 @@ def _collect_citations(
     root: Path, record: ResearchRecord, main_tex: str
 ) -> list[_Citation]:
     """`main_tex` is comment-stripped. A passage no source declares is
-    skipped: the gate reports that on its own."""
+    skipped: the gate reports that on its own. A hypothesis's `grounded_on`
+    and a claim's `cites_passages` are not judged: they are conjectures that
+    by design say more than the passages they build on, and the gate already
+    checks that every passage they name exists."""
     passages = record.passage_index()
     fulltexts: dict[str, str] = {}
     citations: list[_Citation] = []
@@ -72,14 +75,6 @@ def _collect_citations(
             start, end = match.span()
             text = paragraph[max(0, start - _WINDOW) : end + _WINDOW].strip()
             cite(f"main.tex {match.group(0)}", text, locator)
-
-    for hypothesis in record.active_hypotheses():
-        for pid in hypothesis.grounded_on:
-            cite(f"hypothesis {hypothesis.id}", hypothesis.statement, pid)
-    for _, claim in record.active_claims():
-        for pid in claim.cites_passages:
-            text = f"{claim.statement} Rationale: {claim.rationale}"
-            cite(f"claim {claim.id}", text, pid)
     return citations
 
 

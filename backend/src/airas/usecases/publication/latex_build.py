@@ -71,6 +71,19 @@ def _write_project(latex_files: dict[str, bytes], build_dir: Path) -> None:
             continue
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(content)
+    # The engines run without shell escape, so epstopdf cannot convert the
+    # EPS a class includes (mdpi's logo) mid-build; convert up front under the
+    # name epstopdf-pkg looks for, as the publish workflow does.
+    if shutil.which("epstopdf"):
+        for eps in build_dir.rglob("*.eps"):
+            converted = eps.with_name(f"{eps.stem}-eps-converted-to.pdf")
+            if not converted.exists():
+                subprocess.run(
+                    ["epstopdf", str(eps), f"--outfile={converted}"],
+                    cwd=build_dir,
+                    capture_output=True,
+                    timeout=60,
+                )
 
 
 def _run(command: list[str], cwd: Path, timeout: float) -> subprocess.CompletedProcess:
@@ -143,9 +156,9 @@ def verify_latex_build(
 
     The build happens in a temporary directory that is deleted afterwards,
     so pass `output_path` to keep the PDF. It is worth keeping: this is the
-    one build whose result has been inspected, and for a Japanese paper it
-    is currently the only way to get a PDF at all — the GitHub Actions
-    workflow runs pdflatex, which cannot typeset CJK.
+    one build whose result has been inspected. (`compile_latex` on GitHub
+    Actions runs pdflatex and cannot typeset CJK; the Publish Paper workflow
+    can.)
     """
     stem = Path(main_tex_name).stem
 

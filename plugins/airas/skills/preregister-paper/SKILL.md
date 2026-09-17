@@ -19,8 +19,11 @@ paper by. The directory is only a slot: use the bundled style or your
 own preamble, keeping the usual structure (title, abstract, numbered
 sections, figures, bibliography). Write in the user's working
 language; a CJK paper needs a LuaTeX preamble (`luatexja-fontspec` —
-pdflatex silently drops non-Latin text from the PDF). This skill only
-changes *when* the paper is written and how Results are stated.
+pdflatex silently drops non-Latin text from the PDF), and with the `mdpi`
+class also `\RequirePackage{luatex85}` before `\documentclass` (drop its
+`pdftex` option), since the class uses pdfTeX primitives LuaTeX no longer
+has. This skill only changes *when* the paper is written and how Results
+are stated.
 
 ## Preconditions
 
@@ -81,6 +84,11 @@ changes *when* the paper is written and how Results are stated.
      "tables": [...], "notes": [...]
    }]
    ```
+
+   `notes` (free text on the hypothesis) holds what the fields above
+   cannot: the gap in prose, why each margin and interval was chosen, the
+   compute target. It is frozen with the record and is where a fresh
+   session reads the design rationale from.
 
    `grounded_on` and `cites_passages` (also on designs and runs, and
    `reference_passage` on a criterion whose `reference` is a constant

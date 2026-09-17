@@ -138,6 +138,8 @@ async def verify_paper(
             pdf = pdf_path
         else:
             Path(pdf_path).unlink(missing_ok=True)
+            if build_report is not None:
+                build_report = build_report.model_copy(update={"pdf_path": None})
     return PaperVerification(
         ok=ok,
         template=template,
