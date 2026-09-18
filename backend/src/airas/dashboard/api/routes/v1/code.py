@@ -10,10 +10,10 @@ from airas.dashboard.api.schemas.code import (
     FetchExperimentCodeResponseBody,
 )
 from airas.infra.github_client import GithubClient
-from airas.usecases.executors.fetch_experiment_code_subgraph.fetch_experiment_code_subgraph import (
+from airas.workflows.execution.fetch_experiment_code_subgraph.fetch_experiment_code_subgraph import (
     FetchExperimentCodeSubgraph,
 )
-from airas.usecases.generators.dispatch_code_generation_subgraph.dispatch_code_generation_subgraph import (
+from airas.workflows.generators.dispatch_code_generation_subgraph.dispatch_code_generation_subgraph import (
     DispatchCodeGenerationSubgraph,
 )
 

@@ -1,17 +1,33 @@
 """Two ways the paper pipeline used to lose content without saying so.
 
-The analysis prompt rendered nothing at all when `experimental_results`
-carried no `metrics_data` — the outer `if` was true, so it did not even
-fall through to "No experimental results available yet", and the analyst
-was left writing a results section with no results in front of it. The
+The analysis prompt once rendered nothing at all when no metrics were in
+hand, leaving the analyst writing a results section with no results in
+front of it; it now says so and still shows the frozen declarations. The
 paper prompt marks any study whose title misses `references.bib` as "do
 not cite", and told nobody, so citations vanished from the finished paper.
 """
 
+import pytest
+
 from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.core.types.research_record import (
+    Criterion,
+    Hypothesis,
+    Prediction,
+    ResearchRecord,
+    SeyvalClaim,
+    SeyvalDesign,
+    SeyvalRun,
+    SeyvalVerifier,
+    VerifierKind,
+)
 from airas.core.types.research_study import ResearchStudy
 from airas.mcp.prompt_registry import build_generation_prompt
-from airas.usecases.writers.write_subgraph.nodes.generate_note import (
+from airas.usecases.analysis.analyze_experiment import (
+    analysis_context,
+    render_analysis_prompt,
+)
+from airas.workflows.writers.write_subgraph.nodes.generate_note import (
     map_studies_to_bibtex,
     unmatched_citation_titles,
 )
@@ -42,41 +58,67 @@ BIB = """
 """
 
 
-def _analysis_prompt(experimental_results: dict) -> str:
-    return build_generation_prompt(
-        "experiment_analysis",
-        {
-            "research_hypothesis": HYPOTHESIS.model_dump(),
-            "experimental_design": DESIGN,
-            "experiment_code": {"files": {"src/main.py": "print()"}},
-            "experimental_results": experimental_results,
-        },
-    )["prompt"]
+def _context(metrics: dict, verdict: str | None = None) -> dict:
+    record = ResearchRecord(
+        hypotheses=[
+            Hypothesis(
+                id="h1",
+                statement="Aggregate scores hide per-system failure.",
+                assumptions=["lddt_pli stands for pose quality (c1)"],
+                claims=[
+                    SeyvalClaim(
+                        verifier=SeyvalVerifier(kind=VerifierKind.SEYVAL),
+                        id="c1",
+                        statement="Component-wise beats aggregate on lddt_pli.",
+                        rationale="r",
+                        verdict=verdict,
+                        criterion=Criterion(
+                            metric="lddt_pli",
+                            subject="proposed",
+                            reference="baseline",
+                            op=">=",
+                            margin=0.02,
+                        ),
+                        prediction=Prediction(low=0.02, high=0.05, basis="pilot"),
+                        designs=[
+                            SeyvalDesign(
+                                id="d1",
+                                summary="s",
+                                runs=[
+                                    SeyvalRun(run_id="proposed"),
+                                    SeyvalRun(run_id="baseline"),
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            )
+        ]
+    )
+    return analysis_context(record, metrics, set(metrics))
 
 
-def test_results_without_metrics_data_say_so_instead_of_rendering_nothing():
-    prompt = _analysis_prompt({"stdout": "lddt_pli mean 0.648"})
+def test_a_study_without_run_outputs_says_so_instead_of_rendering_nothing():
+    prompt = render_analysis_prompt(_context({}))
 
     assert "NONE PROVIDED" in prompt
     assert "Do not invent" in prompt
-    # Whatever *was* passed still has to reach the analyst.
-    assert "lddt_pli mean 0.648" in prompt
+    assert "Observed difference: not available" in prompt
+    # The frozen declarations still reach the analyst.
+    assert "proposed.lddt_pli - baseline.lddt_pli >= 0.02" in prompt
+    assert "[0.02, 0.05]" in prompt
 
 
-def test_metrics_data_is_rendered_when_present():
-    prompt = _analysis_prompt({"metrics_data": {"run-1": {"lddt_pli": 0.648}}})
-
-    assert "0.648" in prompt
-    assert "NONE PROVIDED" not in prompt
-
-
-def test_expected_result_reaches_the_prompt_that_asks_about_it():
-    prompt = _analysis_prompt({"metrics_data": {"run-1": {}}})
-
-    # Instruction 4 asks whether the results match the hypothesis; without
-    # the expectation there is nothing to compare them against.
-    assert "consistent with the research hypothesis" in prompt
-    assert "The aggregate and the components disagree." in prompt
+def test_the_observed_difference_is_placed_against_the_prediction():
+    metrics = {"proposed": {"lddt_pli": 0.70}, "baseline": {"lddt_pli": 0.60}}
+    context = _context(metrics, verdict="supported")
+    (claim,) = context["hypotheses"][0]["claims"]
+    assert claim["observed"] == pytest.approx(0.10)
+    assert claim["in_prediction"] is False
+    prompt = render_analysis_prompt(context)
+    assert "outside the predicted interval" in prompt
+    assert "Verdict: supported" in prompt
+    assert '"lddt_pli": 0.7' in prompt
 
 
 def test_a_shortened_title_still_finds_its_citation_key():
@@ -166,20 +208,3 @@ def test_literature_from_the_record_replaces_the_do_not_cite_path():
 
     assert "warnings" not in result
     assert "PoseBusters" not in result["prompt"]
-
-
-def test_a_long_run_log_does_not_take_over_the_prompt():
-    """A training run's stdout can dwarf everything else in the prompt.
-
-    The tail is what is kept rather than the head: a run prints its final
-    metrics at the end, and its dataset-download chatter at the start.
-    """
-    prompt = _analysis_prompt(
-        {
-            "metrics_data": {"run-1": {"lddt_pli": 0.648}},
-            "stdout": "downloading shard\n" * 5000 + "FINAL lddt_pli 0.648",
-        }
-    )
-
-    assert "FINAL lddt_pli 0.648" in prompt
-    assert prompt.count("downloading shard") < 200

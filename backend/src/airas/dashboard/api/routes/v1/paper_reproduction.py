@@ -23,19 +23,19 @@ from airas.dashboard.api.schemas.paper_reproduction import (
 )
 from airas.infra.github_client import GithubClient
 from airas.infra.litellm_client import LiteLLMClient
-from airas.usecases.executors.dispatch_paper_reproduction_run_subgraph.dispatch_paper_reproduction_run_subgraph import (
+from airas.workflows.execution.dispatch_paper_reproduction_run_subgraph.dispatch_paper_reproduction_run_subgraph import (
     DispatchPaperReproductionRunSubgraph,
 )
-from airas.usecases.executors.dispatch_parameter_tuning_run_subgraph.dispatch_parameter_tuning_run_subgraph import (
+from airas.workflows.execution.dispatch_parameter_tuning_run_subgraph.dispatch_parameter_tuning_run_subgraph import (
     DispatchParameterTuningRunSubgraph,
 )
-from airas.usecases.executors.fetch_paper_reproduction_results_subgraph.fetch_paper_reproduction_results_subgraph import (
+from airas.workflows.execution.fetch_paper_reproduction_results_subgraph.fetch_paper_reproduction_results_subgraph import (
     FetchPaperReproductionResultsSubgraph,
 )
-from airas.usecases.executors.fetch_parameter_tuning_results_subgraph.fetch_parameter_tuning_results_subgraph import (
+from airas.workflows.execution.fetch_parameter_tuning_results_subgraph.fetch_parameter_tuning_results_subgraph import (
     FetchParameterTuningResultsSubgraph,
 )
-from airas.usecases.generators.dispatch_paper_reproduction_generate_subgraph.dispatch_paper_reproduction_generate_subgraph import (
+from airas.workflows.generators.dispatch_paper_reproduction_generate_subgraph.dispatch_paper_reproduction_generate_subgraph import (
     DispatchPaperReproductionGenerateSubgraph,
 )
 

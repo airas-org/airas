@@ -4,7 +4,7 @@ from airas.dashboard.api.schemas.datasets import (
     RetrieveDatasetsSubgraphRequestBody,
     RetrieveDatasetsSubgraphResponseBody,
 )
-from airas.usecases.retrieve.retrieve_datasets_subgraph.retrieve_datasets_subgraph import (
+from airas.workflows.retrieve.retrieve_datasets_subgraph.retrieve_datasets_subgraph import (
     RetrieveDatasetsSubgraph,
 )
 

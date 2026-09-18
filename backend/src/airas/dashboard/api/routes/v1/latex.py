@@ -20,16 +20,16 @@ from airas.dashboard.api.schemas.latex import (
 )
 from airas.infra.github_client import GithubClient
 from airas.infra.litellm_client import LiteLLMClient
-from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph import (
+from airas.usecases.publication.open_in_overleaf import (
+    open_in_overleaf as open_in_overleaf_usecase,
+)
+from airas.workflows.publication.compile_latex_subgraph.compile_latex_subgraph import (
     CompileLatexSubgraph,
 )
-from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph import (
+from airas.workflows.publication.generate_latex_subgraph.generate_latex_subgraph import (
     GenerateLatexSubgraph,
 )
-from airas.usecases.publication.open_in_overleaf_subgraph.open_in_overleaf_subgraph import (
-    OpenInOverleafSubgraph,
-)
-from airas.usecases.publication.push_latex_subgraph.push_latex_subgraph import (
+from airas.workflows.publication.push_latex_subgraph.push_latex_subgraph import (
     PushLatexSubgraph,
 )
 
@@ -116,22 +116,15 @@ async def open_in_overleaf(
             "unless local_path is provided).",
         )
     try:
-        result = (
-            await OpenInOverleafSubgraph(
-                github_client=github_client,
-                latex_template_name=latex_template_name,
-                local_repo_path=local_path,
-            )
-            .build_graph()
-            .ainvoke(
-                {
-                    "github_config": GitHubConfig(
-                        github_owner=github_owner,
-                        repository_name=repository_name,
-                        branch_name=branch_name,
-                    )
-                }
-            )
+        result = open_in_overleaf_usecase(
+            GitHubConfig(
+                github_owner=github_owner,
+                repository_name=repository_name,
+                branch_name=branch_name,
+            ),
+            latex_template_name,
+            github_client=github_client,
+            local_path=local_path,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e

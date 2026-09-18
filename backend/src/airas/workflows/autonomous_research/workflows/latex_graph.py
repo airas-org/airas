@@ -16,15 +16,15 @@ from airas.infra.github.poll_github_actions_subgraph.poll_github_actions_subgrap
 )
 from airas.infra.github_client import GithubClient
 from airas.infra.litellm_client import LiteLLMClient
-from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph import (
+from airas.workflows.publication.compile_latex_subgraph.compile_latex_subgraph import (
     CompileLatexLLMMapping,
     CompileLatexSubgraph,
 )
-from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph import (
+from airas.workflows.publication.generate_latex_subgraph.generate_latex_subgraph import (
     GenerateLatexLLMMapping,
     GenerateLatexSubgraph,
 )
-from airas.usecases.publication.push_latex_subgraph.push_latex_subgraph import (
+from airas.workflows.publication.push_latex_subgraph.push_latex_subgraph import (
     PushLatexSubgraph,
 )
 

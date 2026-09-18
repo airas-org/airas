@@ -1,18 +1,12 @@
-"""Experiment execution and analysis (GitHub Actions)."""
+"""Experiment execution: dispatch a run, follow it, bring its outputs back."""
 
+import asyncio
 import logging
 import os
 from typing import Any, Literal
 
-from airas.core.llm_config import uniform_llm_mapping
-from airas.core.types.experiment_code import ExperimentCode
-from airas.core.types.experiment_history import RunStage
-from airas.core.types.experimental_design import (
-    ExperimentalDesign,
-)
-from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import GitHubConfig
-from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.core.types.run_stage import RunStage
 from airas.infra.github.download_github_actions_artifacts_subgraph.download_github_actions_artifacts_subgraph import (
     DownloadGithubActionsArtifactsSubgraph,
 )
@@ -21,22 +15,17 @@ from airas.mcp.app import mcp
 from airas.mcp.context import (
     _dump,
     _github_client,
-    _litellm_client,
     _output_store,
     _seyval_client,
 )
-from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
-    AnalyzeExperimentLLMMapping,
-    AnalyzeExperimentSubgraph,
+from airas.usecases.execution.dispatch_experiment import (
+    dispatch_experiment as dispatch_experiment_usecase,
 )
-from airas.usecases.executors.dispatch_experiment_subgraph.dispatch_experiment_subgraph import (
-    DispatchExperimentSubgraph,
+from airas.usecases.execution.fetch_experiment_results import (
+    fetch_experiment_results as fetch_experiment_results_usecase,
 )
-from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment_results_subgraph import (
-    FetchExperimentResultsSubgraph,
-)
-from airas.usecases.executors.import_run_outputs_subgraph.import_run_outputs_subgraph import (
-    ImportRunOutputsSubgraph,
+from airas.usecases.execution.import_run_outputs import (
+    import_run_outputs as import_run_outputs_usecase,
 )
 
 logger = logging.getLogger(__name__)
@@ -113,41 +102,28 @@ async def dispatch_experiment(
         seyval_client = _seyval_client()
         resolved_compute_id = compute_id or os.getenv("SEYVAL_COMPUTE_ID") or None
 
-    result = (
-        await DispatchExperimentSubgraph(
-            backend=backend,
-            github_client=_github_client(),
-            seyval_client=seyval_client,
-            run_stage=stage,
-            runner_label=runner_label,
-            compute_id=resolved_compute_id,
-            compute_type=compute_type,
-            inputs_from_runs=inputs_from_runs,
-            time_limit=time_limit,
-            resource_count=resource_count,
-            user_dockerfile_path=user_dockerfile_path,
-            command_args=command_args,
-            workspace_id=workspace_id or os.getenv("SEYVAL_WORKSPACE_ID") or None,
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                ),
-                "run_id": run_id,
-            }
-        )
+    result = await dispatch_experiment_usecase(
+        GitHubConfig(
+            github_owner=github_owner,
+            repository_name=repository_name,
+            branch_name=branch_name,
+        ),
+        run_id,
+        backend=backend,
+        github_client=_github_client(),
+        seyval_client=seyval_client,
+        run_stage=stage,
+        runner_label=runner_label,
+        compute_id=resolved_compute_id,
+        compute_type=compute_type,
+        inputs_from_runs=inputs_from_runs,
+        time_limit=time_limit,
+        resource_count=resource_count,
+        user_dockerfile_path=user_dockerfile_path,
+        command_args=command_args,
+        workspace_id=workspace_id or os.getenv("SEYVAL_WORKSPACE_ID") or None,
     )
-    return {
-        "dispatched": result["dispatched"],
-        "backend": backend,
-        "compute_id": resolved_compute_id,
-        "execution_id": result["execution_id"],
-        "execution_url": result["execution_url"],
-    }
+    return {**result, "backend": backend, "compute_id": resolved_compute_id}
 
 
 @mcp.tool()
@@ -277,31 +253,18 @@ async def get_workflow_runs(
 
 
 @mcp.tool()
-async def fetch_experiment_results(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-) -> dict[str, Any]:
-    """Fetch experiment results from the experiment repository.
+async def fetch_experiment_results(local_path: str) -> dict[str, Any]:
+    """Read what the runs left under `.research/results/` in the clone.
 
-    Use after a `dispatch_experiment` run has succeeded. The returned object
-    can be passed to `analyze_experiment` as `experimental_results`.
-    Requires GH_PERSONAL_ACCESS_TOKEN.
+    Use after `import_run_outputs` has committed a run's outputs and the
+    clone has pulled them. Returns, per results directory, the `metrics`
+    (metrics.json), the airas-eval `evaluation` report (metrics, curves,
+    skipped metrics with reasons), the `figures` under it, and the entry
+    the provenance manifest holds for it (None when the directory arrived
+    some other way, which `verify_record` will fail). Nothing is
+    interpreted here: the record's verdicts come from `update_record`.
     """
-    result = (
-        await FetchExperimentResultsSubgraph(github_client=_github_client())
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                )
-            }
-        )
-    )
-    return _dump(result["experimental_results"])
+    return await asyncio.to_thread(fetch_experiment_results_usecase, local_path)
 
 
 # Stages that re-run the experiment and so write the file names the full run
@@ -354,34 +317,20 @@ async def import_run_outputs(
             "confirm_overwrite=True to do it anyway."
         )
 
-    result = (
-        await ImportRunOutputsSubgraph(
-            store=_output_store(
-                backend, f"https://github.com/{github_owner}/{repository_name}"
-            ),
-            github_client=_github_client(),
-            run_stage=stage,
-            execution_id=execution_id,
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                ),
-                "run_id": run_id,
-            }
-        )
+    return await import_run_outputs_usecase(
+        GitHubConfig(
+            github_owner=github_owner,
+            repository_name=repository_name,
+            branch_name=branch_name,
+        ),
+        run_id,
+        store=_output_store(
+            backend, f"https://github.com/{github_owner}/{repository_name}"
+        ),
+        github_client=_github_client(),
+        execution_id=execution_id,
+        run_stage=stage,
     )
-    return {
-        "imported": result["imported"],
-        "execution_id": result["execution_id"],
-        "imported_paths": result["imported_paths"],
-        "total_bytes": result["total_bytes"],
-        "import_commit_sha": result["import_commit_sha"],
-    }
 
 
 @mcp.tool()
@@ -411,47 +360,3 @@ async def download_workflow_artifacts(
         )
     )
     return _dump(result["artifact_data"])
-
-
-@mcp.tool()
-async def analyze_experiment(
-    research_hypothesis: dict[str, Any],
-    experimental_design: dict[str, Any],
-    experiment_code: dict[str, Any],
-    experimental_results: dict[str, Any],
-    model: str,
-) -> dict[str, Any]:
-    """Analyze experiment results against the hypothesis and design.
-
-    Takes the hypothesis, the experimental design and the output of
-    `fetch_experiment_results`, and returns a structured analysis
-    (findings, whether the hypothesis is supported, and suggested next
-    steps). For `experiment_code`, read the code from your local clone and
-    pass `{"files": {"<relative path>": "<content>", ...}}`. `model`
-    (required) is the LLM to use — call `get_available_llms` to list valid
-    models. Requires an LLM provider API key — without one, use
-    `get_generation_prompt(step="experiment_analysis", ...)` and write the
-    analysis yourself.
-    """
-    result = (
-        await AnalyzeExperimentSubgraph(
-            litellm_client=_litellm_client(),
-            llm_mapping=uniform_llm_mapping(AnalyzeExperimentLLMMapping, model),
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "research_hypothesis": ResearchHypothesis.model_validate(
-                    research_hypothesis
-                ),
-                "experimental_design": ExperimentalDesign.model_validate(
-                    experimental_design
-                ),
-                "experiment_code": ExperimentCode.model_validate(experiment_code),
-                "experimental_results": ExperimentalResults.model_validate(
-                    experimental_results
-                ),
-            }
-        )
-    )
-    return _dump(result["experimental_analysis"])

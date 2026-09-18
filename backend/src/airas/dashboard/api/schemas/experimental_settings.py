@@ -3,10 +3,10 @@ from pydantic import BaseModel
 from airas.core.types.experiment_history import ExperimentHistory
 from airas.core.types.experimental_design import ComputeEnvironment, ExperimentalDesign
 from airas.core.types.research_hypothesis import ResearchHypothesis
-from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
+from airas.workflows.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignLLMMapping,
 )
-from airas.usecases.generators.refine_experimental_design_subgraph.refine_experimental_design_subgraph import (
+from airas.workflows.generators.refine_experimental_design_subgraph.refine_experimental_design_subgraph import (
     RefineExperimentalDesignLLMMapping,
 )
 

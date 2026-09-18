@@ -4,37 +4,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, HttpUrl
 
-ModelSubfield = Literal[
-    # language
-    "text_generation",
-    "text_understanding",
-    "sequence_to_sequence",
-    "code_generation",
-    "text_embedding",
-    "reranking",
-    "hosted_api",
-    # vision
-    "image_recognition",
-    "image_generation",
-    # multimodal / audio / time_series / science
-    "vision_language",
-    "speech",
-    "forecasting",
-    "protein",
-]
-
-DatasetSubfield = Literal[
-    # language
-    "instruction_tuning",
-    "reasoning_evaluation",
-    "nlp_tasks",
-    "prompt_engineering",
-    "code_evaluation",
-    # vision / audio / multimodal
-    "image_recognition",
-    "speech",
-    "vision_language",
-]
+from airas.core.types.resources import DatasetSubfield, ModelSubfield  # noqa: F401
 
 DataModalities = Literal[
     "text", "image", "audio", "video", "tabular", "time_series", "graph", "embeddings"

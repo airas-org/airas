@@ -8,7 +8,6 @@ from typing_extensions import TypedDict
 from airas.core.execution_timers import time_node
 from airas.core.llm_config import require_llm_mapping
 from airas.core.logging_utils import setup_logging
-from airas.core.types.experiment_history import RunStage
 from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.github import (
     GitHubActionsAgent,
@@ -17,6 +16,7 @@ from airas.core.types.github import (
     GitHubConfig,
 )
 from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.core.types.run_stage import RunStage
 from airas.core.types.runner import ExperimentRunnerConfig, StaticRunnerConfig
 from airas.core.types.wandb import WandbConfig
 from airas.infra.github.download_github_actions_artifacts_subgraph.download_github_actions_artifacts_subgraph import (
@@ -27,10 +27,10 @@ from airas.infra.github.poll_github_actions_subgraph.poll_github_actions_subgrap
     PollGithubActionsSubgraph,
 )
 from airas.infra.github_client import GithubClient
-from airas.usecases.executors.dispatch_experiment_subgraph.dispatch_experiment_subgraph import (
+from airas.workflows.execution.dispatch_experiment_subgraph import (
     DispatchExperimentSubgraph,
 )
-from airas.usecases.executors.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
+from airas.workflows.execution.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
     DispatchExperimentValidationLLMMapping,
     DispatchExperimentValidationSubgraph,
 )

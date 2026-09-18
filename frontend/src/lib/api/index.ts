@@ -7,9 +7,6 @@ export { CancelablePromise, CancelError } from './core/CancelablePromise';
 export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
-export type { AnalyzeExperimentLLMMapping } from './models/AnalyzeExperimentLLMMapping';
-export type { AnalyzeExperimentRequestBody } from './models/AnalyzeExperimentRequestBody';
-export type { AnalyzeExperimentResponseBody } from './models/AnalyzeExperimentResponseBody';
 export type { CancelInteractiveRepoAgentRequestBody } from './models/CancelInteractiveRepoAgentRequestBody';
 export type { CancelInteractiveRepoAgentResponseBody } from './models/CancelInteractiveRepoAgentResponseBody';
 export type { CodeGenerationGraphLLMMapping } from './models/CodeGenerationGraphLLMMapping';

@@ -10,10 +10,10 @@ from airas.dashboard.api.schemas.experimental_settings import (
     RefineExperimentalDesignSubgraphResponseBody,
 )
 from airas.infra.litellm_client import LiteLLMClient
-from airas.usecases.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
+from airas.workflows.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignSubgraph,
 )
-from airas.usecases.generators.refine_experimental_design_subgraph.refine_experimental_design_subgraph import (
+from airas.workflows.generators.refine_experimental_design_subgraph.refine_experimental_design_subgraph import (
     RefineExperimentalDesignSubgraph,
 )
 

@@ -5,7 +5,7 @@ from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.wandb import WandbConfig
-from airas.usecases.generators.dispatch_code_generation_subgraph.dispatch_code_generation_subgraph import (
+from airas.workflows.generators.dispatch_code_generation_subgraph.dispatch_code_generation_subgraph import (
     DispatchCodeGenerationLLMMapping,
 )
 

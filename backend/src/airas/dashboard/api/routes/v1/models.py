@@ -4,7 +4,7 @@ from airas.dashboard.api.schemas.models import (
     RetrieveModelsSubgraphRequestBody,
     RetrieveModelsSubgraphResponseBody,
 )
-from airas.usecases.retrieve.retrieve_models_subgraph.retrieve_models_subgraph import (
+from airas.workflows.retrieve.retrieve_models_subgraph.retrieve_models_subgraph import (
     RetrieveModelsSubgraph,
 )
 

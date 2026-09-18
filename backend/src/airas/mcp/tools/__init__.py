@@ -5,6 +5,7 @@ Importing a module here is what registers its tools on the shared
 """
 
 from airas.mcp.tools import (
+    analysis,
     capabilities,
     execution,
     figures,
@@ -17,6 +18,7 @@ from airas.mcp.tools import (
 )
 
 __all__ = [
+    "analysis",
     "capabilities",
     "execution",
     "figures",

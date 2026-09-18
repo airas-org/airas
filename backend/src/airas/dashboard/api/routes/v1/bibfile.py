@@ -4,7 +4,7 @@ from airas.dashboard.api.schemas.bibfile import (
     GenerateBibfileSubgraphRequestBody,
     GenerateBibfileSubgraphResponseBody,
 )
-from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
+from airas.workflows.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
     GenerateBibfileSubgraph,
 )
 

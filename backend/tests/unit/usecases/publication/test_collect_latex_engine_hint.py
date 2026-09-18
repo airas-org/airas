@@ -6,7 +6,7 @@ anything. latexmk reads `latexmkrc` from the project, so the export
 carries the answer with it.
 """
 
-from airas.usecases.publication.open_in_overleaf_subgraph.nodes.collect_latex_project_files import (
+from airas.usecases.publication.nodes.collect_latex_project_files import (
     _add_engine_hint,
 )
 
