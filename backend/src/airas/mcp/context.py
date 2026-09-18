@@ -1,8 +1,6 @@
 import os
-from typing import Any
 
 import httpx
-from pydantic import BaseModel
 
 from airas.core.credentials import SETUP_INSTRUCTIONS, refresh_environment
 from airas.core.types.llm_provider import LLMProvider
@@ -116,7 +114,3 @@ _LITELLM_PROVIDER_NAME: dict[LLMProvider, str] = {
     LLMProvider.GOOGLE: "gemini",
     LLMProvider.RIKYU: "hosted_vllm",
 }
-
-
-def _dump(value: Any) -> Any:
-    return value.model_dump() if isinstance(value, BaseModel) else value

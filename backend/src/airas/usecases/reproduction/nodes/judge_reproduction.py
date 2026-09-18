@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from airas.core.llm_config import NodeLLMConfig
 from airas.infra.litellm_client import LiteLLMClient
-from airas.workflows.execution.fetch_paper_reproduction_results_subgraph.prompts.validate_reproduction_prompt import (
+from airas.usecases.reproduction.judge_reproduction_prompt import (
     validate_reproduction_prompt,
 )
 

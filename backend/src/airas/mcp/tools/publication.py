@@ -4,11 +4,11 @@ import asyncio
 from typing import Any
 from urllib.parse import urlencode
 
-from airas.cli import DEFAULT_DASHBOARD_PORT
 from airas.core.credentials import refresh_environment
 from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.dashboard.launcher import (
+    DEFAULT_DASHBOARD_PORT,
     dashboard_url,
     is_dashboard_running,
     start_dashboard,

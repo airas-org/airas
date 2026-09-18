@@ -7,13 +7,10 @@ from typing import Any, Literal
 
 from airas.core.types.github import GitHubConfig
 from airas.core.types.run_stage import RunStage
-from airas.infra.github.download_github_actions_artifacts_subgraph.download_github_actions_artifacts_subgraph import (
-    DownloadGithubActionsArtifactsSubgraph,
-)
+from airas.infra.github.nodes.download_artifact import download_and_parse_artifact
 from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
 from airas.mcp.app import mcp
 from airas.mcp.context import (
-    _dump,
     _github_client,
     _output_store,
     _seyval_client,
@@ -345,18 +342,12 @@ async def download_workflow_artifacts(
     `workflow_run_id` comes from `get_workflow_runs`. Useful for inspecting
     logs and outputs of a specific run. Requires GH_PERSONAL_ACCESS_TOKEN.
     """
-    result = (
-        await DownloadGithubActionsArtifactsSubgraph(github_client=_github_client())
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                ),
-                "workflow_run_id": workflow_run_id,
-            }
-        )
+    return await download_and_parse_artifact(
+        github_client=_github_client(),
+        github_config=GitHubConfig(
+            github_owner=github_owner,
+            repository_name=repository_name,
+            branch_name=branch_name,
+        ),
+        workflow_run_id=workflow_run_id,
     )
-    return _dump(result["artifact_data"])

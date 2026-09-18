@@ -17,15 +17,15 @@ from airas.research_record.render.render_references_bib import (
 from airas.research_record.update._add_literatures import (
     _write_fulltext as write_fulltext,
 )
-from airas.research_record.update._resolve_literatures import (
-    _verify_paper_existence as verify_paper_existence,
-)
 from airas.research_record.verify._verify_quoted_passages import (
     passage_is_quoted,
     quote_context,
 )
 from airas.usecases.literature.nodes.fetch_fulltext_from_repository import (
     fetch_fulltext_from_repository,
+)
+from airas.usecases.literature.resolve_literatures import (
+    _verify_paper_existence as verify_paper_existence,
 )
 
 PAGES = [

@@ -14,16 +14,16 @@ from airas.core.types.github import (
     GitHubActionsStatus,
     GitHubConfig,
 )
-from airas.infra.github.poll_github_actions_subgraph.nodes.get_latest_workflow_status import (
+from airas.infra.github_client import GithubClient
+from airas.workflows.github.poll_github_actions_subgraph.nodes.get_latest_workflow_status import (
     get_latest_workflow_status,
 )
-from airas.infra.github.poll_github_actions_subgraph.nodes.get_workflow_runs import (
+from airas.workflows.github.poll_github_actions_subgraph.nodes.get_workflow_runs import (
     get_workflow_runs,
 )
-from airas.infra.github.poll_github_actions_subgraph.nodes.log_workflow_failure_details import (
+from airas.workflows.github.poll_github_actions_subgraph.nodes.log_workflow_failure_details import (
     log_workflow_failure_details,
 )
-from airas.infra.github_client import GithubClient
 
 setup_logging()
 logger = logging.getLogger(__name__)

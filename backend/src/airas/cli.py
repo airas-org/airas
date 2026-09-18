@@ -28,6 +28,7 @@ from airas.agent_session.research_trace import (
 )
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.research_trace import DerivedFromRepository
+from airas.dashboard.launcher import DEFAULT_DASHBOARD_PORT
 from airas.infra.litellm_client import LiteLLMClient
 from airas.research_record.verify.verify_paper import verify_paper
 from airas.research_record.verify.verify_record import verify_record
@@ -39,7 +40,6 @@ from airas.usecases.publication.detect_templates import (
 
 # "AIRAS" on a phone keypad (per ITU-T E.161); a high port to avoid the
 # crowded 8000 range.
-DEFAULT_DASHBOARD_PORT = 24727
 
 
 def _run_mcp() -> None:

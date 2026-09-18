@@ -27,9 +27,6 @@ from airas.core.types.research_study import ResearchStudy
 from airas.core.types.runner import ExperimentRunnerConfig
 from airas.core.types.wandb import WandbConfig
 from airas.core.utils import to_dict_deep
-from airas.infra.github.push_github_subgraph.push_github_subgraph import (
-    PushGitHubSubgraph,
-)
 from airas.infra.github_client import GithubClient
 from airas.infra.litellm_client import LiteLLMClient
 from airas.workflows.autonomous_research.e2e_research_service_protocol import (
@@ -52,6 +49,9 @@ from airas.workflows.autonomous_research.workflows.latex_graph import (
 from airas.workflows.generators.generate_experimental_design_subgraph.generate_experimental_design_subgraph import (
     GenerateExperimentalDesignLLMMapping,
     GenerateExperimentalDesignSubgraph,
+)
+from airas.workflows.github.push_github_subgraph.push_github_subgraph import (
+    PushGitHubSubgraph,
 )
 from airas.workflows.repository.prepare_repository_subgraph import (
     PrepareRepositorySubgraph,

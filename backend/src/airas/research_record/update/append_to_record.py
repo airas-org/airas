@@ -2,11 +2,11 @@ import asyncio
 from pathlib import Path
 from typing import Any
 
-import httpx
 from pydantic import TypeAdapter
 
 from airas.core.research_paths import RECORD_PATH, REFERENCES_BIB_FILENAME
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
+from airas.core.types.literature_material import LiteratureMaterial
 from airas.core.types.map_record_to_publication import TableSpec
 from airas.core.types.research_record import (
     ChartDeclaration,
@@ -16,15 +16,12 @@ from airas.core.types.research_record import (
     ResearchRecord,
 )
 from airas.core.types.run_provenance import RunProvenanceManifest
-from airas.infra.airas_records_index import AirasRecordsIndex
-from airas.infra.arxiv_client import ArxivClient
 from airas.infra.local_git import (
     commit_paths,
     normalize_git_url,
     remote_origin_url,
     restore_paths,
 )
-from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.research_record.read.derive_results import (
     ClaimStatus,
     compute_claim_statuses,
@@ -52,16 +49,9 @@ from airas.research_record.render.render_references_bib import write_references_
 from airas.research_record.render.render_tables import TABLES_DIR_NAME, render_table_tex
 from airas.research_record.update._add_literatures import add_literatures
 from airas.research_record.update._add_quoted_passages import add_quoted_passages
-from airas.research_record.update._resolve_literatures import resolve_literatures
 from airas.research_record.verify.verify_record import verify_record_offline
 
 _CLAIM: TypeAdapter[ClaimDeclaration] = TypeAdapter(ClaimDeclaration)
-
-
-def _required(client: Any, name: str) -> Any:
-    if client is None:
-        raise ValueError(f"literature entries need {name} to be verified")
-    return client
 
 
 def _registered(sources: list[LiteratureSource]) -> dict[str, Any]:
@@ -166,30 +156,13 @@ async def append_to_record(
     passages: list[dict[str, Any]] | None = None,
     run_results: bool = False,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
-    literature: list[dict[str, Any]] | None = None,
-    *,
-    records_index: AirasRecordsIndex | None = None,
-    arxiv_client: ArxivClient | None = None,
-    semantic_scholar_client: SemanticScholarClient | None = None,
-    http: httpx.AsyncClient | None = None,
+    literature: list[LiteratureMaterial] | None = None,
 ) -> dict[str, Any]:
     """Append to an existing record — declarations the agent passes, and with
     `run_results` what the run outputs on disk say — then re-render the paper
     files the record feeds and commit."""
     new_hypotheses = [Hypothesis.model_validate(h) for h in hypotheses or []]
-    materials = (
-        await resolve_literatures(
-            literature,
-            records_index=_required(records_index, "records_index"),
-            arxiv_client=_required(arxiv_client, "arxiv_client"),
-            semantic_scholar_client=_required(
-                semantic_scholar_client, "semantic_scholar_client"
-            ),
-            http=_required(http, "http"),
-        )
-        if literature
-        else []
-    )
+    materials = literature or []
     if any(x for x in (claims, tables, charts, notes)) and not hypothesis_id:
         raise ValueError(
             "claims, tables, charts and notes append under a hypothesis — "

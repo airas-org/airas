@@ -2,6 +2,7 @@ from typing import Any
 
 from airas.core.credentials import refresh_environment
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
+from airas.core.types.literature_material import LiteratureMaterial
 from airas.mcp.app import mcp
 from airas.mcp.context import (
     _arxiv_client,
@@ -15,6 +16,21 @@ from airas.research_record.update.append_to_record import (
 from airas.research_record.update.preregister_record import (
     preregister_record as preregister_record_usecase,
 )
+from airas.usecases.literature.resolve_literatures import resolve_literatures
+
+
+async def _materials(
+    literature: list[dict[str, Any]] | None,
+) -> list[LiteratureMaterial]:
+    if not literature:
+        return []
+    return await resolve_literatures(
+        literature,
+        records_index=_records_index,
+        arxiv_client=_arxiv_client(),
+        semantic_scholar_client=_semantic_scholar_client(),
+        http=_async_session,
+    )
 
 
 @mcp.tool()
@@ -141,11 +157,7 @@ async def preregister_record(
         local_path,
         hypotheses,
         latex_template_name,
-        literature=literature,
-        records_index=_records_index,
-        arxiv_client=_arxiv_client(),
-        semantic_scholar_client=_semantic_scholar_client(),
-        http=_async_session,
+        literature=await _materials(literature),
     )
 
 
@@ -202,11 +214,7 @@ async def append_to_record(
         notes=notes,
         source_id=source_id,
         passages=passages,
-        literature=literature,
-        records_index=_records_index,
-        arxiv_client=_arxiv_client(),
-        semantic_scholar_client=_semantic_scholar_client(),
-        http=_async_session,
+        literature=await _materials(literature),
         latex_template_name=latex_template_name,
     )
 

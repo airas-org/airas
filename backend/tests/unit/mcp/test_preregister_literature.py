@@ -14,7 +14,7 @@ from airas.core.types.research_record import ResearchRecord
 from airas.infra.airas_records_index import RecordEntry
 from airas.mcp.tools import record as record_tools
 from airas.research_record.read.load_record import load_record
-from airas.research_record.update import _resolve_literatures as verify_module
+from airas.usecases.literature import resolve_literatures as verify_module
 
 PAGES = [
     "ATTENTION IS ALL YOU NEED\nWe propose the Transformer.",

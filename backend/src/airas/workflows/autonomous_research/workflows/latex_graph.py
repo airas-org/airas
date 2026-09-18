@@ -11,11 +11,11 @@ from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.paper import PaperContent
-from airas.infra.github.poll_github_actions_subgraph.poll_github_actions_subgraph import (
-    PollGithubActionsSubgraph,
-)
 from airas.infra.github_client import GithubClient
 from airas.infra.litellm_client import LiteLLMClient
+from airas.workflows.github.poll_github_actions_subgraph.poll_github_actions_subgraph import (
+    PollGithubActionsSubgraph,
+)
 from airas.workflows.publication.compile_latex_subgraph.compile_latex_subgraph import (
     CompileLatexLLMMapping,
     CompileLatexSubgraph,

@@ -7,10 +7,10 @@ from airas.dashboard.api.schemas.github import (
     PushGitHubRequestBody,
     PushGitHubResponseBody,
 )
-from airas.infra.github.push_github_subgraph.push_github_subgraph import (
+from airas.infra.github_client import GithubClient
+from airas.workflows.github.push_github_subgraph.push_github_subgraph import (
     PushGitHubSubgraph,
 )
-from airas.infra.github_client import GithubClient
 
 router = APIRouter(prefix="/github", tags=["github"])
 

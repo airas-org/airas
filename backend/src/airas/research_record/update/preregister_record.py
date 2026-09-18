@@ -2,19 +2,15 @@ import asyncio
 from pathlib import Path
 from typing import Any
 
-import httpx
-
 from airas.core.research_paths import RECORD_PATH, REFERENCES_BIB_FILENAME
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
+from airas.core.types.literature_material import LiteratureMaterial
 from airas.core.types.research_record import (
     Hypothesis,
     LiteratureSource,
     ResearchRecord,
 )
-from airas.infra.airas_records_index import AirasRecordsIndex
-from airas.infra.arxiv_client import ArxivClient
 from airas.infra.local_git import commit_paths, restore_paths
-from airas.infra.semantic_scholar_client import SemanticScholarClient
 from airas.research_record.read.load_record import load_record, record_path
 from airas.research_record.render.render_claims_tex import (
     CLAIMS_TEX_FILENAME,
@@ -23,14 +19,7 @@ from airas.research_record.render.render_claims_tex import (
 from airas.research_record.render.render_references_bib import write_references_bib
 from airas.research_record.update._add_literatures import add_literatures
 from airas.research_record.update._add_quoted_passages import add_quoted_passages
-from airas.research_record.update._resolve_literatures import resolve_literatures
 from airas.research_record.verify.verify_record import verify_record_offline
-
-
-def _required(client: Any, name: str) -> Any:
-    if client is None:
-        raise ValueError(f"literature entries need {name} to be verified")
-    return client
 
 
 def _registered(sources: list[LiteratureSource]) -> dict[str, Any]:
@@ -50,29 +39,12 @@ async def preregister_record(
     local_path: str,
     hypotheses: list[dict[str, Any]],
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
-    literature: list[dict[str, Any]] | None = None,
-    *,
-    records_index: AirasRecordsIndex | None = None,
-    arxiv_client: ArxivClient | None = None,
-    semantic_scholar_client: SemanticScholarClient | None = None,
-    http: httpx.AsyncClient | None = None,
+    literature: list[LiteratureMaterial] | None = None,
 ) -> dict[str, Any]:
     """The literature, then the declarations, into an empty record; one
     commit is the freeze point."""
     parsed = [Hypothesis.model_validate(h) for h in hypotheses or []]
-    materials = (
-        await resolve_literatures(
-            literature,
-            records_index=_required(records_index, "records_index"),
-            arxiv_client=_required(arxiv_client, "arxiv_client"),
-            semantic_scholar_client=_required(
-                semantic_scholar_client, "semantic_scholar_client"
-            ),
-            http=_required(http, "http"),
-        )
-        if literature
-        else []
-    )
+    materials = literature or []
 
     def _run() -> dict[str, Any]:
         path = record_path(local_path)
