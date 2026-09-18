@@ -16,6 +16,8 @@ from typing import Any
 
 import httpx
 
+DEFAULT_DASHBOARD_PORT = 24727
+
 STATE_DIR = Path("~/.airas").expanduser()
 PID_FILE = STATE_DIR / "dashboard.json"
 LOG_FILE = STATE_DIR / "dashboard.log"

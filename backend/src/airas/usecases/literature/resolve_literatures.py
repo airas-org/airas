@@ -17,7 +17,7 @@ from airas.core.types.literature_material import LiteratureMaterial
 from airas.infra.airas_records_index import AirasRecordsIndex
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.semantic_scholar_client import SemanticScholarClient
-from airas.research_record.verify._verify_quoted_passages import passage_is_quoted
+from airas.research_record.read.find_quote import find_quote
 from airas.usecases.literature.nodes.cache_fulltext import cached_fulltext
 from airas.usecases.literature.nodes.fetch_fulltext_from_repository import (
     fetch_fulltext_from_repository,
@@ -157,10 +157,8 @@ async def _paper(
     # fallback, space-insensitive: extractors drop the spaces around symbols.
     head = "".join(pages[:2]).casefold()
     if title and not (
-        passage_is_quoted(head, title.casefold())
-        or passage_is_quoted(
-            re.sub(r"\s+", "", head), re.sub(r"\s+", "", title.casefold())
-        )
+        find_quote(head, title.casefold())
+        or find_quote(re.sub(r"\s+", "", head), re.sub(r"\s+", "", title.casefold()))
     ):
         raise ValueError(
             f"'{label}': the PDF's first pages do not carry this title — "

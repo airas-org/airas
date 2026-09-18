@@ -1,5 +1,6 @@
 """Paper reproduction and parameter tuning."""
 
+import time
 from typing import Any, Literal
 
 from airas.core.llm_config import NodeLLMConfig
@@ -115,13 +116,18 @@ async def fetch_paper_reproduction_results(
     reproduction — call `get_available_llms` to list valid models. Requires
     GH_PERSONAL_ACCESS_TOKEN and an LLM provider API key.
     """
-    return await fetch_paper_reproduction_results_usecase(
+    started = time.time()
+    result = await fetch_paper_reproduction_results_usecase(
         _github_client(),
         _litellm_client(),
         _config(github_owner, repository_name, branch_name),
         repro_id,
         NodeLLMConfig(llm_name=model),
     )
+    result["execution_time"] = {
+        "fetch_paper_reproduction_results": [round(time.time() - started, 4)]
+    }
+    return result
 
 
 @mcp.tool()
