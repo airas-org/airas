@@ -19,6 +19,7 @@ from airas.agent_session.agent_state import (
     write_pointer,
 )
 from airas.agent_session.codex_hooks import install_codex_hooks
+from airas.agent_session.loop import loop
 from airas.agent_session.research_trace import (
     capture,
     is_experiment_repository,
@@ -195,6 +196,19 @@ def _run_session(args: argparse.Namespace) -> None:
         print(f"wrote {handoff}\nstart the harness in the clone and give it this file")
 
 
+def _run_loop(args: argparse.Namespace) -> None:
+    print(
+        loop(
+            args.queue_repo,
+            args.workdir,
+            owner=args.owner or os.environ.get("AIRAS_LOOP_OWNER", "auto-res2"),
+            plugin_dir=args.plugin_dir,
+            max_turns=args.max_turns,
+            policy_file=args.policy,
+        )
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="airas",
@@ -243,6 +257,24 @@ def main() -> None:
                 metavar="[REPOSITORY@]COMMIT",
                 help="Record this clone as forked from that fork point",
             )
+
+    loop_cmd = subparsers.add_parser(
+        "loop",
+        help=(
+            "One tick of the unattended loop: advance the active research "
+            "(the queue is the issues labelled research/*) or start the next one"
+        ),
+    )
+    loop_cmd.add_argument("--queue-repo", required=True, help="owner/name of the queue")
+    loop_cmd.add_argument("--workdir", default=".", help="Where the clone lives")
+    loop_cmd.add_argument("--owner", help="Owner for new experiment repositories")
+    loop_cmd.add_argument("--plugin-dir", help="airas plugin directory for Claude Code")
+    loop_cmd.add_argument("--max-turns", type=int, default=150)
+    loop_cmd.add_argument(
+        "--policy",
+        default=".github/airas-loop-policy.md",
+        help="Operational choices handed to the agent every session",
+    )
 
     subparsers.add_parser("mcp", help="Run the MCP server on stdio (default)")
 
@@ -391,6 +423,8 @@ def main() -> None:
         _run_publish_paper(args)
     elif args.command == "verify-record":
         _run_verify_record(args)
+    elif args.command == "loop":
+        _run_loop(args)
     else:
         # No subcommand (or `mcp`): stdio MCP server, the historical default.
         _run_mcp()

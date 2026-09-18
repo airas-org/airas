@@ -167,3 +167,27 @@ rather than re-running a step.
 - Stop and ask the user when the research direction is genuinely
   underdetermined, or when a step has failed the same way twice —
   a third identical attempt rarely differs.
+
+When nobody is watching — the session was started by the research loop
+(`airas loop`), which hands you a policy in its prompt — three things
+change, and nothing else:
+
+- **The policy answers "Settle once, up front".** Read visibility,
+  execution platform and compute target from the policy in the prompt
+  instead of asking. It lives in the airas repository
+  (`.github/airas-loop-policy.md`), once for every research the loop runs.
+- **Asking becomes parking.** Where this file says "ask the user",
+  write `.research/loop.json` as
+  `{"state": "parked", "reason": "<what needs deciding>"}`, commit, and
+  end the turn. The loop stops scheduling this research and hands the
+  reason to a human; they resume it by removing the file.
+- **Waiting becomes yielding.** After dispatching a run that will take
+  longer than a few minutes, write `.research/loop.json` as
+  `{"state": "waiting", "until": "<ISO 8601, the run's expected end>",
+  "reason": "<run id and platform>"}`, commit, and end the turn instead
+  of polling. The loop resumes this conversation once `until` has
+  passed; remove the file when you have brought the results back.
+
+The loop resumes the *same* conversation each time, so what was decided
+is not lost between turns; the record stays the source of truth all the
+same.

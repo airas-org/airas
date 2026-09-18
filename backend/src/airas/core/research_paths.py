@@ -36,3 +36,8 @@ DIAGRAM_DIR = f"{RESULTS_DIR}/diagram"
 # Diagrams used to live at the repository root instead. Kept for older
 # repositories; remove in the next major release (see issue #913).
 LEGACY_DIAGRAM_DIR = ".research/diagrams"
+
+# Written by the agent for the unattended scheduler: {"state": "waiting",
+# "until": <ISO 8601>} while a long run executes, {"state": "parked",
+# "reason": ...} when a human has to decide. Absent means "advance".
+LOOP_PATH = ".research/loop.json"
