@@ -13,7 +13,9 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+from collections.abc import Iterable
 from datetime import datetime, timezone
+from fnmatch import fnmatch
 from pathlib import Path
 
 from airas.agent_session.agent_state import load_agent_state, restore_claude_session
@@ -47,9 +49,13 @@ START_PROMPT = (
 )
 
 
-def decide(local_path: Path, now: datetime | None = None) -> str:
-    """'done', 'parked', 'waiting' or 'advance', from the clone alone."""
-    if list(local_path.glob(".research/latex/*/paper.pdf")):
+def decide(
+    local_path: Path, main_tree: Iterable[str], now: datetime | None = None
+) -> str:
+    """'done', 'parked', 'waiting' or 'advance'. `main_tree` lists the paths
+    on the protected branch: only a paper of record that has landed there
+    counts as done, not one in the working tree or on the staging ref."""
+    if any(fnmatch(p, ".research/latex/*/paper.pdf") for p in main_tree):
         return "done"
     loop_file = local_path / LOOP_PATH
     if not loop_file.exists():
@@ -59,7 +65,10 @@ def decide(local_path: Path, now: datetime | None = None) -> str:
         return "parked"
     until = loop.get("until")
     if loop.get("state") == "waiting" and until:
-        if (now or datetime.now(timezone.utc)) < datetime.fromisoformat(until):
+        deadline = datetime.fromisoformat(until.replace("Z", "+00:00"))
+        if deadline.tzinfo is None:
+            deadline = deadline.replace(tzinfo=timezone.utc)
+        if (now or datetime.now(timezone.utc)) < deadline:
             return "waiting"
     return "advance"
 
@@ -102,6 +111,20 @@ def _relabel(queue_repo: str, number: int, old: str, new: str) -> None:
     )
 
 
+def _park(queue_repo: str, number: int, reason: str) -> None:
+    _relabel(queue_repo, number, ACTIVE, PARKED)
+    _gh(
+        "issue",
+        "comment",
+        str(number),
+        "--repo",
+        queue_repo,
+        "--body",
+        f"parked {reason}\n\nTo resume: remove `{LOOP_PATH}` in the repository "
+        f"if present, then relabel `{PARKED}` → `{ACTIVE}`.",
+    )
+
+
 def _claude(
     prompt: str,
     cwd: Path,
@@ -139,6 +162,8 @@ def loop(
     """Advance the active research by one stretch, or start the next one.
     Returns a one-word outcome for the log."""
     policy = Path(policy_file).read_text()
+    if "<fill in>" in policy:
+        raise SystemExit(f"{policy_file} still has '<fill in>' placeholders")
     work = Path(workdir).expanduser().resolve()
     clone = work / "repo"
     clone.parent.mkdir(parents=True, exist_ok=True)
@@ -165,8 +190,7 @@ def loop(
         )
         url = remote_origin_url(clone) if clone.exists() else None
         if not url:
-            # ponytail: no retry logic — the next tick starts the issue again
-            # (a second repository may be created); add a counter if it happens.
+            _park(queue_repo, issue["number"], "the first session left no clone")
             return "start failed: no clone"
         _gh(
             "issue",
@@ -177,7 +201,7 @@ def loop(
             "--body",
             f"repo: {url}\n\n{issue['body']}",
         )
-        _git(clone, "push", "origin", "main:verify", check=False)
+        _git(clone, "push", "origin", "main:verify")
         return f"started {url}"
 
     issue = active[0]
@@ -191,23 +215,19 @@ def loop(
     if _git(clone, "fetch", "origin", "verify", check=False).returncode == 0:
         _git(clone, "merge", "--ff-only", "FETCH_HEAD", check=False)
 
-    outcome = decide(clone)
+    main_tree = subprocess.run(
+        ["git", "-C", str(clone), "ls-tree", "-r", "--name-only", "origin/main"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.splitlines()
+    outcome = decide(clone, main_tree)
     if outcome == "done":
         _relabel(queue_repo, issue["number"], ACTIVE, DONE)
         _gh("issue", "close", str(issue["number"]), "--repo", queue_repo)
     elif outcome == "parked":
         reason = json.loads((clone / LOOP_PATH).read_text()).get("reason", "")
-        _relabel(queue_repo, issue["number"], ACTIVE, PARKED)
-        _gh(
-            "issue",
-            "comment",
-            str(issue["number"]),
-            "--repo",
-            queue_repo,
-            "--body",
-            f"parked by the agent: {reason}\n\nTo resume: remove "
-            f"`{LOOP_PATH}` in the repository, then relabel `{PARKED}` → `{ACTIVE}`.",
-        )
+        _park(queue_repo, issue["number"], f"by the agent: {reason}")
     elif outcome == "advance":
         try:
             state, _ = load_agent_state(str(clone))
@@ -221,5 +241,7 @@ def loop(
             max_turns=max_turns,
             resume=session_id,
         )
-        _git(clone, "push", "origin", "main:verify", check=False)
+        # A failed push must fail the tick: on a fresh machine the fork
+        # points would otherwise be lost with the clone.
+        _git(clone, "push", "origin", "main:verify")
     return outcome

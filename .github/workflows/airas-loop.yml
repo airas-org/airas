@@ -1,16 +1,26 @@
 # Keeps one AIRAS research moving: every tick clones the active experiment
 # repository, decides without an LLM whether there is anything to do, and
 # only then resumes the agent's conversation for one more stretch.
+#
 # The queue is this repository's issues, labelled research/queued →
 # research/active → research/done | research/parked (create the labels once).
+# The label is the trust boundary: anyone can open an issue, only members
+# with triage rights can label it, and the agent reads only labelled issues.
+#
 # Where the tick runs is a repository variable: point AIRAS_LOOP_RUNNER at a
-# self-hosted runner label to move it off GitHub-hosted machines.
+# self-hosted runner label to move it off GitHub-hosted machines. Such a
+# runner needs git, gh and curl preinstalled; uv and Claude Code are
+# installed below when missing.
 name: airas-loop
 
 on:
   schedule:
     - cron: '7,22,37,52 * * * *'  # off the top of the hour, where schedules queue
   workflow_dispatch:
+
+# Everything below authenticates with the PAT; GITHUB_TOKEN only clones this repo.
+permissions:
+  contents: read
 
 concurrency:
   group: airas-loop
@@ -22,12 +32,25 @@ jobs:
     timeout-minutes: 120
     env:
       GH_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+      # Every name in GITHUB_ACTIONS_SECRET_NAMES (core/credentials.py):
+      # set_github_actions_secrets copies them from this environment into
+      # each experiment repository, so a missing one degrades the research.
       GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       SEYVAL_API_KEY: ${{ secrets.SEYVAL_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      VERCEL_AI_GATEWAY_API_KEY: ${{ secrets.VERCEL_AI_GATEWAY_API_KEY }}
+      RIKYU_API_KEY: ${{ secrets.RIKYU_API_KEY }}
+      AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+      LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+      LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }}
       AIRAS_LOOP_OWNER: ${{ vars.AIRAS_LOOP_OWNER || 'auto-res2' }}
     steps:
       - uses: actions/checkout@v7
