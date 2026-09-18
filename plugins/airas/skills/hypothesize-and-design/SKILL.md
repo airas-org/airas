@@ -22,31 +22,19 @@ refine until the hypothesis rests on passages you have actually read.
    hyphenation and ligatures, so copy it as the extracted text has it;
    keep it to one passage on one page (pages are separated by form
    feeds and a quote cannot span two).
-2. **Author the hypothesis** yourself: one statement, the gap in the
-   read papers it answers, and what would refute it. Write the prose in
-   Japanese; metric names stay English identifiers (parsed downstream).
-   A gap the papers at hand cannot confirm is a reason to search again,
-   not to assume.
-3. **Fix the compute target first**: ask the user if it is not known,
+2. **Fix the compute target**: ask the user if it is not known, and
    record GPU and `arch` (`x86_64`/`aarch64`) — the design and later
    the dependency lockfile depend on it.
-4. **Author the design** yourself: the runs to compare (proposed,
-   baselines, ablations), the models and datasets, the metrics, and the
-   compute they need. `retrieve_models` / `retrieve_datasets` list
-   curated candidates (no key needed); prefer those to defaults from
-   memory, and `search_huggingface_hub` when the curated lists lack
-   what the design needs.
-5. **Leave run ids and metrics settled.** Downstream tooling addresses
-   every result as `<run_id>.<metric.path>` (e.g. `proposed.accuracy`),
-   so a design that leaves run naming open is not finished. State the
-   expected magnitude of the effect as an interval (a range, not a
-   point) and what outcome would refute the hypothesis — a hypothesis
-   without a refutation condition is not testable. These become each
-   claim's `prediction` and `criterion` (a threshold on one named
-   metric, one run against another or a constant) at preregistration.
-   For each claim, say why its holding is evidence for the hypothesis
-   (its `rationale`), and list what the claims together still assume
-   in order to imply the hypothesis (the hypothesis's `assumptions`).
+3. **Author the hypothesis and the design** against the guide
+   `get_prompts(step="hypothesis_and_design")` returns: it states what a hypothesis, a claim (statement, rationale,
+   criterion, predicted interval, cited passages), a design and a run
+   must contain, and ends in the exact `literature` and `hypotheses`
+   arguments `preregister_record` takes. `retrieve_models` /
+   `retrieve_datasets` list curated candidates; `search_huggingface_hub`
+   when they lack what the design needs. A gap the papers at hand cannot
+   confirm is a reason to go back to `search-papers`, not to assume.
+   Write the prose in the user's working language; metric names stay
+   English identifiers.
 
 **Output**: hypothesis + experimental design, and the papers they rest
 on with their `fulltext_path` and quoted passages. Nothing is in the

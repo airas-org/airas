@@ -36,7 +36,7 @@ Notes from preregistration:
 - Rationale: {{ c.rationale }}
 {% if c.criterion %}- Criterion: {{ c.criterion }}
 - Predicted interval: [{{ c.prediction.low }}, {{ c.prediction.high }}] ({{ c.prediction.basis }})
-- Observed difference: {{ c.observed if c.observed is not none else "not available" }}\
+- Observed difference: {{ "%g"|format(c.observed) if c.observed is not none else "not available" }}\
 {% if c.observed is not none %} ({{ "inside" if c.in_prediction else "outside" }} the predicted interval){% endif %}
 {% endif %}- Verdict: {{ c.verdict or "pending" }}
 {% endfor %}{% endfor %}

@@ -32,10 +32,12 @@ Needs imported results under `.research/results/` in a clone.
    show beyond the claims — including when they do not show what was
    hoped. Read the experiment code in the clone before explaining a
    result. Write it in Japanese. The analysis is evidence, not advocacy.
-   With a model at hand, `analyze_experiment(local_path, model)` drafts
-   this from the record and the run outputs (each claim's criterion,
-   predicted interval, observed difference and verdict); read it as a
-   draft to check against the numbers, not as the analysis itself.
+   `get_prompts(step="experiment_analysis", local_path=...)` renders
+   the guide with each claim's criterion, predicted interval, observed
+   difference and verdict filled in from the clone; with a model at
+   hand, `analyze_experiment(local_path, model)` has the model answer
+   the same prompt. Either way the result is a draft to check against
+   the numbers, not the analysis itself.
 4. **Result charts**: build a Vega-Lite spec and `render_chart` it
    (pass the clone as `local_path`) to
    `.research/results/chart/<name>.png` — PNG, not PDF. Data numbers

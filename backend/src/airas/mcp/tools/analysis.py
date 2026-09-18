@@ -22,8 +22,8 @@ async def analyze_experiment(local_path: str, model: str) -> dict[str, Any]:
     limitations and open questions — plus each claim's verdict and observed
     difference. Nothing is written: the analysis is a draft for the
     Discussion, to be checked against the numbers like any other prose.
-    Without an LLM key, `get_generation_prompt(step="experiment_analysis",
-    inputs={"local_path": ...})` renders the same prompt for you to answer.
+    Without an LLM key, `get_prompts(step="experiment_analysis",
+    local_path=...)` renders the same prompt for you to answer.
     """
     return await analyze_experiment_usecase(
         local_path,

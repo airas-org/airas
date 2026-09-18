@@ -1,12 +1,13 @@
 """仮説と実験設計。今は agent が skill（hypothesize-and-design）と
-`get_generation_prompt` で自分で書くので、ここに関数はまだない。
+`get_prompts` の文章に沿って自分で書くので、ここに関数はまだない。
 
 TODO:
 - 素朴にバックエンド LLM に作らせる入口。`mcp/tools/design.py` の
   `generate_hypothesis` / `generate_experimental_design` は今も
   `usecases/generators/` のサブグラフを呼んでいる。ここに
   `generate_hypothesis.py` / `generate_experimental_design.py` として
-  素の関数を置き、`mcp/prompt_registry.py` と同じプロンプトを使う。
+  素の関数を置く。prompt 文と context 関数もここに置き、
+  `get_prompts` はそれを返す（#1054）。
   判断材料（research_study_list、compute_environment）は引数で受ける。
 - 探索アルゴリズムの取り込み（AI Scientist v2 の木探索など）。ループは
   `workflows/` のグラフに置き、node からここの関数と
