@@ -1,0 +1,53 @@
+# Keeps one AIRAS research moving: every tick clones the active experiment
+# repository, decides without an LLM whether there is anything to do, and
+# only then resumes the agent's conversation for one more stretch.
+# The queue is this repository's issues, labelled research/queued →
+# research/active → research/done | research/parked (create the labels once).
+# Where the tick runs is a repository variable: point AIRAS_LOOP_RUNNER at a
+# self-hosted runner label to move it off GitHub-hosted machines.
+name: airas-loop
+
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'  # off the top of the hour, where schedules queue
+  workflow_dispatch:
+
+concurrency:
+  group: airas-loop
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ${{ vars.AIRAS_LOOP_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+      GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      SEYVAL_API_KEY: ${{ secrets.SEYVAL_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      AIRAS_LOOP_OWNER: ${{ vars.AIRAS_LOOP_OWNER || 'auto-res2' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - name: Install Claude Code (the agent `airas loop` starts; skipped where the runner has it)
+        run: |
+          command -v claude || curl -fsSL https://claude.ai/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Git identity and credentials for the experiment repository
+        # The hooks commit fork points (needs a name), and the loop clones and
+        # pushes another repository than this one (needs the PAT, not GITHUB_TOKEN).
+        run: |
+          gh auth setup-git
+          git config --global user.name "airas-loop"
+          git config --global user.email "airas-loop@users.noreply.github.com"
+      - name: Tick
+        working-directory: backend
+        run: |
+          uv run airas loop \
+            --queue-repo "${{ github.repository }}" \
+            --workdir "$RUNNER_TEMP/research" \
+            --plugin-dir "$GITHUB_WORKSPACE/plugins/airas" \
+            --policy "$GITHUB_WORKSPACE/.github/airas-loop-policy.md"
