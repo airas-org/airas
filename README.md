@@ -78,7 +78,7 @@ chmod 600 ~/.airas/credentials.json
 | --- | --- |
 | `GH_PERSONAL_ACCESS_TOKEN` | Required. Creates and drives the experiment repository (`repo` + `workflow` scopes, admin on the repository). |
 | `SEYVAL_API_KEY` (+ optional `SEYVAL_COMPUTE_ID`, `SEYVAL_WORKSPACE_ID`) | Needed for `backend="seyval"`: running experiments on the Seyval compute platform and cross-checking their provenance. See [Execution platforms](#execution-platforms-and-llms). |
-| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `AWS_BEARER_TOKEN_BEDROCK` / `VERCEL_AI_GATEWAY_API_KEY` | Not needed for the flow: the agent driving AIRAS authors every artifact itself, guided by the skills, and `get_prompts` hands you a step's prompt when you want to write what a backend-LLM tool would. A key is only used when you call those tools (`analyze_experiment`, `verify_paper_values` with a `model`) directly. |
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `AWS_BEARER_TOKEN_BEDROCK` / `VERCEL_AI_GATEWAY_API_KEY` | Not needed for the flow: the agent driving AIRAS authors every artifact itself, guided by the skills, and `get_prompts` provides the authoring guidance for a step when you write it yourself. A key is only used when you call the backend-LLM tools (`analyze_experiment`, `verify_paper_values` with a `model`) directly. |
 
 ### 3. Start a research project
 

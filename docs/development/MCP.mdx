@@ -161,7 +161,7 @@ Or add it to your project's `.mcp.json`:
 | `dispatch_parameter_tuning_run` | Sweep the config's `optuna.search_space` with Optuna (TPE), reusing `src/main.py` via Hydra overrides — no code generation (async) |
 | `fetch_parameter_tuning_results` | Fetch the results (best parameters, optimization figure) of a completed tuning run |
 
-Authoring steps have two lanes. The agent writes the result itself, guided by the skills, with the step's prompt from `get_prompts` (`hypothesis_and_design`, `experiment_code`, `experiment_analysis`, `paper_writing`; no key required); or, where a backend-LLM tool exists (`analyze_experiment`, `verify_paper_values` with `model`; requires a provider key), the tool answers the same prompt. Every prompt comes with an `output_json_schema` describing the data format to produce and a `flow` note on where it goes.
+Authoring steps have two lanes. The agent writes the result itself, guided by the skills, with the step's prompt from `get_prompts` (`hypothesis_and_design`, `experiment_code`, `experiment_analysis`, `paper_writing`; no key required); the one backend-LLM tool that shares one of these prompts is `analyze_experiment` (requires a provider key), which answers the `experiment_analysis` prompt; `verify_paper_values` with `model` uses its own citation-judging prompt. Every prompt comes with an `output_json_schema` describing the data format to produce and a `flow` note on where it goes.
 
 A typical paper-reproduction flow: `prepare_repository` (once, to create a runner repository from
 airas-template) → `set_github_actions_secrets` → `dispatch_paper_reproduction_generate` (returns
