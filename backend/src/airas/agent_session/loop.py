@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import subprocess
 from collections.abc import Iterable
 from datetime import datetime, timezone
@@ -20,7 +21,7 @@ from pathlib import Path
 
 from airas.agent_session.agent_state import load_agent_state, restore_claude_session
 from airas.core.research_paths import LOOP_PATH
-from airas.infra.local_git import remote_origin_url
+from airas.infra.local_git import normalize_git_url, remote_origin_url
 
 QUEUED, ACTIVE, PARKED, DONE = (
     "research/queued",
@@ -209,6 +210,11 @@ def loop(
     if not match:
         return "active issue has no 'repo:' line"
     url = match.group(1)
+    # On a persistent runner the clone may belong to the previous research.
+    if clone.exists() and normalize_git_url(remote_origin_url(clone) or "") != (
+        normalize_git_url(url)
+    ):
+        shutil.rmtree(clone)
     if not clone.exists():
         _git(work, "clone", url, str(clone))
     # The newest fork point may sit on the staging ref, not yet on main.
