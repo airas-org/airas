@@ -8,9 +8,7 @@ from airas.core.types.experiment_code import ExperimentCode
 from airas.core.types.experiment_history import ExperimentHistory
 from airas.core.types.experimental_design import (
     ComputeEnvironment,
-    ExperimentalDesign,
 )
-from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.paper import PaperContent
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_record import LiteratureSource
@@ -21,39 +19,40 @@ from airas.resources.datasets.language.prompt_engineering import (
 from airas.resources.models.language.hosted_api import (
     HOSTED_API_MODELS as LLM_API_MODELS,
 )
-from airas.usecases.analyzers.analyze_experiment_subgraph.nodes.analyze_experiment import (
+from airas.usecases.analysis.analyze_experiment import (
     LLMOutput as AnalyzeExperimentOutput,
 )
-from airas.usecases.analyzers.analyze_experiment_subgraph.prompts.analyze_experiment_prompt import (
-    analyze_experiment_prompt,
+from airas.usecases.analysis.analyze_experiment import (
+    analysis_context_of,
+    render_analysis_prompt,
 )
-from airas.usecases.generators.generate_experimental_design_subgraph.nodes.generate_experimental_design import (
+from airas.workflows.generators.generate_experimental_design_subgraph.nodes.generate_experimental_design import (
     LLMOutput as ExperimentalDesignOutput,
 )
-from airas.usecases.generators.generate_experimental_design_subgraph.prompts.generate_experimental_design_prompt import (
+from airas.workflows.generators.generate_experimental_design_subgraph.prompts.generate_experimental_design_prompt import (
     generate_experimental_design_prompt,
 )
-from airas.usecases.generators.generate_hypothesis_subgraph.prompts.generate_simple_hypothesis_prompt import (
+from airas.workflows.generators.generate_hypothesis_subgraph.prompts.generate_simple_hypothesis_prompt import (
     generate_simple_hypothesis_prompt,
 )
-from airas.usecases.generators.generate_queries_subgraph.nodes.generate_queries import (
+from airas.workflows.generators.generate_queries_subgraph.nodes.generate_queries import (
     LLMOutput as GenerateQueriesOutput,
 )
-from airas.usecases.generators.generate_queries_subgraph.prompt.generate_queries_prompt import (
+from airas.workflows.generators.generate_queries_subgraph.prompt.generate_queries_prompt import (
     generate_queries_prompt,
 )
-from airas.usecases.publication.generate_latex_subgraph.prompts.convert_to_latex_prompt import (
+from airas.workflows.publication.generate_latex_subgraph.prompts.convert_to_latex_prompt import (
     convert_to_latex_prompt,
 )
-from airas.usecases.writers.write_subgraph.nodes.generate_note import (
+from airas.workflows.writers.write_subgraph.nodes.generate_note import (
     generate_note,
     map_studies_to_bibtex,
     unmatched_citation_titles,
 )
-from airas.usecases.writers.write_subgraph.prompts.section_tips_prompt import (
+from airas.workflows.writers.write_subgraph.prompts.section_tips_prompt import (
     section_tips_prompt,
 )
-from airas.usecases.writers.write_subgraph.prompts.write_prompt import write_prompt
+from airas.workflows.writers.write_subgraph.prompts.write_prompt import write_prompt
 
 GENERATION_STEPS = (
     "research_queries",
@@ -92,10 +91,9 @@ class _ExperimentalDesignInputs(BaseModel):
 
 
 class _ExperimentAnalysisInputs(BaseModel):
-    research_hypothesis: ResearchHypothesis
-    experimental_design: ExperimentalDesign
-    experiment_code: ExperimentCode
-    experimental_results: ExperimentalResults
+    local_path: str = Field(
+        description="The clone: .research/record.json and .research/results/ are read"
+    )
 
 
 class _PaperWritingInputs(BaseModel):
@@ -186,15 +184,7 @@ def _experimental_design(inputs: _ExperimentalDesignInputs) -> dict[str, Any]:
 
 
 def _experiment_analysis(inputs: _ExperimentAnalysisInputs) -> dict[str, Any]:
-    prompt = _render(
-        analyze_experiment_prompt,
-        {
-            "research_hypothesis": inputs.research_hypothesis,
-            "experimental_design": inputs.experimental_design,
-            "experiment_code": inputs.experiment_code,
-            "experimental_results": inputs.experimental_results,
-        },
-    )
+    prompt = render_analysis_prompt(analysis_context_of(inputs.local_path))
     return {
         "prompt": prompt,
         "output_json_schema": AnalyzeExperimentOutput.model_json_schema(),

@@ -30,8 +30,8 @@ def get_available_llms(include_models: bool = False) -> dict[str, Any]:
     Reads credentials fresh (so keys added or rotated since the server
     started are picked up) and, for each known LLM provider, reports whether
     its required API key(s) are present. Call this before the LLM-backed
-    tools (`analyze_experiment`, `generate_paper`, `generate_latex`,
-    `compile_latex`) to know which will
+    tools (`analyze_experiment`, `verify_paper_values` with a model) to know
+    which will
     run and which model names you may pass — a tool whose model belongs to an
     unconfigured provider fails fast with the missing key named. This tool
     itself needs no API key.
@@ -107,7 +107,7 @@ def get_generation_prompt(step: str, inputs: dict[str, Any]) -> dict[str, Any]:
     MCP host) can author the artifact yourself — no LLM API key required.
 
     Generation steps run in one of two modes: the backend-LLM tool
-    (`analyze_experiment` / `generate_paper`,
+    (`analyze_experiment`,
     needs a provider key) or host mode via this tool. Both use the same
     prompt templates, so quality guidance is identical. Prefer host mode
     when no LLM provider key is configured, or when your own context (the

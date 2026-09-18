@@ -438,31 +438,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /airas/v1/experiments/analyses:
-    post:
-      tags:
-      - experiments
-      summary: Analyze Experiment
-      operationId: analyze_experiment_airas_v1_experiments_analyses_post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AnalyzeExperimentRequestBody'
-        required: true
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AnalyzeExperimentResponseBody'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
   /airas/v1/code/generations/dispatch:
     post:
       tags:
@@ -1515,51 +1490,6 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    AnalyzeExperimentLLMMapping:
-      properties:
-        analyze_experiment:
-          $ref: '#/components/schemas/NodeLLMConfig'
-      type: object
-      required:
-      - analyze_experiment
-      title: AnalyzeExperimentLLMMapping
-    AnalyzeExperimentRequestBody:
-      properties:
-        research_hypothesis:
-          $ref: '#/components/schemas/ResearchHypothesis'
-        experimental_design:
-          $ref: '#/components/schemas/ExperimentalDesign-Input'
-        experiment_code:
-          $ref: '#/components/schemas/ExperimentCode'
-        experimental_results:
-          $ref: '#/components/schemas/ExperimentalResults'
-        llm_mapping:
-          anyOf:
-          - $ref: '#/components/schemas/AnalyzeExperimentLLMMapping'
-          - type: 'null'
-      type: object
-      required:
-      - research_hypothesis
-      - experimental_design
-      - experiment_code
-      - experimental_results
-      title: AnalyzeExperimentRequestBody
-    AnalyzeExperimentResponseBody:
-      properties:
-        experimental_analysis:
-          $ref: '#/components/schemas/ExperimentalAnalysis'
-        execution_time:
-          additionalProperties:
-            items:
-              type: number
-            type: array
-          type: object
-          title: Execution Time
-      type: object
-      required:
-      - experimental_analysis
-      - execution_time
-      title: AnalyzeExperimentResponseBody
     CancelInteractiveRepoAgentRequestBody:
       properties:
         github_config:
@@ -2525,10 +2455,6 @@ components:
         dispatch_experiment_validation:
           anyOf:
           - $ref: '#/components/schemas/DispatchExperimentValidationLLMMapping'
-          - type: 'null'
-        analyze_experiment:
-          anyOf:
-          - $ref: '#/components/schemas/AnalyzeExperimentLLMMapping'
           - type: 'null'
         decide_experiment_cycle:
           anyOf:

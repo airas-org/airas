@@ -2,8 +2,6 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { AnalyzeExperimentRequestBody } from '../models/AnalyzeExperimentRequestBody';
-import type { AnalyzeExperimentResponseBody } from '../models/AnalyzeExperimentResponseBody';
 import type { DispatchDiagramGenerationRequestBody } from '../models/DispatchDiagramGenerationRequestBody';
 import type { DispatchDiagramGenerationResponseBody } from '../models/DispatchDiagramGenerationResponseBody';
 import type { DispatchExperimentValidationRequestBody } from '../models/DispatchExperimentValidationRequestBody';
@@ -148,25 +146,6 @@ export class ExperimentsService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/airas/v1/experiments/diagrams/dispatch',
-            body: requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Analyze Experiment
-     * @param requestBody
-     * @returns AnalyzeExperimentResponseBody Successful Response
-     * @throws ApiError
-     */
-    public static analyzeExperimentAirasV1ExperimentsAnalysesPost(
-        requestBody: AnalyzeExperimentRequestBody,
-    ): CancelablePromise<AnalyzeExperimentResponseBody> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/airas/v1/experiments/analyses',
             body: requestBody,
             mediaType: 'application/json',
             errors: {

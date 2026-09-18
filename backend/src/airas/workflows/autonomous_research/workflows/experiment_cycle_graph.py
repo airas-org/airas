@@ -35,7 +35,6 @@ from airas.core.types.experiment_history import (
     ExperimentHistory,
     RunStage,
 )
-from airas.core.types.experimental_analysis import ExperimentalAnalysis
 from airas.core.types.experimental_design import ComputeEnvironment, ExperimentalDesign
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import (
@@ -48,29 +47,9 @@ from airas.core.types.wandb import WandbConfig
 from airas.infra.github.create_branch_subgraph import CreateBranchSubgraph
 from airas.infra.github_client import GithubClient
 from airas.infra.litellm_client import LiteLLMClient
-from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
-    AnalyzeExperimentLLMMapping,
-    AnalyzeExperimentSubgraph,
-)
-from airas.usecases.analyzers.decide_experiment_cycle_subgraph.decide_experiment_cycle_subgraph import (
+from airas.workflows.analysis.decide_experiment_cycle_subgraph.decide_experiment_cycle_subgraph import (
     DecideExperimentCycleLLMMapping,
     DecideExperimentCycleSubgraph,
-)
-from airas.usecases.executors.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
-    DispatchExperimentValidationLLMMapping,
-)
-from airas.usecases.executors.fetch_experiment_code_subgraph.fetch_experiment_code_subgraph import (
-    FetchExperimentCodeSubgraph,
-)
-from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment_results_subgraph import (
-    FetchExperimentResultsSubgraph,
-)
-from airas.usecases.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph import (
-    FetchRunIdsSubgraph,
-)
-from airas.usecases.generators.refine_experimental_design_subgraph.refine_experimental_design_subgraph import (
-    RefineExperimentalDesignLLMMapping,
-    RefineExperimentalDesignSubgraph,
 )
 from airas.workflows.autonomous_research.workflows.code_generation_graph import (
     CodeGenerationGraph,
@@ -84,6 +63,22 @@ from airas.workflows.autonomous_research.workflows.sanity_check_graph import (
 )
 from airas.workflows.autonomous_research.workflows.visualization_graph import (
     VisualizationGraph,
+)
+from airas.workflows.execution.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
+    DispatchExperimentValidationLLMMapping,
+)
+from airas.workflows.execution.fetch_experiment_code_subgraph.fetch_experiment_code_subgraph import (
+    FetchExperimentCodeSubgraph,
+)
+from airas.workflows.execution.fetch_experiment_results_subgraph.fetch_experiment_results_subgraph import (
+    FetchExperimentResultsSubgraph,
+)
+from airas.workflows.execution.fetch_run_ids_subgraph.fetch_run_ids_subgraph import (
+    FetchRunIdsSubgraph,
+)
+from airas.workflows.generators.refine_experimental_design_subgraph.refine_experimental_design_subgraph import (
+    RefineExperimentalDesignLLMMapping,
+    RefineExperimentalDesignSubgraph,
 )
 
 setup_logging()
@@ -106,7 +101,6 @@ class WorkflowExecutionError(Exception):
 class ExperimentCycleGraphLLMMapping(BaseModel):
     code_generation: CodeGenerationGraphLLMMapping | None = None
     dispatch_experiment_validation: DispatchExperimentValidationLLMMapping | None = None
-    analyze_experiment: AnalyzeExperimentLLMMapping | None = None
     decide_experiment_cycle: DecideExperimentCycleLLMMapping | None = None
     refine_experimental_design: RefineExperimentalDesignLLMMapping | None = None
 
@@ -136,7 +130,6 @@ class ExperimentCycleGraphState(
     current_run_stage: RunStage
     stage_github_config: GitHubConfig
     experimental_results: ExperimentalResults
-    experimental_analysis: ExperimentalAnalysis
     experiment_cycle_decision: ExperimentCycleDecision
     cycle_count: int
 
@@ -372,28 +365,6 @@ class ExperimentCycleGraph:
     # Analysis & Decision
     # =======================================================================
     @record_execution_time
-    async def _analyze_experiment(
-        self, state: ExperimentCycleGraphState
-    ) -> dict[str, ExperimentalAnalysis]:
-        logger.info("=== Analyze Experiment ===")
-        result = (
-            await AnalyzeExperimentSubgraph(
-                litellm_client=self.litellm_client,
-                llm_mapping=self.llm_mapping.analyze_experiment,
-            )
-            .build_graph()
-            .ainvoke(
-                {
-                    "research_hypothesis": state["research_hypothesis"],
-                    "experimental_design": state["experimental_design"],
-                    "experiment_code": state["experiment_code"],
-                    "experimental_results": state["experimental_results"],
-                }
-            )
-        )
-        return {"experimental_analysis": result["experimental_analysis"]}
-
-    @record_execution_time
     def _record_cycle(
         self, state: ExperimentCycleGraphState
     ) -> dict[str, ExperimentHistory]:
@@ -404,7 +375,6 @@ class ExperimentCycleGraph:
             experimental_design=state["experimental_design"],
             run_stage=state.get("current_run_stage", RunStage.PILOT),
             experimental_results=state.get("experimental_results"),
-            experimental_analysis=state.get("experimental_analysis"),
         )
         history.cycles.append(cycle)
 
@@ -594,7 +564,6 @@ class ExperimentCycleGraph:
         )
 
         # Analysis & decision
-        graph_builder.add_node("analyze_experiment", self._analyze_experiment)
         graph_builder.add_node("record_cycle", self._record_cycle)
         graph_builder.add_node("decide_next_action", self._decide_next_action)
 
@@ -628,8 +597,7 @@ class ExperimentCycleGraph:
         graph_builder.add_edge("run_visualization", "fetch_experiment_results")
 
         # → Analysis & decision
-        graph_builder.add_edge("fetch_experiment_results", "analyze_experiment")
-        graph_builder.add_edge("analyze_experiment", "record_cycle")
+        graph_builder.add_edge("fetch_experiment_results", "record_cycle")
         graph_builder.add_edge("record_cycle", "decide_next_action")
 
         # Decision routing

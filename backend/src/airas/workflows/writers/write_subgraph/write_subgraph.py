@@ -1,0 +1,140 @@
+import logging
+from typing import Literal
+
+from langgraph.graph import START, StateGraph
+from langgraph.types import Command
+from pydantic import BaseModel
+from typing_extensions import TypedDict
+
+from airas.core.execution_timers import ExecutionTimeState, time_node
+from airas.core.llm_config import NodeLLMConfig, require_llm_mapping
+from airas.core.logging_utils import setup_logging
+from airas.core.types.experiment_code import ExperimentCode
+from airas.core.types.experiment_history import ExperimentHistory
+from airas.core.types.paper import PaperContent
+from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.core.types.research_study import ResearchStudy
+from airas.infra.litellm_client import LiteLLMClient
+from airas.workflows.writers.write_subgraph.nodes.generate_note import generate_note
+from airas.workflows.writers.write_subgraph.nodes.refine_paper import refine_paper
+from airas.workflows.writers.write_subgraph.nodes.write_paper import write_paper
+
+setup_logging()
+logger = logging.getLogger(__name__)
+record_execution_time = lambda f: time_node("write_subgraph")(f)  # noqa: E731
+
+
+class WriteLLMMapping(BaseModel):
+    write_paper: NodeLLMConfig
+    refine_paper: NodeLLMConfig
+
+
+class WriteSubgraphInputState(TypedDict):
+    research_hypothesis: ResearchHypothesis
+    experiment_history: ExperimentHistory
+    experiment_code: ExperimentCode
+    research_study_list: list[ResearchStudy]
+    references_bib: str
+
+
+class WriteSubgraphOutputState(ExecutionTimeState):
+    paper_content: PaperContent
+
+    # NOTE: Citation Format
+    # This subgraph generates manuscript text using Pandoc/Quarto citation format: [@citation_key]
+    # Examples:
+    #   - Single citation: [@vaswani-2017-attention]
+    #   - Multiple citations: [@vaswani-2017-attention; @devlin-2018-bert]
+    #   - With page numbers: [@vaswani-2017-attention, p. 23]
+    # These citations will be converted to appropriate formats by downstream subgraphs:
+    #   - Latex Subgraph: [@key] → \cite{key}
+    #   - HTML Subgraph: [@key] → <a href="#ref-key">[1]</a>
+
+
+class WriteSubgraphState(
+    WriteSubgraphInputState, WriteSubgraphOutputState, total=False
+):
+    note: str
+    refinement_count: int
+
+
+class WriteSubgraph:
+    def __init__(
+        self,
+        litellm_client: LiteLLMClient,
+        llm_mapping: WriteLLMMapping | None = None,
+        paper_content_refinement_iterations: int = 2,
+    ):
+        self.llm_mapping = require_llm_mapping(llm_mapping)
+        self.paper_content_refinement_iterations = paper_content_refinement_iterations
+        self.litellm_client = litellm_client
+
+    @record_execution_time
+    def _initialize(self, state: WriteSubgraphState) -> dict[str, int]:
+        return {
+            "refinement_count": 0,
+        }
+
+    @record_execution_time
+    def _generate_note(self, state: WriteSubgraphState) -> dict[str, str]:
+        note = generate_note(
+            research_hypothesis=state["research_hypothesis"],
+            experiment_history=state["experiment_history"],
+            experiment_code=state["experiment_code"],
+            research_study_list=state["research_study_list"],
+            references_bib=state["references_bib"],
+        )
+        return {"note": note}
+
+    @record_execution_time
+    async def _write_paper(self, state: WriteSubgraphState) -> dict[str, PaperContent]:
+        paper_content = await write_paper(
+            llm_config=self.llm_mapping.write_paper,
+            litellm_client=self.litellm_client,
+            note=state["note"],
+        )
+        return {"paper_content": paper_content}
+
+    @record_execution_time
+    async def _refine_paper(
+        self, state: WriteSubgraphState
+    ) -> Command[Literal["refine_paper", "__end__"]]:
+        paper_content = await refine_paper(
+            llm_config=self.llm_mapping.refine_paper,
+            litellm_client=self.litellm_client,
+            paper_content=state["paper_content"],
+            note=state["note"],
+        )
+
+        new_refinement_count = state["refinement_count"] + 1
+        goto: Literal["refine_paper", "__end__"]
+        if new_refinement_count < self.paper_content_refinement_iterations:
+            goto = "refine_paper"
+        else:
+            goto = "__end__"
+
+        return Command(
+            update={
+                "paper_content": paper_content,
+                "refinement_count": new_refinement_count,
+            },
+            goto=goto,
+        )
+
+    def build_graph(self):
+        graph_builder = StateGraph(
+            WriteSubgraphState,
+            input_schema=WriteSubgraphInputState,
+            output_schema=WriteSubgraphOutputState,
+        )
+        graph_builder.add_node("initialize", self._initialize)
+        graph_builder.add_node("generate_note", self._generate_note)
+        graph_builder.add_node("write_paper", self._write_paper)
+        graph_builder.add_node("refine_paper", self._refine_paper)
+
+        graph_builder.add_edge(START, "initialize")
+        graph_builder.add_edge("initialize", "generate_note")
+        graph_builder.add_edge("generate_note", "write_paper")
+        graph_builder.add_edge("write_paper", "refine_paper")
+
+        return graph_builder.compile()

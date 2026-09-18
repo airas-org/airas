@@ -2,12 +2,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from airas.core.types.experiment_history import RunStage
+from airas.core.types.run_stage import RunStage
 from airas.core.types.runner import StaticRunnerConfig
-from airas.dashboard.api.dependencies import get_github_client, get_litellm_client
+from airas.dashboard.api.dependencies import get_github_client
 from airas.dashboard.api.schemas.experiments import (
-    AnalyzeExperimentRequestBody,
-    AnalyzeExperimentResponseBody,
     DispatchDiagramGenerationRequestBody,
     DispatchDiagramGenerationResponseBody,
     DispatchExperimentValidationRequestBody,
@@ -24,26 +22,22 @@ from airas.dashboard.api.schemas.experiments import (
     FetchRunIdsResponseBody,
 )
 from airas.infra.github_client import GithubClient
-from airas.infra.litellm_client import LiteLLMClient
-from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
-    AnalyzeExperimentSubgraph,
-)
-from airas.usecases.executors.dispatch_experiment_subgraph.dispatch_experiment_subgraph import (
+from airas.workflows.execution.dispatch_experiment_subgraph import (
     DispatchExperimentSubgraph,
 )
-from airas.usecases.executors.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
+from airas.workflows.execution.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
     DispatchExperimentValidationSubgraph,
 )
-from airas.usecases.executors.dispatch_visualization_subgraph.dispatch_visualization_subgraph import (
+from airas.workflows.execution.dispatch_visualization_subgraph.dispatch_visualization_subgraph import (
     DispatchVisualizationSubgraph,
 )
-from airas.usecases.executors.fetch_experiment_results_subgraph.fetch_experiment_results_subgraph import (
+from airas.workflows.execution.fetch_experiment_results_subgraph.fetch_experiment_results_subgraph import (
     FetchExperimentResultsSubgraph,
 )
-from airas.usecases.executors.fetch_run_ids_subgraph.fetch_run_ids_subgraph import (
+from airas.workflows.execution.fetch_run_ids_subgraph.fetch_run_ids_subgraph import (
     FetchRunIdsSubgraph,
 )
-from airas.usecases.generators.dispatch_diagram_generation_subgraph.dispatch_diagram_generation_subgraph import (
+from airas.workflows.generators.dispatch_diagram_generation_subgraph.dispatch_diagram_generation_subgraph import (
     DispatchDiagramGenerationSubgraph,
 )
 
@@ -196,24 +190,5 @@ async def dispatch_diagram_generation(
     )
     return DispatchDiagramGenerationResponseBody(
         dispatched=result["dispatched"],
-        execution_time=result["execution_time"],
-    )
-
-
-@router.post("/analyses", response_model=AnalyzeExperimentResponseBody)
-async def analyze_experiment(
-    request: AnalyzeExperimentRequestBody,
-    litellm_client: Annotated[LiteLLMClient, Depends(get_litellm_client)],
-) -> AnalyzeExperimentResponseBody:
-    result = (
-        await AnalyzeExperimentSubgraph(
-            litellm_client=litellm_client,
-            llm_mapping=request.llm_mapping,
-        )
-        .build_graph()
-        .ainvoke(request)
-    )
-    return AnalyzeExperimentResponseBody(
-        experimental_analysis=result["experimental_analysis"],
         execution_time=result["execution_time"],
     )

@@ -1,19 +1,13 @@
 """Paper writing and publication."""
 
 import asyncio
-from typing import Any, Literal
+from typing import Any
 from urllib.parse import urlencode
 
 from airas.cli import DEFAULT_DASHBOARD_PORT
 from airas.core.credentials import refresh_environment
-from airas.core.llm_config import uniform_llm_mapping
-from airas.core.types.experiment_code import ExperimentCode
-from airas.core.types.experiment_history import ExperimentHistory
 from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
-from airas.core.types.paper import PaperContent
-from airas.core.types.research_hypothesis import ResearchHypothesis
-from airas.core.types.research_study import ResearchStudy
 from airas.dashboard.launcher import (
     dashboard_url,
     is_dashboard_running,
@@ -21,193 +15,15 @@ from airas.dashboard.launcher import (
 )
 from airas.mcp.app import mcp
 from airas.mcp.context import (
-    _dump,
     _github_client,
     _litellm_client,
     _output_store,
 )
-from airas.research_record.read.load_record import load_record
-from airas.research_record.render.render_references_bib import render_references_bib
 from airas.research_record.verify.verify_paper import PaperVerification, verify_paper
-from airas.usecases.publication.compile_latex_subgraph.compile_latex_subgraph import (
-    CompileLatexLLMMapping,
-    CompileLatexSubgraph,
-)
-from airas.usecases.publication.generate_latex_subgraph.generate_latex_subgraph import (
-    GenerateLatexLLMMapping,
-    GenerateLatexSubgraph,
-)
-from airas.usecases.publication.latex_build import build_paper, verify_latex_build
-from airas.usecases.publication.open_in_overleaf_subgraph.nodes.collect_latex_project_files import (
+from airas.usecases.publication.build_paper import build_paper
+from airas.usecases.publication.nodes.collect_latex_project_files import (
     collect_latex_project_files,
 )
-from airas.usecases.writers.generate_bibfile_subgraph.generate_bibfile_subgraph import (
-    GenerateBibfileSubgraph,
-)
-from airas.usecases.writers.write_subgraph.write_subgraph import (
-    WriteLLMMapping,
-    WriteSubgraph,
-)
-
-
-@mcp.tool()
-async def generate_bibfile(
-    research_study_list: list[dict[str, Any]] | None = None,
-    local_path: str | None = None,
-) -> str:
-    """Generate a BibTeX references file from research studies.
-
-    With `local_path`, the .bib is rendered from the repository's registered
-    literature — the same bytes `preregister_record` wrote and the gate
-    regenerates. Otherwise `research_study_list` is what you distilled from
-    the papers you read. Returns the .bib content used by `generate_paper` and
-    `generate_latex`. No API keys required.
-    """
-    if local_path:
-        return render_references_bib(load_record(local_path).active_literature())
-    studies = [
-        ResearchStudy.model_validate(study) for study in research_study_list or []
-    ]
-    result = (
-        await GenerateBibfileSubgraph()
-        .build_graph()
-        .ainvoke({"research_study_list": studies})
-    )
-    return result["references_bib"]
-
-
-@mcp.tool()
-async def generate_paper(
-    research_hypothesis: dict[str, Any],
-    experiment_history: dict[str, Any],
-    experiment_code: dict[str, Any],
-    research_study_list: list[dict[str, Any]],
-    references_bib: str,
-    model: str,
-    writing_refinement_rounds: int = 2,
-) -> dict[str, Any]:
-    """Write the paper content from the completed research (backend LLM).
-
-    Takes the hypothesis, experiment history, experiment code, related
-    studies, and the BibTeX file (from `generate_bibfile`), and produces
-    structured paper content (title, abstract, sections). Pass the result
-    to `generate_latex`. `model` (required) is the LLM to use — call
-    `get_available_llms` to list valid models. Requires an LLM provider API
-    key — without one, use
-    `get_generation_prompt(step="paper_writing", ...)` and author the paper
-    yourself in one pass with the same curated prompt.
-    """
-    result = (
-        await WriteSubgraph(
-            litellm_client=_litellm_client(),
-            paper_content_refinement_iterations=writing_refinement_rounds,
-            llm_mapping=uniform_llm_mapping(WriteLLMMapping, model),
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "research_hypothesis": ResearchHypothesis.model_validate(
-                    research_hypothesis
-                ),
-                "experiment_history": ExperimentHistory.model_validate(
-                    experiment_history
-                ),
-                "experiment_code": ExperimentCode.model_validate(experiment_code),
-                "research_study_list": [
-                    ResearchStudy.model_validate(study) for study in research_study_list
-                ],
-                "references_bib": references_bib,
-            }
-        )
-    )
-    return _dump(result["paper_content"])
-
-
-@mcp.tool()
-async def generate_latex(
-    paper_content: dict[str, Any],
-    references_bib: str,
-    model: str,
-    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
-) -> str:
-    """Convert paper content into a full LaTeX document (backend LLM).
-
-    `paper_content` should be the output of `generate_paper`. Available
-    templates: "mdpi", "iclr2024", "agents4science_2025". Write the returned
-    LaTeX to `.research/latex/{template}/main.tex` in your local clone of
-    the experiment repository and push it with git, then build the PDF with
-    `compile_latex` and/or hand it over with `open_in_overleaf`. `model`
-    (required) is the LLM to use — call `get_available_llms` to list valid
-    models. Requires an LLM provider API key and GH_PERSONAL_ACCESS_TOKEN —
-    without them, use `get_generation_prompt(step="latex_conversion", ...)`
-    and do the conversion yourself with the template from your local clone.
-    """
-    result = (
-        await GenerateLatexSubgraph(
-            litellm_client=_litellm_client(),
-            github_client=_github_client(),
-            latex_template_name=latex_template_name,
-            llm_mapping=uniform_llm_mapping(GenerateLatexLLMMapping, model),
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "paper_content": PaperContent.model_validate(paper_content),
-                "references_bib": references_bib,
-            }
-        )
-    )
-    return result["latex_text"]
-
-
-@mcp.tool()
-async def compile_latex(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-    model: str,
-    latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
-    github_actions_agent: Literal["claude_code", "open_code"] = "claude_code",
-) -> dict[str, Any]:
-    """Build the paper PDF on GitHub Actions (asynchronous).
-
-    One of the two publication exits after main.tex has been pushed to
-    `.research/latex/{template}/` (the other is `open_in_overleaf`; they
-    are independent and can both be used).
-    Dispatches the LaTeX compilation workflow for the pushed sources.
-    The workflow materializes every PDF under `.research/results/` and
-    `.research/diagrams/` into the template's `images/` with the directory
-    structure preserved, so figures need only be pushed, not pre-staged.
-    Returns as soon as the dispatch is accepted, which is not a
-    compile result — `paper_url` is where the PDF will land if the run
-    succeeds, so track the run with `get_workflow_runs`, and use
-    `verify_latex` to find out whether the document is actually sound.
-    `model` (required) is forwarded to the compilation workflow as the
-    coding-agent model (`model_name`) — call `get_available_llms` to list
-    valid models. Requires GH_PERSONAL_ACCESS_TOKEN.
-    """
-    result = (
-        await CompileLatexSubgraph(
-            github_client=_github_client(),
-            latex_template_name=latex_template_name,
-            github_actions_agent=github_actions_agent,
-            llm_mapping=uniform_llm_mapping(CompileLatexLLMMapping, model),
-        )
-        .build_graph()
-        .ainvoke(
-            {
-                "github_config": GitHubConfig(
-                    github_owner=github_owner,
-                    repository_name=repository_name,
-                    branch_name=branch_name,
-                )
-            }
-        )
-    )
-    return {
-        "compile_latex_dispatched": result["compile_latex_dispatched"],
-        "paper_url": result["paper_url"],
-    }
 
 
 @mcp.tool()
@@ -222,7 +38,7 @@ async def verify_latex(
 ) -> dict[str, Any]:
     """Compile the paper locally and report whether it is actually sound.
 
-    Use this before `open_in_overleaf` or `compile_latex` — those produce a
+    Use this before `open_in_overleaf` or a push — those produce a
     link and a dispatch receipt, neither of which tells you the document
     built. This one builds it and answers the questions that decide whether
     the paper is publishable: did a PDF come out (`compiled`, `page_count`),
@@ -250,9 +66,8 @@ async def verify_latex(
 
     Pass `output_path` to keep the PDF this build produced — the build
     directory is temporary otherwise, and `pdf_path` in the result says
-    where it landed. `compile_latex` runs pdflatex on GitHub Actions and
-    cannot typeset CJK; a Japanese paper's PDF comes from here or from the
-    Publish Paper workflow.
+    where it landed. A Japanese paper's PDF comes from here or from the
+    Publish Paper workflow (lualatex on both).
 
     Requires a local TeX distribution. A Japanese document is built with
     lualatex (`texlive-luatex`, `texlive-lang-japanese`); everything else
@@ -294,7 +109,7 @@ async def verify_latex(
         )
 
     report = await asyncio.to_thread(
-        verify_latex_build, latex_files, "main.tex", output_path
+        build_paper, None, latex_template_name, output_path, latex_files=latex_files
     )
     return report.model_dump()
 
@@ -394,8 +209,6 @@ def open_in_overleaf(
 ) -> dict[str, Any]:
     """Create a link that opens the paper in Overleaf for editing.
 
-    One of the two publication exits for the paper (the other is
-    `compile_latex`; they are independent and can both be used).
     Returns `overleaf_url`, which must be shown to the user as a clickable
     link. Opening it in a browser packages the LaTeX project (main.tex,
     bibliography, template assets, plus every figure PDF under

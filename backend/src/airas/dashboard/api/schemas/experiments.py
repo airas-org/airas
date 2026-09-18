@@ -1,21 +1,16 @@
 from pydantic import BaseModel, Field
 
-from airas.core.types.experiment_code import ExperimentCode
-from airas.core.types.experiment_history import RunStage
-from airas.core.types.experimental_analysis import ExperimentalAnalysis
 from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.experimental_results import ExperimentalResults
 from airas.core.types.github import GitHubActionsAgent, GitHubConfig
 from airas.core.types.research_hypothesis import ResearchHypothesis
+from airas.core.types.run_stage import RunStage
 from airas.core.types.runner import ExperimentRunnerConfig, StaticRunnerConfig
 from airas.core.types.wandb import WandbConfig
-from airas.usecases.analyzers.analyze_experiment_subgraph.analyze_experiment_subgraph import (
-    AnalyzeExperimentLLMMapping,
-)
-from airas.usecases.executors.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
+from airas.workflows.execution.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
     DispatchExperimentValidationLLMMapping,
 )
-from airas.usecases.generators.dispatch_diagram_generation_subgraph.dispatch_diagram_generation_subgraph import (
+from airas.workflows.generators.dispatch_diagram_generation_subgraph.dispatch_diagram_generation_subgraph import (
     DispatchDiagramGenerationLLMMapping,
 )
 
@@ -103,17 +98,4 @@ class DispatchDiagramGenerationRequestBody(BaseModel):
 
 class DispatchDiagramGenerationResponseBody(BaseModel):
     dispatched: bool
-    execution_time: dict[str, list[float]]
-
-
-class AnalyzeExperimentRequestBody(BaseModel):
-    research_hypothesis: ResearchHypothesis
-    experimental_design: ExperimentalDesign
-    experiment_code: ExperimentCode
-    experimental_results: ExperimentalResults
-    llm_mapping: AnalyzeExperimentLLMMapping | None = None
-
-
-class AnalyzeExperimentResponseBody(BaseModel):
-    experimental_analysis: ExperimentalAnalysis
     execution_time: dict[str, list[float]]

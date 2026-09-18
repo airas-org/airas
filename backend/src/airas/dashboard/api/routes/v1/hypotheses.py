@@ -8,7 +8,7 @@ from airas.dashboard.api.schemas.hypotheses import (
     GenerateHypothesisSubgraphV0ResponseBody,
 )
 from airas.infra.litellm_client import LiteLLMClient
-from airas.usecases.generators.generate_hypothesis_subgraph.generate_hypothesis_subgraph_v0 import (
+from airas.workflows.generators.generate_hypothesis_subgraph.generate_hypothesis_subgraph_v0 import (
     GenerateHypothesisSubgraphV0,
 )
 

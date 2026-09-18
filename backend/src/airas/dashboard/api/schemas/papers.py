@@ -8,10 +8,10 @@ from airas.core.types.paper import PaperContent, SearchMethod
 from airas.core.types.paper_search import PAPER_SEARCH_SOURCES, PaperSearchResult
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.research_study import ResearchStudy
-from airas.usecases.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
+from airas.workflows.retrieve.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraphLLMMapping,
 )
-from airas.usecases.writers.write_subgraph.write_subgraph import WriteLLMMapping
+from airas.workflows.writers.write_subgraph.write_subgraph import WriteLLMMapping
 
 
 class SearchPaperTitlesRequestBody(BaseModel):

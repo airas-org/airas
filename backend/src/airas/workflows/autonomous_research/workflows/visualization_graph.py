@@ -23,11 +23,11 @@ from airas.infra.github.poll_github_actions_subgraph.poll_github_actions_subgrap
     PollGithubActionsSubgraph,
 )
 from airas.infra.github_client import GithubClient
-from airas.usecases.executors.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
+from airas.workflows.execution.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
     DispatchExperimentValidationLLMMapping,
     DispatchExperimentValidationSubgraph,
 )
-from airas.usecases.executors.dispatch_visualization_subgraph.dispatch_visualization_subgraph import (
+from airas.workflows.execution.dispatch_visualization_subgraph.dispatch_visualization_subgraph import (
     DispatchVisualizationSubgraph,
 )
 

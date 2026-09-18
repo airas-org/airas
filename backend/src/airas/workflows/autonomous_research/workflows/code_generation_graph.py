@@ -21,7 +21,7 @@ from airas.infra.github.poll_github_actions_subgraph.poll_github_actions_subgrap
     PollGithubActionsSubgraph,
 )
 from airas.infra.github_client import GithubClient
-from airas.usecases.generators.dispatch_code_generation_subgraph.dispatch_code_generation_subgraph import (
+from airas.workflows.generators.dispatch_code_generation_subgraph.dispatch_code_generation_subgraph import (
     DispatchCodeGenerationLLMMapping,
     DispatchCodeGenerationSubgraph,
 )

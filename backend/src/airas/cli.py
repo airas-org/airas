@@ -31,11 +31,11 @@ from airas.core.types.research_trace import DerivedFromRepository
 from airas.infra.litellm_client import LiteLLMClient
 from airas.research_record.verify.verify_paper import verify_paper
 from airas.research_record.verify.verify_record import verify_record
+from airas.usecases.publication.build_paper import build_paper
 from airas.usecases.publication.detect_templates import (
     detect_templates,
     paper_directories,
 )
-from airas.usecases.publication.latex_build import build_paper
 
 # "AIRAS" on a phone keypad (per ITU-T E.161); a high port to avoid the
 # crowded 8000 range.

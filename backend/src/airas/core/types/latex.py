@@ -1,3 +1,4 @@
+import re
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -5,6 +6,16 @@ from pydantic import BaseModel, Field
 from airas.core.types.github import GitHubRepositoryInfo
 
 LATEX_TEMPLATE_NAME = Literal["iclr2024", "agents4science_2025", "mdpi"]
+
+LUALATEX_ENGINE = "lualatex"
+PDFLATEX_ENGINE = "pdflatex"
+# CJK ideographs, hiragana, katakana, and the fullwidth punctuation that
+# comes with them. Latin text with a stray “ or — stays on pdflatex.
+_CJK = re.compile(r"[぀-ヿ㐀-䶿一-鿿＀-ﾟ]")
+
+
+def select_engine(main_tex: str) -> str:
+    return LUALATEX_ENGINE if _CJK.search(main_tex) else PDFLATEX_ENGINE
 
 
 class LatexBuildReport(BaseModel):

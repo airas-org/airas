@@ -74,8 +74,7 @@ local stage.
    (`unjudged_citations`), so re-run with `model` after a rewrite.
    Bibliography: `preregister_record` wrote
    `.research/latex/{template}/references.bib` from the record and the
-   gate regenerates it — never edit it; only a repository without
-   registered sources uses `generate_bibfile`.
+   gate regenerates it — never edit it.
 
 2. **Check that it builds**: `verify_latex` with `local_path`
    (working tree; no push). Use it for what a local run can honestly

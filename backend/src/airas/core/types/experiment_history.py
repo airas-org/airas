@@ -9,13 +9,7 @@ from typing_extensions import Self
 from airas.core.types.experimental_analysis import ExperimentalAnalysis
 from airas.core.types.experimental_design import ExperimentalDesign
 from airas.core.types.experimental_results import ExperimentalResults
-
-
-class RunStage(str, Enum):
-    SANITY = "sanity"
-    PILOT = "pilot"
-    FULL = "full"
-    VISUALIZATION = "visualization"
+from airas.core.types.run_stage import RunStage  # noqa: F401
 
 
 class ExperimentCycleAction(str, Enum):

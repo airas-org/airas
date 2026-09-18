@@ -2,16 +2,16 @@
 
 from typing import Any
 
-from airas.core.types.experimental_design import DatasetSubfield, ModelSubfield
+from airas.core.types.resources import DatasetSubfield, ModelSubfield
 from airas.infra.hugging_face_client import HF_RESOURCE_TYPE
 from airas.mcp.app import mcp
 from airas.mcp.context import _hugging_face_client
 from airas.resources.libraries.library_docs import LIBRARY_DOCS
-from airas.usecases.retrieve.retrieve_datasets_subgraph.retrieve_datasets_subgraph import (
-    RetrieveDatasetsSubgraph,
+from airas.usecases.hypothesis_and_design.retrieve_datasets import (
+    retrieve_datasets as retrieve_datasets_usecase,
 )
-from airas.usecases.retrieve.retrieve_models_subgraph.retrieve_models_subgraph import (
-    RetrieveModelsSubgraph,
+from airas.usecases.hypothesis_and_design.retrieve_models import (
+    retrieve_models as retrieve_models_usecase,
 )
 
 
@@ -31,12 +31,7 @@ async def retrieve_models(model_subfield: ModelSubfield) -> dict[str, Any]:
     `search_huggingface_hub` (kind="models"), which returns the same shape
     from the live Hub. No API keys required.
     """
-    result = (
-        await RetrieveModelsSubgraph()
-        .build_graph()
-        .ainvoke({"model_subfield": model_subfield})
-    )
-    return result["models_dict"]
+    return retrieve_models_usecase(model_subfield)
 
 
 @mcp.tool()
@@ -53,12 +48,7 @@ async def retrieve_datasets(dataset_subfield: DatasetSubfield) -> dict[str, Any]
     (kind="datasets"), which returns the same shape from the live Hub.
     No API keys required.
     """
-    result = (
-        await RetrieveDatasetsSubgraph()
-        .build_graph()
-        .ainvoke({"dataset_subfield": dataset_subfield})
-    )
-    return result["datasets_dict"]
+    return retrieve_datasets_usecase(dataset_subfield)
 
 
 def _hf_hub_entry(item: dict[str, Any], kind: HF_RESOURCE_TYPE) -> dict[str, Any]:
