@@ -1,24 +1,14 @@
-import json
-from typing import Any, Optional
+"""step name -> its prompt. The prompt text lives next to the usecase of the
+step (usecases/<step>/<step>_prompt.py); a step that also has a backend-LLM
+tool (analysis) renders the very prompt the tool sends, from the clone, so
+the agent lane and the tool lane read the same material (#1054). The other
+steps are plain text: the agent reads the clone itself."""
 
-from jinja2 import Environment
+from typing import Any, Callable
+
 from pydantic import BaseModel, Field
 
-from airas.core.types.experiment_code import ExperimentCode
-from airas.core.types.experiment_history import ExperimentHistory
-from airas.core.types.experimental_design import (
-    ComputeEnvironment,
-)
-from airas.core.types.paper import PaperContent
-from airas.core.types.research_hypothesis import ResearchHypothesis
-from airas.core.types.research_record import LiteratureSource
-from airas.core.types.research_study import ResearchStudy
-from airas.resources.datasets.language.prompt_engineering import (
-    PROMPT_ENGINEERING_DATASETS,
-)
-from airas.resources.models.language.hosted_api import (
-    HOSTED_API_MODELS as LLM_API_MODELS,
-)
+from airas.core.types.research_record import Hypothesis
 from airas.usecases.analysis.analyze_experiment import (
     LLMOutput as AnalyzeExperimentOutput,
 )
@@ -26,286 +16,82 @@ from airas.usecases.analysis.analyze_experiment import (
     analysis_context_of,
     render_analysis_prompt,
 )
-from airas.workflows.generators.generate_experimental_design_subgraph.nodes.generate_experimental_design import (
-    LLMOutput as ExperimentalDesignOutput,
+from airas.usecases.execution.write_experiment_code_prompt import (
+    write_experiment_code_prompt,
 )
-from airas.workflows.generators.generate_experimental_design_subgraph.prompts.generate_experimental_design_prompt import (
-    generate_experimental_design_prompt,
+from airas.usecases.hypothesis_and_design.hypothesize_and_design_prompt import (
+    hypothesize_and_design_prompt,
 )
-from airas.workflows.generators.generate_hypothesis_subgraph.prompts.generate_simple_hypothesis_prompt import (
-    generate_simple_hypothesis_prompt,
-)
-from airas.workflows.generators.generate_queries_subgraph.nodes.generate_queries import (
-    LLMOutput as GenerateQueriesOutput,
-)
-from airas.workflows.generators.generate_queries_subgraph.prompt.generate_queries_prompt import (
-    generate_queries_prompt,
-)
-from airas.workflows.publication.generate_latex_subgraph.prompts.convert_to_latex_prompt import (
-    convert_to_latex_prompt,
-)
-from airas.workflows.writers.write_subgraph.nodes.generate_note import (
-    generate_note,
-    map_studies_to_bibtex,
-    unmatched_citation_titles,
-)
-from airas.workflows.writers.write_subgraph.prompts.section_tips_prompt import (
-    section_tips_prompt,
-)
-from airas.workflows.writers.write_subgraph.prompts.write_prompt import write_prompt
-
-GENERATION_STEPS = (
-    "research_queries",
-    "hypothesis",
-    "experimental_design",
-    "experiment_analysis",
-    "paper_writing",
-    "latex_conversion",
-)
+from airas.usecases.publication.write_paper_prompt import write_paper_prompt
 
 
-# The shape of `inputs` for each step. These both validate the call and are
-# published as `input_json_schema`, so a host can see what a step wants
-# before calling it rather than discovering it from a validation error.
-# Host mode is expected to assemble some of these by hand — a
-# research_study_list built from search_papers rows, for instance — and
-# there is no other place that shape is written down.
-
-
-class _ResearchQueriesInputs(BaseModel):
-    research_topic: str
-    num_queries: int = 2
-
-
-class _HypothesisInputs(BaseModel):
-    research_topic: str
-    research_study_list: list[ResearchStudy]
-
-
-class _ExperimentalDesignInputs(BaseModel):
-    research_hypothesis: ResearchHypothesis
-    compute_environment: Optional[ComputeEnvironment] = None
-    num_models_to_use: int = 2
-    num_datasets_to_use: int = 2
-    num_comparative_methods: int = 2
-
-
-class _ExperimentAnalysisInputs(BaseModel):
-    local_path: str = Field(
-        description="The clone: .research/record.json and .research/results/ are read"
+class _Preregistration(BaseModel):
+    literature: list[dict[str, Any]] = Field(
+        description="preregister_record's `literature`: the papers the hypothesis "
+        "rests on, each with its identifiers, fulltext_path and verbatim passages"
     )
+    hypotheses: list[Hypothesis]
 
 
-class _PaperWritingInputs(BaseModel):
-    research_hypothesis: ResearchHypothesis
-    experiment_history: ExperimentHistory
-    experiment_code: ExperimentCode
-    research_study_list: list[ResearchStudy] = Field(default_factory=list)
-    references_bib: str = ""
-    literature: list[LiteratureSource] = Field(
-        default_factory=list,
-        description="record.json's literature; when given, the note lists each "
-        "source's passages to cite and research_study_list is not used",
-    )
+class _ExperimentCode(BaseModel):
+    files: dict[str, str] = Field(description="Relative path -> file content")
 
 
-class _LatexConversionInputs(BaseModel):
-    paper_content: PaperContent
-    figures_dir: str = "images"
+class _Paper(BaseModel):
+    main_tex: str
 
 
-def _render(template: str, data: dict[str, Any]) -> str:
-    return Environment().from_string(template).render(data)
+def _static(
+    prompt: str, output: type[BaseModel], flow: str
+) -> Callable[[str | None], dict[str, Any]]:
+    def build(local_path: str | None) -> dict[str, Any]:
+        return {
+            "prompt": prompt,
+            "output_json_schema": output.model_json_schema(),
+            "flow": flow,
+        }
+
+    return build
 
 
-def _research_queries(inputs: _ResearchQueriesInputs) -> dict[str, Any]:
-    prompt = _render(
-        generate_queries_prompt,
-        {
-            "research_topic": inputs.research_topic,
-            "n_queries": inputs.num_queries,
-        },
-    )
+def _experiment_analysis(local_path: str | None) -> dict[str, Any]:
+    if local_path is None:
+        raise ValueError("experiment_analysis renders from the clone: pass local_path")
     return {
-        "prompt": prompt,
-        "output_json_schema": GenerateQueriesOutput.model_json_schema(),
-        "flow": (
-            "Produce output matching output_json_schema; the query_list is "
-            "what you would pass to search_papers."
-        ),
-    }
-
-
-def find_hypothesis(inputs: _HypothesisInputs) -> dict[str, Any]:
-    prompt = _render(
-        generate_simple_hypothesis_prompt,
-        {
-            "research_topic": inputs.research_topic,
-            "research_study_list": [
-                study.to_formatted_json() for study in inputs.research_study_list
-            ],
-        },
-    )
-    return {
-        "prompt": prompt,
-        "output_json_schema": ResearchHypothesis.model_json_schema(),
-        "flow": (
-            "Produce a single, novel and significant hypothesis matching "
-            "output_json_schema. The result is what you would pass to the "
-            "experimental_design step."
-        ),
-    }
-
-
-def _experimental_design(inputs: _ExperimentalDesignInputs) -> dict[str, Any]:
-    prompt = _render(
-        generate_experimental_design_prompt,
-        {
-            "research_hypothesis": inputs.research_hypothesis,
-            "compute_environment": inputs.compute_environment or ComputeEnvironment(),
-            "model_list": json.dumps(LLM_API_MODELS, indent=4, ensure_ascii=False),
-            "dataset_list": json.dumps(
-                PROMPT_ENGINEERING_DATASETS, indent=4, ensure_ascii=False
-            ),
-            "num_models_to_use": inputs.num_models_to_use,
-            "num_datasets_to_use": inputs.num_datasets_to_use,
-            "num_comparative_methods": inputs.num_comparative_methods,
-        },
-    )
-    return {
-        "prompt": prompt,
-        "output_json_schema": ExperimentalDesignOutput.model_json_schema(),
-        "flow": (
-            "Produce output matching output_json_schema. The result is the "
-            "experimental design used to write the experiment code and, "
-            "later, by the experiment_analysis and paper_writing steps."
-        ),
-    }
-
-
-def _experiment_analysis(inputs: _ExperimentAnalysisInputs) -> dict[str, Any]:
-    prompt = render_analysis_prompt(analysis_context_of(inputs.local_path))
-    return {
-        "prompt": prompt,
+        "prompt": render_analysis_prompt(analysis_context_of(local_path)),
         "output_json_schema": AnalyzeExperimentOutput.model_json_schema(),
         "flow": (
-            "Produce output matching output_json_schema; analysis_report is "
-            "the analysis text used by the paper-writing step."
+            "analysis_report is a draft for the Discussion, to be checked against "
+            "the numbers. The verdicts come from update_record, not from this text."
         ),
     }
 
 
-def _paper_writing(inputs: _PaperWritingInputs) -> dict[str, Any]:
-    # Built once and handed to both readers: the note renders it, and the
-    # warning below reports what it could not resolve.
-    mapped_studies = (
-        []
-        if inputs.literature
-        else map_studies_to_bibtex(inputs.research_study_list, inputs.references_bib)
-    )
-    note = generate_note(
-        research_hypothesis=inputs.research_hypothesis,
-        experiment_history=inputs.experiment_history,
-        experiment_code=inputs.experiment_code,
-        research_study_list=inputs.research_study_list,
-        references_bib=inputs.references_bib,
-        mapped_studies=mapped_studies,
-        literature=inputs.literature or None,
-    )
-    prompt = _render(write_prompt, {"note": note, "tips_dict": section_tips_prompt})
-    result: dict[str, Any] = {
-        "prompt": prompt,
-        "output_json_schema": PaperContent.model_json_schema(),
-        "flow": (
-            "Author the full paper in one pass, matching output_json_schema. "
-            "The result is what you would pass to the latex_conversion step "
-            "as paper_content."
-        ),
-    }
-    # The prompt tells the writer not to cite these, and says so nowhere the
-    # caller can see. Unattended, that finishes a paper with the citations
-    # quietly missing.
-    unmatched = unmatched_citation_titles(mapped_studies)
-    if unmatched:
-        result["warnings"] = [
-            f"{len(unmatched)} of {len(inputs.research_study_list)} studies have "
-            "no entry in references_bib, so the prompt marks them 'do not cite' "
-            "and they will be missing from the paper: "
-            + "; ".join(unmatched)
-            + ". Titles are matched by title, so pass generate_bibfile's output "
-            "verbatim rather than a shortened version."
-        ]
-    return result
-
-
-def _latex_conversion(inputs: _LatexConversionInputs) -> dict[str, Any]:
-    paper_content = inputs.paper_content
-    prompt = _render(
-        convert_to_latex_prompt,
-        {
-            "figures_dir": inputs.figures_dir,
-            "sections": [
-                {"name": field, "content": getattr(paper_content, field)}
-                for field in PaperContent.model_fields.keys()
-                if getattr(paper_content, field)
-            ],
-        },
-    )
-    return {
-        "prompt": prompt,
-        "output_json_schema": PaperContent.model_json_schema(),
-        "flow": (
-            "1) Produce LaTeX-formatted PaperContent matching "
-            "output_json_schema. 2) Embed it into the template yourself: "
-            "read .research/latex/{template}/template.tex from your local "
-            "clone — it marks insertion points with << title >>, "
-            "<< abstract >>, << introduction >>, << related_work >>, "
-            "<< background >>, << method >>, << experimental_setup >>, "
-            "<< results >>, << conclusion >> — replace each marker with the "
-            "corresponding section and save the result as "
-            ".research/latex/{template}/main.tex. 3) The bibliography: when "
-            "the record has literature, preregister_record already wrote "
-            ".research/latex/{template}/references.bib and the gate "
-            "regenerates it — leave it alone; otherwise write generate_bibfile's "
-            "output there, overwriting the placeholder the template ships — "
-            "without this every \\cite renders as '?'. 4) Check the result "
-            "with verify_latex before publishing, then push both files with git."
-        ),
-    }
-
-
-_STEP_BUILDERS: dict[str, tuple[type[BaseModel], Any]] = {
-    "research_queries": (_ResearchQueriesInputs, _research_queries),
-    "hypothesis": (_HypothesisInputs, find_hypothesis),
-    "experimental_design": (_ExperimentalDesignInputs, _experimental_design),
-    "experiment_analysis": (_ExperimentAnalysisInputs, _experiment_analysis),
-    "paper_writing": (_PaperWritingInputs, _paper_writing),
-    "latex_conversion": (_LatexConversionInputs, _latex_conversion),
+_STEPS: dict[str, Callable[[str | None], dict[str, Any]]] = {
+    "hypothesis_and_design": _static(
+        hypothesize_and_design_prompt,
+        _Preregistration,
+        "Pass literature and hypotheses to preregister_record; that call is "
+        "the freeze commit.",
+    ),
+    "experiment_code": _static(
+        write_experiment_code_prompt,
+        _ExperimentCode,
+        "Write the files into the clone, run mode=sanity and make "
+        "validate-inputs, then commit and push; run-experiments dispatches.",
+    ),
+    "experiment_analysis": _experiment_analysis,
+    "paper_writing": _static(
+        write_paper_prompt,
+        _Paper,
+        "Save main_tex as .research/latex/{template}/main.tex, run verify_latex "
+        "until ok, then commit and push.",
+    ),
 }
+PROMPT_STEPS = tuple(_STEPS)
 
 
-def get_input_json_schema(step: str) -> dict[str, Any]:
-    """The JSON Schema of the `inputs` a step expects."""
-    if step not in _STEP_BUILDERS:
-        raise ValueError(
-            f"No input schema for '{step}'. Available: {', '.join(GENERATION_STEPS)}"
-        )
-    return _STEP_BUILDERS[step][0].model_json_schema()
-
-
-def _require_known_step(step: str) -> None:
-    if step not in _STEP_BUILDERS:
-        raise ValueError(
-            f"Unknown step '{step}'. Available: {', '.join(GENERATION_STEPS)}"
-        )
-
-
-def build_generation_prompt(step: str, inputs: dict[str, Any]) -> dict[str, Any]:
-    _require_known_step(step)
-    input_model, builder = _STEP_BUILDERS[step]
-    validated = input_model.model_validate(inputs)
-    return {
-        "step": step,
-        "input_json_schema": input_model.model_json_schema(),
-        **builder(validated),
-    }
+def build_prompt(step: str, local_path: str | None = None) -> dict[str, Any]:
+    if step not in _STEPS:
+        raise ValueError(f"Unknown step '{step}'. Available: {', '.join(PROMPT_STEPS)}")
+    return {"step": step, **_STEPS[step](local_path)}

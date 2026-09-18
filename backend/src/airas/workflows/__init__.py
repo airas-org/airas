@@ -11,9 +11,9 @@ states this flow in prose for an agent to follow; this package states it
 in edges for a graph to execute. Both call the same functions, so the two
 must not grow separate implementations. Where the agent uses its own
 judgement — authoring queries, distilling a paper, choosing which
-passages to quote — a node here calls the backend LLM through
-`mcp/prompt_registry.py`, which renders the *same* prompts the agent is
-handed.
+passages to quote — a node here calls the backend LLM through the
+step's usecase, whose prompt and context functions are the *same* ones
+`get_prompts` hands the agent (#1054).
 
 **State is the repository.** The graph state carries a pointer and a few
 derived facts, not the research itself:

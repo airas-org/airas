@@ -19,106 +19,21 @@ seyval`). A claim proved in Lean is written under `lean/` instead, to the
 contract in `_shared/references/lean.md`; both kinds start through the same
 `make run` and can live in one repository.
 
-1. **The execution contract.** The experiment repository ships empty
-   source files; this is what they must become. Run ids and output metric
-   paths must match `.research/record.json` exactly — verification rejects
-   results directories no declared run accounts for, and a claim whose
-   metric the code never emits can never be realized. Library docs via
-   `get_library_docs`.
-
-   **Edit or create ONLY these files** (`.github/` is managed by AIRAS,
-   and everything must run on a Linux runner):
-
-   | Path | Role |
-   | --- | --- |
-   | `Dockerfile` | Reproducible environment (Python 3.11 + uv) |
-   | `config/config.yaml` | Shared Hydra defaults |
-   | `config/run/*.yaml` | One run config per (method, model, dataset) |
-   | `src/main.py` | Orchestrator for a single `run_id` (Hydra entrypoint) |
-   | `src/preprocess.py` | Dataset loading / preprocessing |
-   | `src/train.py` / `src/inference.py` | Single-run executor |
-   | `src/model.py` | Model definition, if a custom one is needed |
-   | `src/evaluate.py` | Independent aggregation script |
-   | `pyproject.toml` | Dependencies only |
-
-   **The CLI shape is fixed** — `run_experiment.yml` and the external
-   executors call exactly this, so it cannot change:
-
-   ```bash
-   uv run python -u -m src.main run={run_id} results_dir=.research/results mode={sanity|pilot|full}
-   uv run python -u -m src.evaluate results_dir=.research/results run_ids='["run-1","run-2"]'
-   ```
-
-   `run_ids` is a Hydra list override and arrives in either spelling —
-   quoted JSON as above, or the quote-free `run_ids=[run-1,run-2]` the
-   executors use because nested quotes do not survive their shells — so
-   parse it as Hydra does, not with `json.loads`.
-
-   **Run ids** are `{method_type}-{model}-{dataset}`, dropping whichever of
-   model/dataset does not apply; `method_type` is `proposed` or
-   `comparative-{index}`.
-
-   **All three modes must work**, on the same dataset and model — only the
-   scale changes: `sanity` cheap enough to run locally on CPU (1 epoch, 1–2
-   batches, or 5–10 inference samples), `pilot` 20–30% of full (≥3 epochs,
-   ≥50 samples) for a go/no-go, `full` the real thing. `sanity` and `pilot`
-   log to `{project}-sanity` / `{project}-pilot` so they never pollute the
-   full runs.
-
-   `sanity` prints `SANITY_VALIDATION: PASS` with a
-   `SANITY_VALIDATION_SUMMARY: {...}` line, or
-   `SANITY_VALIDATION: FAIL reason=<short_reason>`; `pilot` prints the
-   `PILOT_VALIDATION` equivalents. Checks, adapted to the task: ≥5 steps
-   with final loss ≤ initial, or ≥5 non-identical outputs; every metric
-   finite; `FAIL reason=missing_metrics` when they are absent. This is your
-   own gate before dispatching anything expensive — nothing downstream
-   parses it for you.
-
-2. **Write the three files verification reads.** Per run, under
-   `{results_dir}/{run_id}/`:
-
-   | File | Written by | Why it is required |
-   | --- | --- | --- |
-   | `eval_inputs/<task>.json` | `src/main.py` | the raw predictions; what the metrics can be re-derived from |
-   | `evaluation/<task>.json` | `make evaluate` | airas-eval's verdict, its versions and `skipped` |
-   | `metrics.json` | `src/evaluate.py` | copied from the airas-eval report; the file the record is checked against |
-
-   Do **not** write out the resolved configuration. The record takes the
-   parameters a run executed with from the platform's record of the
-   dispatch, never from a file the run wrote: code reporting its own
-   settings can report anything, so agreeing with it would prove only that
-   the code was willing to claim it.
-
-   All three go **under `.research/results/`**: that is the only tree the
-   executor collects back, so anything written beside the Hydra logs or in a
-   scratch directory never reaches the repository, and the check that would
-   have used it silently passes on an empty value.
-
-   `src/evaluate.py` computes no metric of its own — it copies airas-eval's
-   numbers into `metrics.json` and builds the figures. Routing them through
-   W&B instead would put values the experiment code wrote into the file
-   verification reads, which is what the fixed evaluation layer exists to
-   prevent.
-
-3. **The outputs must feed airas-eval.** First declare the eval plan:
-   write `.research/evaluation.json` with the task types the
-   experimental design calls for — the template ships
-   `{"task_types": ["REPLACE_ME"]}`, and `make schema`,
-   `make list-tasks` and every later `make evaluate` read this file.
-   The template's Makefile
-   scores runs mechanically from raw predictions, so the experiment
-   must write prediction files matching the eval plan's contract:
-   `make schema` prints the JSON Schema the code must produce, and
-   `make list-tasks` what each planned task type returns. Design
-   `src/evaluate.py` output against that schema, not against metrics
-   you intend to compute yourself.
-4. **Fix the environment in the repository.** Pin dependencies in
-   `pyproject.toml` and commit `uv.lock`; provide a Dockerfile that
-   builds the environment from the lock alone. The platform reference
-   has the specifics (base image, wheel availability on the target
-   architecture, what a local pass does and does not prove).
-5. **Prove it runs before handing it over**: run `mode=sanity` locally
-   until it prints `SANITY_VALIDATION: PASS`, then
+1. **Read the contract**: `get_prompts(step="experiment_code")` returns
+   it; the runs it binds you to are in `.research/record.json` and the
+   eval plan in `.research/evaluation.json` — the files you may touch, the fixed CLI shape, the three modes and their
+   validation lines, the three files verification reads, how the outputs
+   feed airas-eval, and how the environment is pinned. Run ids and
+   metric paths come from the record; a claim whose metric the code never
+   emits can never be realized. Library docs via `get_library_docs`.
+2. **Declare the eval plan first**: `.research/evaluation.json` with the
+   task types the design calls for; `make schema` and `make list-tasks`
+   read it and say what the prediction files must contain.
+3. **Write the code and fix the environment**: the files the contract
+   names, `pyproject.toml` pinned, `uv.lock` committed, a Dockerfile that
+   builds from the lock alone for the platform reference's target.
+4. **Prove it runs before handing it over**: `mode=sanity` locally until
+   it prints `SANITY_VALIDATION: PASS`, then
    `make validate-inputs RUN_ID=<sanity run id>` to check the
    prediction files against the eval contract without scoring.
    Commit and push.

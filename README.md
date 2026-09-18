@@ -78,7 +78,7 @@ chmod 600 ~/.airas/credentials.json
 | --- | --- |
 | `GH_PERSONAL_ACCESS_TOKEN` | Required. Creates and drives the experiment repository (`repo` + `workflow` scopes, admin on the repository). |
 | `SEYVAL_API_KEY` (+ optional `SEYVAL_COMPUTE_ID`, `SEYVAL_WORKSPACE_ID`) | Needed for `backend="seyval"`: running experiments on the Seyval compute platform and cross-checking their provenance. See [Execution platforms](#execution-platforms-and-llms). |
-| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `AWS_BEARER_TOKEN_BEDROCK` / `VERCEL_AI_GATEWAY_API_KEY` | Not needed for the flow. The agent driving AIRAS authors every generated artifact itself via `get_generation_prompt`. A key is only used when you call the backend-LLM generation tools directly. |
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `AWS_BEARER_TOKEN_BEDROCK` / `VERCEL_AI_GATEWAY_API_KEY` | Not needed for the flow: the agent driving AIRAS authors every artifact itself, guided by the skills, and `get_prompts` provides the authoring guidance for a step when you write it yourself. A key is only used when you call the backend-LLM tools (`analyze_experiment`, `verify_paper_values` with a `model`) directly. |
 
 ### 3. Start a research project
 
@@ -117,7 +117,7 @@ It walks through the flow below, asking you to settle the operational choices (r
 
 Experiments run through the same three MCP tools on either backend: `dispatch_experiment` starts the run, `get_experiment_run_status` follows it, and `import_run_outputs` copies its outputs from where the backend keeps them (Seyval's storage, or the workflow's artifact on **GitHub Actions**) into `.research/results/` with a provenance manifest. The record gate cross-checks the committed bytes against that same store, and once the store has dropped the run, against the sha256 hashes the import recorded. **Seyval** (bring-your-own Slurm compute) and **GitHub Actions** are supported; a backend for machines you run yourself (RunPod, a lab cluster) is not yet, since it needs a store the agent cannot rewrite.
 
-The flow needs no LLM key: the agent authors the hypothesis, design, analysis and paper itself, guided by the skills. Backend-LLM tools (`analyze_experiment`, and `verify_paper_values` with a `model`) and `get_generation_prompt`, which hands a client the prompts they use, exist for use outside the flow; the former need a provider key (`get_available_llms` lists the models your keys allow). Supported providers: OpenAI, Anthropic, Google Gemini, OpenRouter, Amazon Bedrock, and Vercel AI Gateway.
+The flow needs no LLM key: the agent authors the hypothesis, design, analysis and paper itself, guided by the skills. Backend-LLM tools (`analyze_experiment`, and `verify_paper_values` with a `model`) and `get_prompts`, which hands a client the prompts they use, exist for use outside the flow; the former need a provider key (`get_available_llms` lists the models your keys allow). Supported providers: OpenAI, Anthropic, Google Gemini, OpenRouter, Amazon Bedrock, and Vercel AI Gateway.
 
 ## Companion repositories
 
@@ -137,11 +137,11 @@ The `auto-research` flow uses the following tools; the skills above are thin con
 | --- | --- |
 | `setup-repository` | `prepare_repository`, `set_github_actions_secrets` |
 | `search-papers` | `search_papers`, `fetch_paper_fulltext` |
-| `hypothesize-and-design` | `retrieve_models`, `retrieve_datasets`, `search_huggingface_hub` |
-| `preregister-paper` | `preregister_record`, `append_to_record`, `update_record`, `verify_latex` |
-| `write-experiment-code` | `get_library_docs` |
+| `hypothesize-and-design` | `get_prompts`, `retrieve_models`, `retrieve_datasets`, `search_huggingface_hub` |
+| `preregister-paper` | `preregister_record`, `get_prompts`, `append_to_record`, `update_record`, `verify_latex` |
+| `write-experiment-code` | `get_prompts`, `get_library_docs` |
 | `run-experiments` | `dispatch_experiment`, `get_experiment_run_status`, `import_run_outputs`, `fetch_experiment_results` |
-| `analyze-results` | `fetch_experiment_results`, `render_chart`, `render_diagram`, `append_to_record`, `update_record` |
+| `analyze-results` | `fetch_experiment_results`, `analyze_experiment` / `get_prompts`, `render_chart`, `render_diagram`, `append_to_record`, `update_record` |
 | `publish-paper` | `verify_latex`, `verify_paper_values`, `open_in_overleaf`, `get_workflow_runs` |
 
 See the [MCP documentation](docs/development/MCP.mdx) for descriptions, credentials per tool, and configuration options.

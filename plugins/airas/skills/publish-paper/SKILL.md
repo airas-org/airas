@@ -42,29 +42,16 @@ local stage.
    The tool is idempotent (a result already recorded is not appended
    twice), so re-running it after a late chart or append is the fix.
 
-   `\airasval` addresses one of two things, both writable before any
-   run exists:
-
-   | Form | Prints |
-   | --- | --- |
-   | `<run_id>.<metric.path>` | a metric of a declared run, read from its metrics file |
-   | `<run_id>.params.<key>` | a condition the run was declared with |
-
-   The `params` form reads the declaration; the gate checks that
-   declaration against what the platform recorded for the dispatch, so
-   citing a batch size cites a condition the run was held to. Derived
-   numbers (a claim's target) are not modelled yet. Need an undeclared value? Append the
-   declaration with `append_to_record` and re-run — never type the
-   number. A number no declaration can produce (e.g. quoted from a
-   cited paper) must be wrapped as `\unverified{...}`.
-   Citations: every `\cite` key must be a source in the record (pinned
-   at preregistration, or appended since with
-   `append_to_record(literature=[...])`); a sentence that rests on a
-   registered passage
-   cites it as `\cite[s1.p2]{key}` (the writer's `[@key, s1.p2]`), and
-   the gate checks the passage belongs to that source. Registered
-   sources the paper never cites are listed in `uncited_sources` for
-   you to judge, not failed. Once the text is settled, run
+   How the text addresses values (`\airasval{<run_id>.<metric.path>}`,
+   `\airasval{<run_id>.params.<key>}`, `\unverified{...}` for a number no
+   declaration can produce) and passages (`\cite[s1.p2]{key}`) is in the
+   `paper_writing` prompt (`get_prompts`). Every `\cite` key
+   must be a source in the record (pinned at preregistration, or appended
+   since with `append_to_record(literature=[...])`); registered sources
+   the paper never cites are listed in `uncited_sources` for you to judge,
+   not failed. Need an undeclared value? Append the declaration with
+   `append_to_record` and re-run — never type the number.
+   Once the text is settled, run
    `verify_paper_values` with a `model`: it has that model read every
    unjudged passage citation against the passage in its snapshot, writes
    the judgments into the record, and then reports what the model found

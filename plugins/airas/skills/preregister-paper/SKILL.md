@@ -142,55 +142,18 @@ are stated.
    next to main.tex, and commits them with the record and the source
    snapshots as the one freeze commit.
 
-2. **Write `.research/latex/{template}/main.tex` in two parts.**
-   The *frozen part* — title, abstract, introduction, related work,
-   **hypothesis and predictions**, method, experimental design — is
-   written in full now. The *post-experiment part* — Results and
-   Discussion — is left as stubs behind a marker comment
-   (`% ===== airas: post-experiment sections, filled once runs exist =====`),
-   so the diff at publish time is confined to a region a reviewer can
-   find.
+2. **Write `.research/latex/{template}/main.tex`** against
+   `get_prompts(step="paper_writing")`. It states the rules the gate
+   holds the paper to (the hypothesis, claims, bibkeys and passages are
+   in record.json and claims.tex): the frozen part written in
+   full now and the post-experiment part left as stubs behind the marker
+   comment, `\input{claims.tex}` for the hypothesis and predictions,
+   `\airasval` for every experimental number (none appears before the
+   marker), `\cite[s1.p2]{key}` for a sentence resting on a passage, the
+   fallback preamble that compiles without values.tex, and the LuaTeX
+   notes for a CJK paper.
 
-   The **hypothesis and predictions section is the numbered list of
-   claims**: `\input{claims.tex}` where it belongs. The file is rendered
-   from record.json (C1, C2, ... with each claim's rationale, criterion,
-   predicted interval and verdict, then the hypothesis's assumptions),
-   so the list in the PDF is the record's, not a
-   transcription; the gate regenerates and diffs it at every stage.
-   Prose around it may explain why each criterion and interval was
-   chosen. The criterion is the falsification line, the interval is
-   what you expect; an outcome outside the interval in either direction
-   must be discussed later. A range too wide to miss is a criterion,
-   not a prediction. Every experimental number is
-   `\airasval{key}` and appears only in the post-experiment part —
-   never a literal, not even an expected one presented as measured.
-
-3. **Make it compile without values.tex.** The tool-generated
-   `values.tex` cannot exist yet (update_record needs run
-   metrics), so the preamble must provide the same fallback it would:
-
-   ```latex
-   \InputIfFileExists{values.tex}{}{}
-   \providecommand{\airasval}[1]{\textbf{??airasval:\detokenize{#1}??}}
-   \providecommand{\unverified}[1]{#1}
-   \providecommand{\airasrecordlink}[1]{#1}
-   ```
-
-   Put `\airasrecordlink{record.json}` in the Data Availability statement
-   (or wherever the paper points at its record): after `update_record` it
-   is a hyperlink to record.json at the commit that realized the record,
-   so a reader of the PDF reaches the record without the repository's
-   history; before, it is plain text.
-
-   (`\providecommand` is a no-op once values.tex defines the macros.
-   Do not move these definitions into an `\IfFileExists` branch — a
-   macro body with `#1` inside another macro's argument does not
-   compile.)
-
-   Once experiments run and `update_record` writes `values.tex`,
-   the same main.tex picks up the real numbers with no edit.
-
-4. **Compile until green — this is a freeze condition, not a
+3. **Compile until green — this is a freeze condition, not a
    courtesy check.** Run `verify_latex` with `local_path` and iterate
    until `ok`; any `\airasval` rendering as `??airasval:key??` is the
    correct prereg state, not an error. A paper that does not
@@ -206,7 +169,7 @@ are stated.
    intervals narrow enough to miss? are the claims falsifiable?) and
    what a reader compares the final paper against.
 
-5. **Commit main.tex and push.** `preregister_record` already committed
+4. **Commit main.tex and push.** `preregister_record` already committed
    record.json and returned the `freeze_commit` sha — that commit is the
    freeze point. Commit the prereg main.tex on top, push, and tell the
    user the freeze sha — later verification argues from runs being
@@ -230,9 +193,9 @@ are stated.
 
 ## After the experiments
 
-Results and Discussion are written now, in the stub region: every
-claim reported by number against its criterion and predicted interval.
-Do not edit the claims to fit the results. The honest paths are:
+Results and Discussion are written now, in the stub region; the same
+`get_prompts(step="paper_writing")` states the rules for this stage. Do not edit the claims to fit the
+results. The honest paths are:
 
 - A criterion that fails is a **negative result**: keep the claim,
   report that it did not hold, and discuss why. A value that meets the
