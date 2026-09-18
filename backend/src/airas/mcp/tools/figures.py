@@ -1,12 +1,8 @@
 """Chart and diagram rendering."""
 
 import asyncio
-from io import BytesIO
 from pathlib import Path
 from typing import Any
-
-import vl_convert as vlc
-from PIL import Image
 
 from airas.core.research_paths import (
     RECORD_PATH,
@@ -31,29 +27,9 @@ from airas.research_record.render.render_charts import (
     renderer_version,
     substitute_chart_refs,
 )
-
-
-def _resolve_render_output(output_path: str) -> tuple[Path, str]:
-    path = Path(output_path).expanduser()
-    suffix = path.suffix.lower().lstrip(".")
-    if suffix not in ("pdf", "svg", "png"):
-        raise ValueError("output_path must end with .pdf, .svg, or .png")
-    return path, suffix
-
-
-def _png_to_pdf(png: bytes) -> bytes:
-    buffer = BytesIO()
-    with Image.open(BytesIO(png)) as image:
-        if image.mode != "RGB":
-            # Flatten transparency onto white instead of the black that a
-            # plain RGB conversion would produce.
-            rgba = image.convert("RGBA")
-            rgb = Image.new("RGB", rgba.size, (255, 255, 255))
-            rgb.paste(rgba, mask=rgba.getchannel("A"))
-        else:
-            rgb = image.copy()
-    rgb.save(buffer, format="PDF")
-    return buffer.getvalue()
+from airas.usecases.publication.render_diagram import (
+    render_diagram as render_diagram_usecase,
+)
 
 
 @mcp.tool()
@@ -90,8 +66,9 @@ async def render_chart(
     Rendering runs in-process (vl-convert); no data leaves the machine
     and no API keys are required.
     """
-    path, suffix = _resolve_render_output(output_path)
-    if suffix == "pdf":
+    path = Path(output_path).expanduser()
+    suffix = path.suffix.lower().lstrip(".")
+    if suffix not in ("png", "svg"):
         raise ValueError(
             "output_path must end with .png or .svg: pdf charts cannot be "
             "verified (vl-convert's PDF bytes are not deterministic across "
@@ -181,19 +158,6 @@ async def render_diagram(
     self-hosted instance to keep unpublished diagrams private. No API keys
     required.
     """
-    path, suffix = _resolve_render_output(output_path)
-    client = _kroki_client()
-    if suffix == "pdf":
-        svg = await client.arender(diagram_type, diagram_source, "svg")
-        if b"<foreignObject" in svg:
-            # HTML-in-SVG labels (mermaid etc.) are dropped by the local
-            # SVG-to-PDF converter, so rasterize via Kroki's PNG instead.
-            png = await client.arender(diagram_type, diagram_source, "png")
-            data = await asyncio.to_thread(_png_to_pdf, png)
-        else:
-            data = await asyncio.to_thread(vlc.svg_to_pdf, svg.decode("utf-8"))
-    else:
-        data = await client.arender(diagram_type, diagram_source, suffix)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(data)
-    return {"output_path": str(path), "bytes_written": len(data)}
+    return await render_diagram_usecase(
+        _kroki_client(), diagram_type, diagram_source, output_path
+    )

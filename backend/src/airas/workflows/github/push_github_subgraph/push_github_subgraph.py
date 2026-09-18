@@ -6,10 +6,10 @@ from typing_extensions import TypedDict
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubConfig
-from airas.infra.github.push_github_subgraph.nodes.push_files_to_github import (
+from airas.infra.github_client import GithubClient
+from airas.workflows.github.push_github_subgraph.nodes.push_files_to_github import (
     push_files_to_github,
 )
-from airas.infra.github_client import GithubClient
 
 setup_logging()
 logger = logging.getLogger(__name__)

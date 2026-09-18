@@ -13,13 +13,13 @@ from airas.core.types.github import (
     GitHubActionsStatus,
     GitHubConfig,
 )
-from airas.infra.github.poll_github_actions_subgraph.poll_github_actions_subgraph import (
-    PollGithubActionsSubgraph,
-)
 from airas.infra.github_client import GithubClient
 from airas.workflows.generators.dispatch_diagram_generation_subgraph.dispatch_diagram_generation_subgraph import (
     DispatchDiagramGenerationLLMMapping,
     DispatchDiagramGenerationSubgraph,
+)
+from airas.workflows.github.poll_github_actions_subgraph.poll_github_actions_subgraph import (
+    PollGithubActionsSubgraph,
 )
 
 # TODO: Determine after operational use whether a validation loop

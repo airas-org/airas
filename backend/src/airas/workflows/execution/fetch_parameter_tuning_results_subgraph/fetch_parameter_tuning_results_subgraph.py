@@ -1,22 +1,12 @@
-import logging
-
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
-from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubConfig
 from airas.infra.github_client import GithubClient
-from airas.workflows.execution.fetch_parameter_tuning_results_subgraph.nodes.fetch_tuning_outputs import (
-    fetch_tuning_outputs,
+from airas.usecases.reproduction.fetch_parameter_tuning_results import (
+    fetch_parameter_tuning_results,
 )
-
-setup_logging()
-logger = logging.getLogger(__name__)
-
-
-def record_execution_time(f):
-    return time_node("fetch_parameter_tuning_results_subgraph")(f)
 
 
 class FetchParameterTuningResultsSubgraphInputState(TypedDict):
@@ -39,48 +29,16 @@ class FetchParameterTuningResultsSubgraphState(
 
 
 class FetchParameterTuningResultsSubgraph:
+    """`fetch_parameter_tuning_results` as one graph node."""
+
     def __init__(self, github_client: GithubClient):
         self.github_client = github_client
 
-    @record_execution_time
-    async def _fetch_tuning_outputs(
-        self, state: FetchParameterTuningResultsSubgraphState
-    ) -> dict:
-        try:
-            outputs = await fetch_tuning_outputs(
-                github_client=self.github_client,
-                github_config=state["github_config"],
-                repro_id=state["repro_id"],
-            )
-        except Exception as exc:
-            logger.exception("Failed to fetch tuning outputs")
-            return {
-                "result": None,
-                "tuning_figure_png_base64": None,
-                "final_status": {"status": "failed", "fetch_error": str(exc)},
-            }
-
-        result = outputs.get("result")
-        if not isinstance(result, dict):
-            return {
-                "result": None,
-                "tuning_figure_png_base64": outputs.get("tuning_figure_png_base64"),
-                "final_status": {"status": "failed", "run_error": "result_missing"},
-            }
-
-        run_error = result.get("error")
-        if run_error:
-            return {
-                "result": result,
-                "tuning_figure_png_base64": outputs.get("tuning_figure_png_base64"),
-                "final_status": {"status": "failed", "run_error": run_error},
-            }
-
-        return {
-            "result": result,
-            "tuning_figure_png_base64": outputs.get("tuning_figure_png_base64"),
-            "final_status": {"status": "passed"},
-        }
+    @time_node("fetch_parameter_tuning_results_subgraph")
+    async def _fetch(self, state: FetchParameterTuningResultsSubgraphState) -> dict:
+        return await fetch_parameter_tuning_results(
+            self.github_client, state["github_config"], state["repro_id"]
+        )
 
     def build_graph(self):
         graph_builder = StateGraph(
@@ -88,7 +46,7 @@ class FetchParameterTuningResultsSubgraph:
             input_schema=FetchParameterTuningResultsSubgraphInputState,
             output_schema=FetchParameterTuningResultsSubgraphOutputState,
         )
-        graph_builder.add_node("fetch_tuning_outputs", self._fetch_tuning_outputs)
+        graph_builder.add_node("fetch_tuning_outputs", self._fetch)
         graph_builder.add_edge(START, "fetch_tuning_outputs")
         graph_builder.add_edge("fetch_tuning_outputs", END)
         return graph_builder.compile()

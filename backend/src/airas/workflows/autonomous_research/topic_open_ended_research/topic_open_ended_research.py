@@ -29,9 +29,6 @@ from airas.core.types.wandb import WandbConfig
 from airas.core.utils import to_dict_deep
 from airas.infra.airas_db_index import AirasDbPaperSearchIndex
 from airas.infra.arxiv_client import ArxivClient
-from airas.infra.github.push_github_subgraph.push_github_subgraph import (
-    PushGitHubSubgraph,
-)
 from airas.infra.github_client import GithubClient
 from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.qdrant_client import QdrantClient
@@ -63,6 +60,9 @@ from airas.workflows.generators.generate_hypothesis_subgraph.generate_hypothesis
 from airas.workflows.generators.generate_queries_subgraph.generate_queries_subgraph import (
     GenerateQueriesLLMMapping,
     GenerateQueriesSubgraph,
+)
+from airas.workflows.github.push_github_subgraph.push_github_subgraph import (
+    PushGitHubSubgraph,
 )
 from airas.workflows.literature.search_paper_titles_from_airas_db_subgraph import (
     SearchPaperTitlesFromAirasDbSubgraph,

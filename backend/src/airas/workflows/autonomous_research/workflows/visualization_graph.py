@@ -16,12 +16,6 @@ from airas.core.types.github import (
 )
 from airas.core.types.research_hypothesis import ResearchHypothesis
 from airas.core.types.wandb import WandbConfig
-from airas.infra.github.download_github_actions_artifacts_subgraph.download_github_actions_artifacts_subgraph import (
-    DownloadGithubActionsArtifactsSubgraph,
-)
-from airas.infra.github.poll_github_actions_subgraph.poll_github_actions_subgraph import (
-    PollGithubActionsSubgraph,
-)
 from airas.infra.github_client import GithubClient
 from airas.workflows.execution.dispatch_experiment_validation_subgraph.dispatch_experiment_validation_subgraph import (
     DispatchExperimentValidationLLMMapping,
@@ -29,6 +23,12 @@ from airas.workflows.execution.dispatch_experiment_validation_subgraph.dispatch_
 )
 from airas.workflows.execution.dispatch_visualization_subgraph.dispatch_visualization_subgraph import (
     DispatchVisualizationSubgraph,
+)
+from airas.workflows.github.download_github_actions_artifacts_subgraph.download_github_actions_artifacts_subgraph import (
+    DownloadGithubActionsArtifactsSubgraph,
+)
+from airas.workflows.github.poll_github_actions_subgraph.poll_github_actions_subgraph import (
+    PollGithubActionsSubgraph,
 )
 
 setup_logging()

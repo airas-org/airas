@@ -4,14 +4,14 @@ from pydantic import AfterValidator, BaseModel
 
 from airas.core.types.github import GitHubActionsAgent
 from airas.dashboard.api.schemas.github import GitHubConfigRequest
+from airas.usecases.reproduction.nodes.validate_repro_id import (
+    validate_repro_id,
+)
 from airas.workflows.execution.fetch_paper_reproduction_results_subgraph.fetch_paper_reproduction_results_subgraph import (
     FetchPaperReproductionResultsLLMMapping,
 )
 from airas.workflows.generators.dispatch_paper_reproduction_generate_subgraph.dispatch_paper_reproduction_generate_subgraph import (
     DispatchPaperReproductionGenerateLLMMapping,
-)
-from airas.workflows.generators.dispatch_paper_reproduction_generate_subgraph.repro_id import (
-    validate_repro_id,
 )
 
 ReproId = Annotated[str, AfterValidator(validate_repro_id)]
