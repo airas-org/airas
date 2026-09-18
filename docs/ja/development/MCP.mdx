@@ -115,7 +115,7 @@ claude mcp add airas -- uvx airas
 
 | ツール | 説明 |
 | --- | --- |
-| `get_generation_prompt` | 生成ステップ（research_queries / hypothesis / experimental_design / experiment_analysis / paper_writing / latex_conversion）のキュレート済みプロンプトを組み立てて返し、MCPホスト自身が成果物を執筆できるようにする。APIキー不要 |
+| `get_prompts` | 執筆ステップ（`hypothesis_and_design` / `experiment_code` / `experiment_analysis` / `paper_writing`）のプロンプトを返し、MCP ホスト自身が書く。`experiment_analysis` は clone（`local_path`）から描画し、`analyze_experiment` が送るものと同じ文面。APIキー不要 |
 | `search_papers` | 複数ソース（OpenAlex / Semantic Scholar / arXiv / AIRAS DB）の並列論文検索。結果は正規化・重複排除済み。APIキー不要 |
 | `fetch_paper_fulltext` | arXiv ID / DOI / PDF URL から論文全文を取得（合法なオープンアクセス解決のみ）。APIキー不要 |
 | `retrieve_models` | サブ分野ごとの候補モデル一覧を取得。APIキー不要 |
@@ -127,37 +127,40 @@ claude mcp add airas -- uvx airas
 
 | ツール | 説明 |
 | --- | --- |
-| `prepare_repository` | 実験用リポジトリの作成・初期化 |
+| `prepare_repository` | テンプレートから実験リポジトリを作成し、ブランチ保護（record gate を必須チェックに）と Pages を設定 |
+| `set_github_actions_secrets` | このマシンの API キーをリポジトリの Actions secrets にコピー |
 | `dispatch_experiment` | サニティチェック／本実験の実行を開始（非同期）。`backend` パラメータで GitHub Actions / Seyval 計算基盤を選択 |
 | `get_workflow_runs` | 直近のワークフロー実行のステータス確認（ノンブロッキング） |
 | `get_experiment_run_status` | 任意のバックエンドの実行1件のステータス確認と stdout/stderr の取得（エラー診断用） |
 | `import_run_outputs` | 完了した実行の出力をバックエンドの保存先（Seyval のストレージ、または workflow の artifact）から `.research/results/` に provenance マニフェスト付きで取り込む |
-| `fetch_experiment_results` | 実験結果を取得 |
+| `fetch_experiment_results` | clone の `.research/results/` を読む: run ごとの metrics、評価レポート、図、provenance エントリ |
 | `download_workflow_artifacts` | 特定のワークフロー実行のアーティファクトを取得 |
-| `analyze_experiment` | 仮説・実験設計に照らして結果を解析 |
+| `analyze_experiment` | record と run 出力から claim ごとの分析の下書きをバックエンド LLM（`model`）で作る。自分で書くなら `get_prompts(step="experiment_analysis")` が同じプロンプト |
 | `render_chart` | Vega-Lite仕様を図ファイル（PDF/SVG/PNG）にローカルでレンダリング。APIキー不要 |
 | `render_diagram` | テキスト記法のダイアグラム（mermaid, graphviz, d2, plantuml など）をKroki経由でレンダリング。APIキー不要 |
 
-### 論文執筆・出版
+### 研究記録・論文
 
 | ツール | 説明 |
 | --- | --- |
-| `generate_bibfile` | 研究データからBibTeX参考文献ファイルを生成。APIキー不要 |
-| `generate_paper` | 完了した研究から論文本文（タイトル・アブストラクト・各セクション）を執筆 |
-| `generate_latex` | 論文本文をLaTeX文書に変換（テンプレート: mdpi / iclr2024 / agents4science_2025） |
-| `compile_latex` | GitHub Actionsで論文PDFをビルド（非同期）。図は `.research/results/` と `.research/diagrams/` から自動で取り込まれる |
+| `preregister_record` | 実験前に `.research/record.json` を作る: 文献（DOI / arXiv id で固定、全文をスナップショット、引用を照合）と仮説・claim・criterion・prediction・run を 1 回の freeze commit で。`claims.tex` と `references.bib` も書く |
+| `append_to_record` | record への追記（append-only: 同じ id で改訂、`withdrawn` で撤回）。文献、仮説、claim、表、チャート、passage、`run_results` で run 出力から導いた結果 |
+| `update_record` | `.research/results/` から各 run の結果と各 claim の verdict を導き、`values.tex` と `tables/` を描画してコミット |
+| `verify_latex` | 論文をローカルでビルド（CJK は lualatex）し、未定義の引用・参照、欠けた図、エラーを報告。`local_path` を渡す。`output_path` で PDF を保存 |
+| `verify_paper_values` | CI と同じ論文ゲート: 宣言、append-only の履歴、values.tex / claims.tex の再生成一致、`\airasval` の key、引用。`model` を渡すと未判定の passage 引用を判定して record に書く |
 | `open_in_overleaf` | 論文をOverleafで開くリンクを作成。`local_path` を渡すと push 不要でローカルのワーキングツリーをエクスポート |
+| `get_available_llms` | 設定済みキーで使える LLM プロバイダ（`model` 引数用） |
 
-生成ステップは**デュアルモード**です: バックエンドLLMで実行する（下記の各ツール、LLMプロバイダーキーが必要）か、`get_generation_prompt` で同じキュレート済みプロンプトを受け取ってホスト自身が執筆する（キー不要）かを選べます。ホスト執筆対応ステップ: `research_queries` / `hypothesis` / `experimental_design` / `experiment_analysis` / `paper_writing` / `latex_conversion` — 各プロンプトには**作成すべきデータ形式を正確に示す `output_json_schema`** が付属します
+執筆ステップには 2 車線があります。skills に導かれて agent 自身が書く車線では、`get_prompts` がその step のプロンプトを返します（`hypothesis_and_design` / `experiment_code` / `experiment_analysis` / `paper_writing`、キー不要）。バックエンド LLM のツールがある step（`analyze_experiment`、`model` 付きの `verify_paper_values`。プロバイダーキーが必要）では、ツールが同じプロンプトに答えます。各プロンプトには作成すべきデータ形式を示す `output_json_schema` と、出力の行き先を示す `flow` が付きます。
 
-典型的なフロー: `search_papers` → `fetch_paper_fulltext`（ファイルを読む）→ **仮説と実験設計を自分で書く** → `prepare_repository` → **実験コードを自分で書く**（下記参照）→ `dispatch_experiment` →（`get_experiment_run_status` でポーリング）→ `import_run_outputs` → `fetch_experiment_results` → `analyze_experiment` → **図とダイアグラムを自分で作る**（下記参照）→ `generate_bibfile` → `generate_paper` → `generate_latex` → **返された LaTeX を clone 内の `.research/latex/{テンプレート}/main.tex` に書いて git で push** → **出口は2つ（片方でも両方でも）**: `compile_latex`（GitHub ActionsでPDFをビルド）/ `open_in_overleaf`（ユーザーが編集できる形でOverleafに引き渡し。`local_path` 指定なら push 不要）
+典型的なフロー（順序と不変条件は `auto-research` skill が持つ）: `prepare_repository` → `set_github_actions_secrets` → `search_papers` → `fetch_paper_fulltext`（ファイルを読む）→ **仮説と実験設計を自分で書く**（`get_prompts(step="hypothesis_and_design")`）→ `preregister_record`（freeze commit）→ **事前登録論文を書く**（`get_prompts(step="paper_writing")`）→ `verify_latex` → staging ref に push、gate が green なら fast-forward → **実験コードを自分で書く**（`get_prompts(step="experiment_code")`、下記参照）→ `dispatch_experiment` →（`get_experiment_run_status` でポーリング）→ `import_run_outputs` → `fetch_experiment_results` → `update_record` → **分析**（`get_prompts(step="experiment_analysis")` か `analyze_experiment`）→ **図を作る**（`render_chart`、下記参照）→ **Results と Discussion を埋める** → `model` 付きの `verify_paper_values` → `verify_latex` → push。CI が再検証し、Publish Paper workflow が正式版の PDF をビルドしてコミットします。`open_in_overleaf` はユーザーが編集できる形で Overleaf に引き渡します（`local_path` 指定なら push 不要）。
 
 ### 実験コードの書き方
 
 MCP ホストは有能なコーディングエージェント（Claude Code、Cursor など）である前提のため、AIRAS は実験コードを代わりに生成しません。`prepare_repository` の後:
 
 1. 実験リポジトリを git でローカルに clone する
-2. リポジトリ内の `AGENTS.md` を読む — コードが満たすべき規約（編集可能ファイル、CLI の形、`sanity` / `pilot` / `full` モード、検証判定行、W&B 規約）が定義されています
+2. `get_prompts(step="experiment_code")` で契約を読む — 編集可能ファイル、CLI の形、`sanity` / `pilot` / `full` モードと検証判定行、検証が読む 3 ファイル。従うべき run id と metric は `.research/record.json` にあります
 3. 設計が依存する各ライブラリについて `get_library_docs` を呼び、返される `llms.txt`（またはドキュメント）を取得して、記憶に頼らず最新のAPIをもとに実装する
 4. 実験を実装し、ローカルで `mode=sanity` を実行して `SANITY_VALIDATION: PASS` が出るまで修正してから commit・push する
 5. GPU 規模の実行は `dispatch_experiment` でディスパッチし、エラーと結果は `get_experiment_run_status` / `fetch_experiment_results` で取得する
@@ -170,13 +173,13 @@ MCP ホストは有能なコーディングエージェント（Claude Code、Cu
 
 1. `fetch_experiment_results` で実験結果を取得する（ローカルの clone から直接読んでもよい。run ごとのディレクトリは `.research/results/` 配下にあります）
 2. 結果から Vega-Lite 仕様を組み立てて `render_chart` でレンダリングし、clone 内の `.research/results/chart/` 配下に PDF として保存する。手法ダイアグラムはテキスト記法（mermaid, graphviz, d2 など）で書き、`render_diagram` で `.research/results/diagram/` 配下にレンダリングする（matplotlib などで自分で図を生成しても構いません — 重要なのは出力先だけです）
-3. git で commit・push する。コピーの手順は不要です: `compile_latex` と `open_in_overleaf` が `.research/results/` と `.research/diagrams/` 配下の図PDFを自動で取り込み、LaTeX からは `images/<そのディレクトリからの相対パス>` として参照できます（例: `.research/results/chart/loss.pdf` → `images/chart/loss.pdf`。ディレクトリ構造は保持されます）。論文中の図参照はこの規約に合わせてください
+3. `render_chart` はチャートの仕様を record に追記してコミットします。コピーの手順は不要です: 論文ビルド（`verify_latex`、Publish Paper workflow）と `open_in_overleaf` が `.research/results/` と `.research/diagrams/` 配下の図PDFを自動で取り込み、LaTeX からは `images/<そのディレクトリからの相対パス>` として参照できます（例: `.research/results/chart/loss.pdf` → `images/chart/loss.pdf`。ディレクトリ構造は保持されます）。論文中の図参照はこの規約に合わせてください
 
 `render_chart` は完全にローカルでレンダリングします。`render_diagram` はデフォルトでパブリックの https://kroki.io を使います — 未公開のダイアグラムを外に出したくない場合は `KROKI_BASE_URL` でセルフホストの Kroki インスタンスを指定してください。
 
 コード生成と同様に、全自動研究ワークフローは従来どおり GitHub Actions 上で可視化・ダイアグラム生成を実行しますが、その経路は MCP ツールとしては公開していません。
 
-時間のかかるステップは完了を待たず、ツール自体は即座に返ります。実験は `dispatch_experiment` の `backend` に応じて GitHub Actions または Seyval 上で実行されます。どちらも `execution_id` を返し、`get_experiment_run_status` で追跡、`import_run_outputs` で回収します。LaTeX ビルドは GitHub Actions 上で実行され、`get_workflow_runs` で追跡します。
+時間のかかるステップは完了を待たず、ツール自体は即座に返ります。実験は `dispatch_experiment` の `backend` に応じて GitHub Actions または Seyval 上で実行されます。どちらも `execution_id` を返し、`get_experiment_run_status` で追跡、`import_run_outputs` で回収します。record gate・論文 gate と Publish Paper のビルドは GitHub Actions 上で実行され、`get_workflow_runs` で追跡します。
 
 ## 開発
 
