@@ -1,21 +1,26 @@
-# Keeps one AIRAS research moving: every tick clones the active experiment
-# repository, decides without an LLM whether there is anything to do, and
-# only then resumes the agent's conversation for one more stretch.
+# One run of this workflow carries one AIRAS research to its end: it clones
+# the active experiment repository and keeps resuming the agent's
+# conversation (`airas loop`) until the paper of record lands or a human has
+# to decide. When it ends it starts the next run itself, which picks the
+# next queued research. A run that dies (timeout, runner failure) is picked
+# up the same way: the next run resumes the same research from its last
+# fork point, so the daily schedule below is only the safety net for a
+# broken chain.
 #
 # The queue is this repository's issues, labelled research/queued →
 # research/active → research/done | research/parked (create the labels once).
 # The label is the trust boundary: anyone can open an issue, only members
 # with triage rights can label it, and the agent reads only labelled issues.
 #
-# Where the tick runs is a repository variable: point AIRAS_LOOP_RUNNER at a
-# self-hosted runner label to move it off GitHub-hosted machines. Such a
-# runner needs git, gh and curl preinstalled; uv and Claude Code are
-# installed below when missing.
+# Where the agent runs is a repository variable: AIRAS_LOOP_RUNNER names the
+# runner label (default Ubicloud, 5-day job limit; GitHub-hosted runners stop
+# at 6 hours). A self-hosted runner needs git, gh and curl preinstalled; uv
+# and Claude Code are installed below when missing.
 name: airas-loop
 
 on:
   schedule:
-    - cron: '7,22,37,52 * * * *'  # off the top of the hour, where schedules queue
+    - cron: '7 3 * * *'  # daily heartbeat: restarts the chain if a run died without starting the next
   workflow_dispatch:
 
 # Everything below authenticates with the PAT; GITHUB_TOKEN only clones this repo.
@@ -27,9 +32,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  tick:
-    runs-on: ${{ vars.AIRAS_LOOP_RUNNER || 'ubuntu-latest' }}
-    timeout-minutes: 120
+  research:
+    runs-on: ${{ vars.AIRAS_LOOP_RUNNER || 'ubicloud-standard-2' }}
+    timeout-minutes: 7000  # end before the 5-day job limit; the next run resumes
     env:
       GH_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
       # Every name in GITHUB_ACTIONS_SECRET_NAMES (core/credentials.py):
@@ -66,11 +71,28 @@ jobs:
           gh auth setup-git
           git config --global user.name "airas-loop"
           git config --global user.email "airas-loop@users.noreply.github.com"
-      - name: Tick
+      - name: Run one research to its end
+        id: research
         working-directory: backend
+        # `airas loop` prints one outcome per call. Keep going while the
+        # research is moving or waiting on a run; stop when it is done or
+        # parked (start the next run) or when nothing is queued (do not).
         run: |
-          uv run airas loop \
-            --queue-repo "${{ github.repository }}" \
-            --workdir "$RUNNER_TEMP/research" \
-            --plugin-dir "$GITHUB_WORKSPACE/plugins/airas" \
-            --policy "$GITHUB_WORKSPACE/.github/airas-loop-policy.md"
+          while :; do
+            out=$(uv run airas loop \
+              --queue-repo "${{ github.repository }}" \
+              --workdir "$RUNNER_TEMP/research" \
+              --plugin-dir "$GITHUB_WORKSPACE/plugins/airas" \
+              --policy "$GITHUB_WORKSPACE/.github/airas-loop-policy.md" | tail -1)
+            echo "$(date -u +%FT%TZ) $out"
+            case "$out" in
+              advance|waiting|started*) sleep 600 ;;
+              done|parked|"start failed"*) echo "next=true" >> "$GITHUB_OUTPUT"; break ;;
+              *) echo "next=false" >> "$GITHUB_OUTPUT"; break ;;
+            esac
+          done
+      - name: Start the next run
+        # Also after a timeout or failure, where the outcome is empty: the
+        # next run resumes this research. Only an empty queue ends the chain.
+        if: always() && steps.research.outputs.next != 'false'
+        run: gh workflow run airas-loop.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}"
