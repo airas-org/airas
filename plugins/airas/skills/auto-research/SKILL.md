@@ -167,3 +167,26 @@ rather than re-running a step.
 - Stop and ask the user when the research direction is genuinely
   underdetermined, or when a step has failed the same way twice —
   a third identical attempt rarely differs.
+
+When nobody is watching — the session was started by `airas loop`,
+which hands you a policy in its prompt — three things change, and
+nothing else:
+
+- **The policy answers "Settle once, up front".** Read visibility,
+  execution platform and compute target from the policy in the prompt
+  instead of asking. It lives in the airas repository
+  (`.github/airas-loop-policy.md`), once for every research the loop runs.
+- **Waiting is allowed.** Estimate how long a run will take and `sleep`
+  for that long in one command before checking again; the loop raises
+  the shell timeout so a single sleep can span hours. Polling every few
+  minutes wastes turns. If the same wait comes round three times with
+  nothing having moved, the run is stuck: treat it as a failure and
+  archive, as below.
+- **Asking becomes archiving.** Where this file says "ask the user",
+  commit a note with what needs deciding, archive the repository
+  (`gh repo archive`) and end the turn. A human unarchives it to resume;
+  the loop starts the next research meanwhile.
+
+Ending the turn is how a research ends: once the paper of record is on
+the protected branch there is nothing more to do, and the loop starts
+the next one.
