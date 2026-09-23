@@ -197,15 +197,12 @@ def _run_session(args: argparse.Namespace) -> None:
 
 
 def _run_loop(args: argparse.Namespace) -> None:
-    print(
-        loop(
-            args.queue_repo,
-            args.workdir,
-            owner=args.owner or os.environ.get("AIRAS_LOOP_OWNER", "auto-res2"),
-            plugin_dir=args.plugin_dir,
-            max_turns=args.max_turns,
-            policy_file=args.policy,
-        )
+    loop(
+        args.resume_repo,
+        args.workdir,
+        owner=args.owner,
+        plugin_dir=args.plugin_dir,
+        policy_file=args.policy,
     )
 
 
@@ -261,15 +258,18 @@ def main() -> None:
     loop_cmd = subparsers.add_parser(
         "loop",
         help=(
-            "One tick of the unattended loop: advance the active research "
-            "(the queue is the issues labelled research/*) or start the next one"
+            "Run one unattended research session: resume the given experiment "
+            "repository, or start a new research when none is given"
         ),
     )
-    loop_cmd.add_argument("--queue-repo", required=True, help="owner/name of the queue")
+    loop_cmd.add_argument(
+        "--resume-repo", default="", help="Experiment repository URL to continue"
+    )
     loop_cmd.add_argument("--workdir", default=".", help="Where the clone lives")
-    loop_cmd.add_argument("--owner", help="Owner for new experiment repositories")
+    loop_cmd.add_argument(
+        "--owner", default="auto-res2", help="Owner for new experiment repositories"
+    )
     loop_cmd.add_argument("--plugin-dir", help="airas plugin directory for Claude Code")
-    loop_cmd.add_argument("--max-turns", type=int, default=150)
     loop_cmd.add_argument(
         "--policy",
         default=".github/airas-loop-policy.md",

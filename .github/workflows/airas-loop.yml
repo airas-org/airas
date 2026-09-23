@@ -1,29 +1,17 @@
-# One run of this workflow carries one AIRAS research to its end: it clones
-# the active experiment repository and keeps resuming the agent's
-# conversation (`airas loop`) until the paper of record lands or a human has
-# to decide. When it ends it starts the next run itself, which picks the
-# next queued research. A run that dies (timeout, runner failure) is picked
-# up the same way: the next run resumes the same research from its last
-# fork point, so the daily schedule below is only the safety net for a
-# broken chain.
-#
-# The queue is this repository's issues, labelled research/queued →
-# research/active → research/done | research/parked (create the labels once).
-# The label is the trust boundary: anyone can open an issue, only members
-# with triage rights can label it, and the agent reads only labelled issues.
-#
-# Where the agent runs is a repository variable: AIRAS_LOOP_RUNNER names the
-# runner label (default Ubicloud, 5-day job limit; GitHub-hosted runners stop
-# at 6 hours). A self-hosted runner needs git, gh and curl preinstalled; uv
-# and Claude Code are installed below when missing.
+# 1 run = 1 研究。終わったら次の run を自分で起こす。5 日の timeout で殺されたら
+# 次の run に実験リポの URL を渡し、同じ研究を fork point から resume する。
+# schedule は連鎖が切れたときの保険で、run が生きている間は concurrency で待つだけ。
 name: airas-loop
 
 on:
-  schedule:
-    - cron: '7 3 * * *'  # daily heartbeat: restarts the chain if a run died without starting the next
   workflow_dispatch:
+    inputs:
+      resume_repo:
+        description: '続きをやる実験リポの URL。空なら新しい研究を始める'
+        default: ''
+  schedule:
+    - cron: '7 3 * * *'
 
-# Everything below authenticates with the PAT; GITHUB_TOKEN only clones this repo.
 permissions:
   contents: read
 
@@ -33,13 +21,15 @@ concurrency:
 
 jobs:
   research:
+    # self-hosted に切り替えるときは git / gh / curl を入れておく
     runs-on: ${{ vars.AIRAS_LOOP_RUNNER || 'ubicloud-standard-2' }}
-    timeout-minutes: 7000  # end before the 5-day job limit; the next run resumes
+    # self-hosted の job 上限 5 日(7200 分)の手前で切る
+    timeout-minutes: 7000
     env:
-      GH_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
-      # Every name in GITHUB_ACTIONS_SECRET_NAMES (core/credentials.py):
-      # set_github_actions_secrets copies them from this environment into
-      # each experiment repository, so a missing one degrades the research.
+      GH_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}  # gh CLI 用(push 認証、次 run の起動)
+      # agent が実験ランを待つ sleep を 1 回のツール呼び出しで済ませられるようにする(6 時間)
+      BASH_MAX_TIMEOUT_MS: "21600000"
+      # 以下は GITHUB_ACTIONS_SECRET_NAMES(core/credentials.py)の全名。set_github_actions_secrets が実験リポの secrets に写す
       GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       SEYVAL_API_KEY: ${{ secrets.SEYVAL_API_KEY }}
@@ -56,43 +46,40 @@ jobs:
       LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
       LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
       LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }}
-      AIRAS_LOOP_OWNER: ${{ vars.AIRAS_LOOP_OWNER || 'auto-res2' }}
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
-      - name: Install Claude Code (the agent `airas loop` starts; skipped where the runner has it)
+      - name: Install Claude Code
         run: |
           command -v claude || curl -fsSL https://claude.ai/install.sh | bash
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-      - name: Git identity and credentials for the experiment repository
-        # The hooks commit fork points (needs a name), and the loop clones and
-        # pushes another repository than this one (needs the PAT, not GITHUB_TOKEN).
+      - name: Refuse a runner with its own credentials
+        # ~/.airas/credentials.json は環境変数より優先されるので、常駐 runner に残っていると上の secrets が効かない
+        run: test ! -e ~/.airas/credentials.json || { echo "remove ~/.airas/credentials.json on this runner"; exit 1; }
+      - name: Git identity and credentials
+        # 実験リポへの push は GITHUB_TOKEN では届かないので PAT。identity は hooks のコミット用
         run: |
           gh auth setup-git
           git config --global user.name "airas-loop"
           git config --global user.email "airas-loop@users.noreply.github.com"
-      - name: Run one research to its end
+      - name: Research
         id: research
         working-directory: backend
-        # `airas loop` prints one outcome per call. Keep going while the
-        # research is moving or waiting on a run; stop when it is done or
-        # parked (start the next run) or when nothing is queued (do not).
         run: |
-          while :; do
-            out=$(uv run airas loop \
-              --queue-repo "${{ github.repository }}" \
-              --workdir "$RUNNER_TEMP/research" \
-              --plugin-dir "$GITHUB_WORKSPACE/plugins/airas" \
-              --policy "$GITHUB_WORKSPACE/.github/airas-loop-policy.md" | tail -1)
-            echo "$(date -u +%FT%TZ) $out"
-            case "$out" in
-              advance|waiting|started*) sleep 600 ;;
-              done|parked|"start failed"*) echo "next=true" >> "$GITHUB_OUTPUT"; break ;;
-              *) echo "next=false" >> "$GITHUB_OUTPUT"; break ;;
-            esac
-          done
+          uv run airas loop \
+            --resume-repo "${{ inputs.resume_repo }}" \
+            --workdir "$RUNNER_TEMP/research" \
+            --owner "${{ vars.AIRAS_LOOP_OWNER || 'auto-res2' }}" \
+            --plugin-dir "$GITHUB_WORKSPACE/plugins/airas" \
+            --policy "$GITHUB_WORKSPACE/.github/airas-loop-policy.md"
       - name: Start the next run
-        # Also after a timeout or failure, where the outcome is empty: the
-        # next run resumes this research. Only an empty queue ends the chain.
-        if: always() && steps.research.outputs.next != 'false'
-        run: gh workflow run airas-loop.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}"
+        # exit 0 なら次の研究、timeout の cancel なら同じリポを resume。
+        # exit 1(agent の異常終了)では起こさない。同じ失敗で数分周期に回り続けるのを防ぎ、翌日の cron が 1 回だけ再試行する
+        if: always() && steps.research.outcome != 'failure'
+        run: |
+          repo=""
+          if [ "${{ steps.research.outcome }}" = "cancelled" ]; then
+            repo=$(git -C "$RUNNER_TEMP/research/repo" remote get-url origin 2>/dev/null || true)
+            git -C "$RUNNER_TEMP/research/repo" push origin main:verify 2>/dev/null || true
+          fi
+          gh workflow run airas-loop.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}" -f resume_repo="$repo"
