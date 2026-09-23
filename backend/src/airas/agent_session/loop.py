@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 from airas.agent_session.agent_state import load_agent_state, restore_claude_session
+from airas.infra.local_git import remote_origin_url
 
 CONTINUE_PROMPT = (
     "Continue the AIRAS research in this clone: follow the auto-research "
@@ -56,5 +57,21 @@ def loop(
     else:
         cmd.append(START_PROMPT.format(owner=owner, clone=clone, policy=policy))
         result = subprocess.run(cmd, cwd=work, check=False)
+    # 人待ちで archive されたリポは失敗として返し、workflow が次の研究を即座に始めないようにする
+    if result.returncode == 0 and clone.exists() and _archived(clone):
+        raise SystemExit(1)
     # claude の終了コードをそのまま返し、workflow が失敗を見分けられるようにする
     raise SystemExit(result.returncode)
+
+
+def _archived(clone: Path) -> bool:
+    url = remote_origin_url(clone)
+    if not url:
+        return False
+    out = subprocess.run(
+        ["gh", "repo", "view", url, "--json", "isArchived", "-q", ".isArchived"],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    return out == "true"

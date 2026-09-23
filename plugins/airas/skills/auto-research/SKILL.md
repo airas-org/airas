@@ -179,7 +179,9 @@ nothing else:
 - **Waiting is allowed.** Estimate how long a run will take and `sleep`
   for that long in one command before checking again; the loop raises
   the shell timeout so a single sleep can span hours. Polling every few
-  minutes wastes turns.
+  minutes wastes turns. If the same wait comes round three times with
+  nothing having moved, the run is stuck: treat it as a failure and
+  archive, as below.
 - **Asking becomes archiving.** Where this file says "ask the user",
   commit a note with what needs deciding, archive the repository
   (`gh repo archive`) and end the turn. A human unarchives it to resume;

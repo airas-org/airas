@@ -72,9 +72,16 @@ jobs:
             --owner "${{ vars.AIRAS_LOOP_OWNER || 'auto-res2' }}" \
             --plugin-dir "$GITHUB_WORKSPACE/plugins/airas" \
             --policy "$GITHUB_WORKSPACE/.github/airas-loop-policy.md"
+      - name: Stop after three failures in a row
+        # 翌日の cron の再試行も止め、人が原因を直して enable し直すまで待つ
+        if: always() && steps.research.outcome == 'failure'
+        run: |
+          prev=$(gh run list --workflow airas-loop.yml --repo "${{ github.repository }}" --limit 3 --json status,conclusion \
+                 -q '[.[] | select(.status=="completed" and .conclusion=="failure")] | length')
+          [ "$prev" -ge 2 ] && gh workflow disable airas-loop.yml --repo "${{ github.repository }}" || true
       - name: Start the next run
         # exit 0 なら次の研究、timeout の cancel なら同じリポを resume。
-        # exit 1(agent の異常終了)では起こさない。同じ失敗で数分周期に回り続けるのを防ぎ、翌日の cron が 1 回だけ再試行する
+        # exit 1(agent の異常終了、または人待ちで archive)では起こさない。同じ失敗で数分周期に回り続けるのを防ぎ、翌日の cron が 1 回だけ再試行する
         if: always() && steps.research.outcome != 'failure'
         run: |
           repo=""
