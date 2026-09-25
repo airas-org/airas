@@ -12,6 +12,7 @@ from typing import Any
 import pytest
 
 from airas.core.types.map_record_to_publication import (
+    ReferenceValues,
     TableColumnSpec,
     TableRowSpec,
     TableSpec,
@@ -20,7 +21,9 @@ from airas.core.types.research_record import (
     ChartDeclaration,
     Criterion,
     Hypothesis,
+    LiteratureSource,
     Prediction,
+    QuotedPassage,
     RenderedChart,
     ResearchRecord,
     SeyvalClaim,
@@ -72,6 +75,106 @@ def test_table_cells_come_from_the_row_run() -> None:
     assert r"Ours & 0.902 & 0.28 \\" in tex
     assert r"Baseline & 0.871 & 0.32 \\" in tex
     assert r"\label{tab:main_results}" in tex
+
+
+def test_table_reference_column_shows_published_and_difference() -> None:
+    published = ReferenceValues(passage="s1.p1", values={"run_1": 0.85, "run_2": 0.9})
+    spec = TABLE.model_copy(
+        update={
+            "columns": [
+                TableColumnSpec(header="Acc", ref_path="accuracy", round=2),
+                TableColumnSpec(header="Acc (paper)", reference=published, round=2),
+                TableColumnSpec(
+                    header="$\\Delta$",
+                    ref_path="accuracy",
+                    reference=published,
+                    round=2,
+                ),
+            ]
+        }
+    )
+    tex = render_table_tex(spec, METRICS_DATA)
+    acc: dict[str, float] = {
+        row.run_id: METRICS_DATA[row.run_id]["accuracy"] for row in TABLE.rows
+    }
+    for row in TABLE.rows:
+        expected = (
+            f"{row.label} & {acc[row.run_id]:.2f} & {published.values[row.run_id]:.2f} "
+            f"& {acc[row.run_id] - published.values[row.run_id]:.2f} \\\\"
+        )
+        assert expected in tex
+    with pytest.raises(ValueError, match="no published value"):
+        render_table_tex(
+            spec.model_copy(
+                update={"rows": spec.rows + [TableRowSpec(run_id="run_3", label="C")]}
+            ),
+            {**METRICS_DATA, "run_3": {"accuracy": 0.1}},
+        )
+    with pytest.raises(ValueError, match="needs ref_path or reference"):
+        TableColumnSpec(header="empty")
+
+
+def test_table_reference_values_must_appear_in_their_passage() -> None:
+    from airas.research_record.verify._verify_record_declarations import (
+        verify_record_declarations,
+    )
+
+    def record(values: dict[str, float]) -> ResearchRecord:
+        column = TableColumnSpec(
+            header="Acc (paper)",
+            reference=ReferenceValues(passage="s1.p1", values=values),
+        )
+        return ResearchRecord(
+            literature=[
+                LiteratureSource(
+                    id="s1",
+                    title="Prior work",
+                    bibkey="prior",
+                    passages=[
+                        QuotedPassage(
+                            id="s1.p1", node_type="result", quote="Ours 0.85 Theirs 0.9"
+                        )
+                    ],
+                )
+            ],
+            hypotheses=[
+                Hypothesis(
+                    id="h1",
+                    statement="s",
+                    claims=[
+                        SeyvalClaim(
+                            verifier=SeyvalVerifier(kind=VerifierKind.SEYVAL),
+                            id="c1",
+                            statement="s",
+                            rationale="r",
+                            criterion=Criterion(
+                                metric="accuracy",
+                                subject="run_1",
+                                reference=0.5,
+                                op=">=",
+                            ),
+                            prediction=Prediction(low=0.0, high=0.1, basis="b"),
+                            designs=[
+                                SeyvalDesign(id="d1", runs=[SeyvalRun(run_id="run_1")])
+                            ],
+                        )
+                    ],
+                    tables=[
+                        TABLE.model_copy(
+                            update={"columns": [column], "rows": [TABLE.rows[1]]}
+                        )
+                    ],
+                )
+            ],
+        )
+
+    assert verify_record_declarations(record({"run_1": 0.85})) == []
+    problems = verify_record_declarations(record({"run_1": 0.86}))
+    assert any("does not state" in p for p in problems), problems
+    problems = verify_record_declarations(
+        record({"run_1": 0.85}).model_copy(update={"literature": []})
+    )
+    assert any("no source declares" in p for p in problems), problems
 
 
 def test_table_fails_on_unknown_metric() -> None:

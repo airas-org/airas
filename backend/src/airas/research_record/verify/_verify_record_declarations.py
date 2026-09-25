@@ -94,6 +94,24 @@ def _verify_passage_references(record: ResearchRecord) -> list[str]:
             for pid in hypothesis.grounded_on
             if pid not in known
         ]
+    passages = record.passage_index()
+    for spec in record.active_tables():
+        for column in spec.columns:
+            if column.reference is None:
+                continue
+            if column.reference.passage not in passages:
+                problems.append(
+                    f"table {spec.key}: column {column.header!r} reads passage"
+                    + unknown % column.reference.passage
+                )
+                continue
+            quote = passages[column.reference.passage][1].quote
+            problems += [
+                f"table {spec.key}: column {column.header!r} gives {value!r} for "
+                f"'{run_id}', which passage {column.reference.passage} does not state"
+                for run_id, value in column.reference.values.items()
+                if str(value) not in quote and f"{value:g}" not in quote
+            ]
     for _, claim in record.active_claims():
         problems += [
             f"claim {claim.id}: cites_passages names passage" + unknown % pid
