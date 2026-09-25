@@ -15,12 +15,12 @@ from pydantic import BaseModel, Field
 
 from airas.core.research_paths import FULLTEXT_FILENAME, SOURCES_DIR
 from airas.core.types.research_record import (
-    PASSAGE_ID_PATTERN,
     CitationJudgment,
     QuotedPassage,
     ResearchRecord,
 )
 from airas.infra.litellm_client import LiteLLMClient
+from airas.research_record.read.scan_main_tex import passage_locators
 from airas.research_record.verify._verify_quoted_passages import quote_context
 
 _CITE_WITH_LOCATOR = re.compile(r"\\cite[pt]?\*?\[([^\]]*)\]\{[^}]*\}")
@@ -69,12 +69,10 @@ def _collect_citations(
 
     for paragraph in re.split(r"\n\s*\n", main_tex):
         for match in _CITE_WITH_LOCATOR.finditer(paragraph):
-            locator = match.group(1).strip()
-            if not re.fullmatch(PASSAGE_ID_PATTERN, locator):
-                continue
             start, end = match.span()
             text = paragraph[max(0, start - _WINDOW) : end + _WINDOW].strip()
-            cite(f"main.tex {match.group(0)}", text, locator)
+            for pid in passage_locators(match.group(1)):
+                cite(f"main.tex {match.group(0)}", text, pid)
     return citations
 
 

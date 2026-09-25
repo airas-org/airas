@@ -954,6 +954,20 @@ def test_a_passage_locator_that_is_not_the_sources_fails(tmp_path: Path) -> None
     assert any("at 's1.p9'" in p for p in result.problems)
 
 
+def test_several_passages_of_one_source_in_one_locator_are_each_checked(
+    tmp_path: Path,
+) -> None:
+    """`\\cite[s1.p1, s1.p9]{key}` — the form claims.tex renders — is read
+    passage by passage: the gate checks each one and the judge reads each."""
+    repo, _ = _grounded_repo(tmp_path)
+    _write_cited_paper(repo, r"See \cite[s1.p1, s1.p9]{vaswani-2017-attention}.")
+    result = _verify_paper(str(repo))
+    assert any("at 's1.p9'" in p for p in result.problems)
+    assert result.unjudged_citations == [
+        r"main.tex \cite[s1.p1, s1.p9]{vaswani-2017-attention} cites s1.p1"
+    ]
+
+
 def test_a_passage_cited_against_several_keys_fails(tmp_path: Path) -> None:
     repo, _ = _grounded_repo(tmp_path)
     _write_cited_paper(repo, r"See \cite[s1.p1]{vaswani-2017-attention,other}.")

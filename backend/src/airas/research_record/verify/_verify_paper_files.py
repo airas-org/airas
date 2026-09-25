@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 from typing import Any, Literal
 
 from airas.core.research_paths import RECORD_FILENAME, REFERENCES_BIB_FILENAME
 from airas.core.types.map_record_to_publication import TableSpec
-from airas.core.types.research_record import PASSAGE_ID_PATTERN, ResearchRecord
+from airas.core.types.research_record import ResearchRecord
 from airas.infra.local_git import normalize_git_url, remote_origin_url
-from airas.research_record.read.scan_main_tex import scan_citations, scan_main_tex
+from airas.research_record.read.scan_main_tex import (
+    passage_locators,
+    scan_citations,
+    scan_main_tex,
+)
 from airas.research_record.render.render_charts import (
     CHART_DIR,
     CHART_SUFFIXES,
@@ -50,18 +53,17 @@ def _verify_paper_citations(
                     f"main.tex cites '{key}', which no source in record.json "
                     "declares (preregister_record adds one)"
                 ] = None
-        if not (locator and re.fullmatch(PASSAGE_ID_PATTERN, locator)):
-            continue
-        if len(keys) != 1:
-            problems[
-                f"main.tex cites passage '{locator}' against several keys "
-                f"({', '.join(keys)}) — a passage belongs to one source"
-            ] = None
-        elif locator not in passages or passages[locator][0].bibkey != keys[0]:
-            problems[
-                f"main.tex cites '{keys[0]}' at '{locator}', which is not a "
-                "passage of that source"
-            ] = None
+        for pid in passage_locators(locator):
+            if len(keys) != 1:
+                problems[
+                    f"main.tex cites passage '{pid}' against several keys "
+                    f"({', '.join(keys)}) — a passage belongs to one source"
+                ] = None
+            elif pid not in passages or passages[pid][0].bibkey != keys[0]:
+                problems[
+                    f"main.tex cites '{keys[0]}' at '{pid}', which is not a "
+                    "passage of that source"
+                ] = None
     return list(problems), [key for key in by_key if key not in cited]
 
 
