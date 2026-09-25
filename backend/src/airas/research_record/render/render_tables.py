@@ -31,7 +31,17 @@ def render_table_tex(spec: TableSpec, metrics_data: dict[str, Any]) -> str:
     for row in spec.rows:
         cells = [row.label]
         for column in spec.columns:
-            value = resolve_ref(metrics_data, f"{row.run_id}.{column.ref_path}")
+            value = 0.0
+            if column.ref_path is not None:
+                value = resolve_ref(metrics_data, f"{row.run_id}.{column.ref_path}")
+            if column.reference is not None:
+                if row.run_id not in column.reference.values:
+                    raise ValueError(
+                        f"column {column.header!r} has no published value for "
+                        f"run '{row.run_id}'"
+                    )
+                published = column.reference.values[row.run_id]
+                value = value - published if column.ref_path is not None else published
             cells.append(
                 f"{value:.{column.round}f}"
                 if column.round is not None

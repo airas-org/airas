@@ -278,7 +278,7 @@ async def test_passages_get_ids_and_ground_the_hypothesis(tmp_path: Path) -> Non
     record = load_record(str(repo))
     assert record.hypotheses[0].grounded_on == ["s1.p1"]
     claims_tex = (repo / ".research" / "latex" / "mdpi" / "claims.tex").read_text()
-    assert "Grounded on" in claims_tex and "The rate is 0.1." in claims_tex
+    assert r"\cite[s1.p1]{vaswani-2017-attention}" in claims_tex
 
 
 async def test_a_quote_not_in_the_snapshot_is_refused_and_nothing_is_written(

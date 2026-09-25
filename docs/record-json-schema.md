@@ -343,7 +343,7 @@ classDiagram
 
 | 生成物 | 元 | 段階 |
 | --- | --- | --- |
-| `claims.tex` | claims の statement / rationale / criterion / prediction / observed / verdict と hypothesis の assumptions。`grounded_on` / `cites_passages` の id と、末尾に Sources（各 source の bibkey・題名と passage の逐語引用） | prereg から（未着は pending） |
+| `claims.tex` | claims の statement / rationale / criterion / prediction / observed / verdict と hypothesis の assumptions。`grounded_on` / `cites_passages` は main.tex と同じ `\cite[s1.p2]{key}` として statement に付く（逐語引用は record.json のみ、論文には再掲しない） | prereg から（未着は pending） |
 | `references.bib` | literature[]（bibkey ごとに 1 エントリ） | preregister_record 時 |
 | `values.tex` | `\airasval{<run_id>.<metric>}` の値 | results 以降 |
 | `tables/<key>.tex` | tables[] | results 以降 |

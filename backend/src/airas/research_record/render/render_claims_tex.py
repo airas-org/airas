@@ -6,7 +6,6 @@ from typing import Any
 from airas.core.types.research_record import (
     LeanClaim,
     LeanResult,
-    LiteratureSource,
     ResearchRecord,
     SeyvalClaim,
     active,
@@ -43,48 +42,36 @@ def _lean_evidence_lines(claim: LeanClaim) -> list[str]:
     return lines
 
 
-def _passages(ids: list[str]) -> str:
-    return ", ".join(_tt(pid) for pid in ids)
+def _number(record_id: str) -> str:
+    return record_id[1:]  # ids are h1, c2, …; the paper says "Hypothesis 1", "Claim 2"
 
 
-def _cited_passages_line(claim: Any) -> str | None:
-    parts = [_passages(claim.cites_passages)] if claim.cites_passages else []
+def _cite(record: ResearchRecord, passage_ids: list[str]) -> str:
+    index = record.passage_index()
+    by_key: dict[str, list[str]] = {}
+    unknown: list[str] = []
+    for pid in passage_ids:
+        if pid in index:
+            by_key.setdefault(index[pid][0].bibkey, []).append(pid)
+        else:
+            unknown.append(pid)
+    cites = [
+        rf"\cite[{', '.join(sorted(pids, key=lambda i: int(i.split('.p')[1])))}]{{{key}}}"
+        for key, pids in by_key.items()
+    ]
+    cites += [_tt(pid) for pid in unknown]
+    return "~" + ", ".join(cites) if cites else ""
+
+
+def _claim_passages(claim: Any) -> list[str]:
+    ids = list(claim.cites_passages)
     if isinstance(claim, SeyvalClaim) and claim.criterion.reference_passage:
-        parts.append(f"criterion: {_tt(claim.criterion.reference_passage)}")
+        ids.append(claim.criterion.reference_passage)
     for design in active(claim.designs, "id"):
-        if design.cites_passages:
-            parts.append(f"{_tt(design.id)}: {_passages(design.cites_passages)}")
+        ids += design.cites_passages
         for run in active(design.runs, "run_id"):
-            if run.cites_passages:
-                parts.append(f"{_tt(run.run_id)}: {_passages(run.cites_passages)}")
-    return rf"  \emph{{Cites:}} {'; '.join(parts)}." if parts else None
-
-
-def _literature_lines(literature: list[LiteratureSource]) -> list[str]:
-    # The (statement, quote) pairs reach the reviewer through the PDF: the
-    # declarations above name passages, these are the passages verbatim.
-    lines = [r"\noindent\textbf{Sources.}"]
-    for source in literature:
-        year = f" ({source.year})" if source.year else ""
-        lines.append(
-            rf"\noindent\textbf{{{source.id.upper()}}} {_tt(source.bibkey)}: "
-            + latex_text(source.title)
-            + f"{year}."
-        )
-        passages = active(source.passages, "id")
-        if not passages:
-            continue
-        lines.append(r"\begin{itemize}")
-        for passage in passages:
-            where = "" if passage.anchor == "text" else f" {passage.anchor}"
-            lines.append(
-                rf"\item[{_tt(passage.id)}] ({passage.node_type}{where}) "
-                + "``"
-                + latex_text(passage.quote)
-                + "''"
-            )
-        lines.append(r"\end{itemize}")
-    return lines
+            ids += run.cites_passages
+    return list(dict.fromkeys(ids))
 
 
 def render_claims_tex(record: ResearchRecord, metrics_data: dict[str, Any]) -> str:
@@ -93,20 +80,19 @@ def render_claims_tex(record: ResearchRecord, metrics_data: dict[str, Any]) -> s
     ops = {">=": r"\geq", "<=": r"\leq", ">": ">", "<": "<"}
     lines = [AUTO_GENERATED_HEADER]
     for hypothesis in record.active_hypotheses():
-        lines += [
-            rf"\noindent\textbf{{{hypothesis.id.upper()}.}} "
-            + latex_text(hypothesis.statement),
-        ]
-        if hypothesis.grounded_on:
-            lines.append(rf"\emph{{Grounded on:}} {_passages(hypothesis.grounded_on)}.")
+        lines.append(
+            rf"\noindent\textbf{{Hypothesis {_number(hypothesis.id)}.}} "
+            + latex_text(hypothesis.statement)
+            + _cite(record, hypothesis.grounded_on)
+        )
         lines.append(r"\begin{enumerate}")
         for claim in active(hypothesis.claims, "id"):
             lines.append(
-                rf"\item[\textbf{{{claim.id.upper()}}}] {latex_text(claim.statement)}"
+                rf"\item[\textbf{{Claim {_number(claim.id)}}}] "
+                + latex_text(claim.statement)
+                + _cite(record, _claim_passages(claim))
             )
             lines.append(rf"  \emph{{Rationale:}} {latex_text(claim.rationale)}")
-            if cited := _cited_passages_line(claim):
-                lines.append(cited)
             if isinstance(claim, SeyvalClaim):
                 c = claim.criterion
                 reference = (
@@ -134,13 +120,11 @@ def render_claims_tex(record: ResearchRecord, metrics_data: dict[str, Any]) -> s
         if hypothesis.assumptions:
             lines.append(
                 r"\noindent\emph{Assumed, so that the claims together imply "
-                rf"{hypothesis.id.upper()}:}}"
+                rf"Hypothesis {_number(hypothesis.id)}:}}"
             )
             lines.append(r"\begin{itemize}")
             lines += [rf"\item {latex_text(a)}" for a in hypothesis.assumptions]
             lines.append(r"\end{itemize}")
-    if literature := record.active_literature():
-        lines += _literature_lines(literature)
     return "\n".join(lines) + "\n"
 
 
