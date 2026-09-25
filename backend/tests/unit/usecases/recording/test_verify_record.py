@@ -42,6 +42,8 @@ from airas.research_record.read.read_run_outputs import load_metrics_data
 from airas.research_record.read.scan_main_tex import scan_main_tex
 from airas.research_record.render.render_claims_tex import render_claims_tex
 from airas.research_record.render.render_paper_values import (
+    record_link_commit,
+    record_link_json,
     render_values_tex,
     resolve_paper_values,
 )
@@ -511,8 +513,12 @@ def _write_paper(repo: Path) -> Path:
     latex_dir.mkdir(parents=True)
     (latex_dir / "main.tex").write_text(MAIN_TEX)
     record = load_record(str(repo))
+    # As update_record writes it: the lines count the committed record.
     values, _ = resolve_paper_values(
-        record, load_metrics_data(str(repo)), scan_main_tex(MAIN_TEX)[1]
+        record,
+        load_metrics_data(str(repo)),
+        scan_main_tex(MAIN_TEX)[1],
+        record_link_json(repo, record_link_commit(repo)),
     )
     (latex_dir / "values.tex").write_text(render_values_tex(values, None))
     (latex_dir / "claims.tex").write_text(

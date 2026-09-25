@@ -23,7 +23,8 @@ local stage.
    `verified`, renders `values.tex` and
    `tables/<key>.tex` into `.research/latex/{template}/` (each
    `\airasval` prints as a hyperlink pinned to the commit that wrote the
-   record; table cells are always `<row.run_id>.<column.ref_path>`, so
+   record, at the line of record.json that holds the number; table cells
+   are always `<row.run_id>.<column.ref_path>`, so
    a label cannot be paired with another run's number), and commits
    what it wrote. It does **not** judge the result: a local verdict
    could be pushed past regardless, so the judgement is CI's, on the

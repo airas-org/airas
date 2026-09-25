@@ -308,6 +308,74 @@ def test_values_tex_links_each_value_to_the_commit(tmp_path: Path) -> None:
     tex = render_values_tex(values, "https://github.com/o/r", "a" * 40)
     assert "airasval@run-1.accuracy" in tex
     assert f"https://github.com/o/r/blob/{'a' * 40}/.research/record.json" in tex
+    # Without the record's text there is no line to anchor: the file link.
+    assert r"\airasrecordlink{0.871}" in tex
+
+
+def test_values_tex_anchors_each_value_to_its_line_in_the_record(
+    tmp_path: Path,
+) -> None:
+    _make_repo(tmp_path)
+    record = _record()
+    metrics_data = load_metrics_data(str(tmp_path))
+    update_record_with_results(tmp_path, record, metrics_data, _manifest())
+    record_json = record.save(str(tmp_path)).read_text(encoding="utf-8")
+    refs = ["run-1.accuracy", "run-1.loss.final", "run-1.params.dataset"]
+    values, _ = resolve_paper_values(record, metrics_data, refs, record_json)
+
+    # Each anchor is the line that holds the number: in the run's last
+    # result's metrics, or in its declared params.
+    text = record_json.splitlines()
+    by_ref = {value.ref: value for value in values}
+    assert by_ref["run-1.accuracy"].line is not None
+    assert text[by_ref["run-1.accuracy"].line - 1].strip() == '"accuracy": 0.871,'
+    assert by_ref["run-1.loss.final"].line is not None
+    assert text[by_ref["run-1.loss.final"].line - 1].strip() == '"final": 0.32'
+    assert by_ref["run-1.params.dataset"].line is not None
+    assert (
+        text[by_ref["run-1.params.dataset"].line - 1].strip() == '"dataset": "cifar10"'
+    )
+
+    tex = render_values_tex(values, "https://github.com/o/r", "a" * 40)
+    # `\#` is how hyperref takes a # in a URL; a bare # would break the macro.
+    assert r"\newcommand{\airasrecordlink}[2][]" in tex
+    assert rf"\airasrecordlink[\#L{by_ref['run-1.accuracy'].line}]{{0.871}}" in tex
+    assert "#L" not in tex.replace(r"\#L", "")
+
+
+def test_record_line_is_none_when_the_record_has_no_such_number(
+    tmp_path: Path,
+) -> None:
+    _make_repo(tmp_path)
+    record = _record()
+    metrics_data = load_metrics_data(str(tmp_path))
+    # Declared but not run: no result holds the number yet.
+    record_json = record.model_dump_json(indent=2, exclude_defaults=True)
+    values, _ = resolve_paper_values(
+        record, metrics_data, ["run-1.accuracy", "run-1.params.dataset"], record_json
+    )
+    assert [v.line is None for v in values] == [True, False]
+    # A record that does not parse links the file rather than failing.
+    values, _ = resolve_paper_values(record, metrics_data, ["run-1.accuracy"], "{")
+    assert values[0].line is None
+
+
+def test_record_line_follows_the_live_entry_of_a_re_appended_run(
+    tmp_path: Path,
+) -> None:
+    _make_repo(tmp_path)
+    record = _record()
+    metrics_data = load_metrics_data(str(tmp_path))
+    update_record_with_results(tmp_path, record, metrics_data, _manifest())
+    design = record.hypotheses[0].claims[0].designs[0]
+    design.runs.append(SeyvalRun(run_id="run-1", params={"dataset": "cifar100"}))
+    record_json = record.model_dump_json(indent=2, exclude_defaults=True)
+    values, _ = resolve_paper_values(
+        record, metrics_data, ["run-1.params.dataset"], record_json
+    )
+    assert values[0].line is not None
+    line = record_json.splitlines()[values[0].line - 1]
+    assert line.strip() == '"dataset": "cifar100"'
 
 
 def test_no_link_without_an_origin_or_a_commit() -> None:

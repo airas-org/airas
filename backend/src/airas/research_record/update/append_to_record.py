@@ -42,6 +42,7 @@ from airas.research_record.render.render_claims_tex import (
 from airas.research_record.render.render_paper_values import (
     VALUES_TEX_FILENAME,
     record_link_commit,
+    record_link_json,
     render_values_tex,
     resolve_paper_values,
 )
@@ -113,14 +114,15 @@ def _write_paper_values(
         if main_tex.is_file()
         else []
     )
-    paper_values, _ = resolve_paper_values(record, metrics_data, used_keys)
+    commit = record_link_commit(root)
+    paper_values, _ = resolve_paper_values(
+        record, metrics_data, used_keys, record_link_json(root, commit)
+    )
     remote = remote_origin_url(root)
     values_tex = latex_dir / VALUES_TEX_FILENAME
     values_tex.write_text(
         render_values_tex(
-            paper_values,
-            normalize_git_url(remote) if remote else None,
-            record_link_commit(root),
+            paper_values, normalize_git_url(remote) if remote else None, commit
         ),
         encoding="utf-8",
     )
