@@ -118,7 +118,9 @@ def _verify_values_tex(
     if values_tex_path.is_file():
         origin = remote_origin_url(root)
         expected = render_values_tex(
-            paper_values, normalize_git_url(origin) if origin else None, commit
+            paper_values,
+            normalize_git_url(origin) if origin else None,
+            commit,
         )
         if values_tex_path.read_text(encoding="utf-8") != expected:
             problems.append(

@@ -15,9 +15,7 @@ class PaperValue(BaseModel):
         default="", description="Human-readable note of where the number came from"
     )
     line: Optional[int] = Field(
-        default=None,
-        description="The line of record.json, at the commit values.tex links, "
-        "that holds the number; None links the file",
+        default=None, description="Line of record.json that holds the number"
     )
 
 

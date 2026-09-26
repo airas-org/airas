@@ -513,7 +513,6 @@ def _write_paper(repo: Path) -> Path:
     latex_dir.mkdir(parents=True)
     (latex_dir / "main.tex").write_text(MAIN_TEX)
     record = load_record(str(repo))
-    # As update_record writes it: the lines count the committed record.
     values, _ = resolve_paper_values(
         record,
         load_metrics_data(str(repo)),

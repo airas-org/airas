@@ -49,8 +49,7 @@ def _resolve_paper_ref(
 
 
 def _json_lines(node: Any) -> int:
-    """Lines `node` takes as record.save writes it (indent=2): one key or
-    element per line, an empty container on one."""
+    """Lines `node` takes as record.save writes it (indent=2)."""
     items = list(node.values()) if isinstance(node, dict) else node
     if not isinstance(items, list):
         return 1
@@ -58,11 +57,8 @@ def _json_lines(node: Any) -> int:
 
 
 def _record_line(data: Any, ref: str) -> int | None:
-    """The 1-based line of record.json holding `ref`'s number: the run's last
-    result's metric, or its declared parameter. None when the record has no
-    such run or value. ponytail: line arithmetic over the parsed record in
-    the layout record.save writes, not a position-aware JSON parser — a
-    hand-formatted record.json gets the file-level link."""
+    """1-based line of record.json holding `ref`'s number, or None. ponytail:
+    counts the layout record.save writes; a hand-formatted record gets no line."""
     run_id, _, tail = ref.partition(".")
     path: list[Any] = []
     live: dict[str, Any] = {}
@@ -71,7 +67,7 @@ def _record_line(data: Any, ref: str) -> int | None:
             for d, design in enumerate(claim.get("designs") or []):
                 for r, run in enumerate(design.get("runs") or []):
                     if run.get("run_id") == run_id:
-                        # As in `active`: the last entry for an id is the live one.
+                        # last entry for an id is the live one (see `active`)
                         path = ["hypotheses", h, "claims", c, "designs", d, "runs", r]
                         live = run
     if not path:
@@ -100,8 +96,6 @@ def resolve_paper_values(
     used_keys: list[str],
     record_json: str | None = None,
 ) -> tuple[list[PaperValue], list[str]]:
-    """`record_json` is record.json as the commit values.tex links holds it;
-    with it, each value carries its line there."""
     try:
         data = json.loads(record_json) if record_json else None
     except ValueError:
@@ -134,8 +128,7 @@ def record_link_commit(root: Path) -> str | None:
 
 
 def record_link_json(root: Path, commit: str | None) -> str | None:
-    """record.json as the linked commit holds it: the text the line anchors
-    count, whatever the working tree says."""
+    """record.json as the linked commit holds it."""
     data = file_bytes_at_commit(root, commit, RECORD_PATH) if commit else None
     return None if data is None else data.decode("utf-8")
 
@@ -160,9 +153,7 @@ def render_values_tex(
         r"\providecommand{\unverified}[1]{#1}",
         # \ifdefined at use time: hyperref may load after this file (mdpi
         # loads it at begindocument), and without it the value stays plain.
-        # The optional argument is the line anchor: `\#` is hyperref's
-        # spelling of `#` inside a URL, and as a control sequence it
-        # survives the macro body where a bare # would not.
+        # The optional argument is the line anchor; `\#` is # in a hyperref URL.
         (
             rf"\newcommand{{\airasrecordlink}}[2][]{{\ifdefined\href"
             rf"\href{{{url}#1}}{{#2}}\else#2\fi}}"

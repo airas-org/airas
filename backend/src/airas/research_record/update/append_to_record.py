@@ -122,7 +122,9 @@ def _write_paper_values(
     values_tex = latex_dir / VALUES_TEX_FILENAME
     values_tex.write_text(
         render_values_tex(
-            paper_values, normalize_git_url(remote) if remote else None, commit
+            paper_values,
+            normalize_git_url(remote) if remote else None,
+            commit,
         ),
         encoding="utf-8",
     )
