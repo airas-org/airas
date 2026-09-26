@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 # Keys become LaTeX \csname parts and JSON keys; keep them boring.
 KEY_PATTERN = r"^[a-z][a-z0-9_]*$"
@@ -21,13 +21,28 @@ class PaperValue(BaseModel):
     )
 
 
+class ReferenceValues(BaseModel):
+    passage: str = Field(
+        description="Passage id the values are read from, e.g. 's1.p5'"
+    )
+    values: dict[str, float] = Field(
+        description="run_id -> the published value that row is compared with"
+    )
+
+
 class TableColumnSpec(BaseModel):
     header: str = Field(description="Column heading (LaTeX allowed)")
-    ref_path: str = Field(
+    ref_path: Optional[str] = Field(
+        default=None,
         description=(
             "Metric path inside each row's metrics.json, e.g. 'accuracy' "
             "or 'loss.final' — resolved per row as '<run_id>.<ref_path>'"
-        )
+        ),
+    )
+    reference: Optional[ReferenceValues] = Field(
+        default=None,
+        description="Published values per row; alone the column shows them, "
+        "with ref_path it shows measured minus published",
     )
     round: Optional[int] = Field(
         default=None,
@@ -35,6 +50,12 @@ class TableColumnSpec(BaseModel):
         le=10,
         description="Decimal places for display; omitted = shortest form",
     )
+
+    @model_validator(mode="after")
+    def _some_source(self) -> "TableColumnSpec":
+        if self.ref_path is None and self.reference is None:
+            raise ValueError(f"column {self.header!r} needs ref_path or reference")
+        return self
 
 
 class TableRowSpec(BaseModel):

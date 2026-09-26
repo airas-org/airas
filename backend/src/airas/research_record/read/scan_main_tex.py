@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 import re
 
+from airas.core.types.research_record import PASSAGE_ID_PATTERN
+
 logger = logging.getLogger(__name__)
 
 
@@ -69,3 +71,10 @@ def scan_citations(main_tex: str) -> list[tuple[str | None, list[str]]]:
         (locator.strip() or None, [k.strip() for k in keys.split(",") if k.strip()])
         for locator, keys in _CITE.findall(text)
     ]
+
+
+def passage_locators(locator: str | None) -> list[str]:
+    """The passage ids in a \\cite locator: one, or several of one source
+    as `s1.p1, s1.p2`; anything else (a page number) is not a passage."""
+    parts = [part.strip() for part in (locator or "").split(",")]
+    return [part for part in parts if re.fullmatch(PASSAGE_ID_PATTERN, part)]

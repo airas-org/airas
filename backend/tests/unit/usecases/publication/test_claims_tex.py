@@ -67,8 +67,8 @@ def _record(verdict: str | None = None) -> ResearchRecord:
 
 def test_pending_before_any_run() -> None:
     tex = render_claims_tex(_record(), {})
-    assert r"\textbf{H1.} Method X improves accuracy." in tex
-    assert r"\item[\textbf{C1}] X beats the baseline." in tex
+    assert r"\textbf{Hypothesis 1.} Method X improves accuracy." in tex
+    assert r"\item[\textbf{Claim 1}] X beats the baseline." in tex
     assert r"\emph{Rationale:} Head-to-head on the hypothesis's own metric." in tex
     assert r"\item Accuracy on this dataset stands for the property (c1)." in tex
     assert r"\texttt{\detokenize{run_2}}.\texttt{\detokenize{accuracy}} $-$" in tex
@@ -155,7 +155,10 @@ def test_a_lean_claim_names_the_run_it_rests_on() -> None:
     assert "axioms: \\texttt{\\detokenize{propext}}" in realized
 
 
-def test_grounds_cited_passages_and_quoted_sources_are_listed() -> None:
+def test_grounds_and_cited_passages_are_citations_of_their_source() -> None:
+    """The paper cites the source as main.tex does (``cite[s1.p1]{key}``),
+    so the link leads to the bibliography entry; the quotes stay in
+    record.json and are not reprinted."""
     record = _record()
     record.literature.append(
         LiteratureSource(
@@ -169,22 +172,20 @@ def test_grounds_cited_passages_and_quoted_sources_are_listed() -> None:
                     node_type="result",
                     anchor="table",
                     quote="We apply dropout & more.",
-                )
+                ),
+                QuotedPassage(id="s1.p2", node_type="setup", quote="Adam."),
             ],
         )
     )
     record.hypotheses[0].grounded_on = ["s1.p1"]
-    record.hypotheses[0].claims[0].cites_passages = ["s1.p1"]
-    record.hypotheses[0].claims[0].criterion.reference_passage = "s1.p1"
+    claim = record.hypotheses[0].claims[0]
+    claim.cites_passages = ["s1.p1"]
+    claim.criterion.reference_passage = "s1.p1"
+    claim.designs[0].cites_passages = ["s1.p2", "s9.p1"]
     tex = render_claims_tex(record, {})
-    assert r"\emph{Grounded on:} \texttt{\detokenize{s1.p1}}." in tex
+    assert r"Method X improves accuracy.~\cite[s1.p1]{vaswani-2017-attention}" in tex
     assert (
-        r"\emph{Cites:} \texttt{\detokenize{s1.p1}}; criterion: \texttt{\detokenize{s1.p1}}."
-        in tex
+        r"X beats the baseline.~\cite[s1.p1, s1.p2]{vaswani-2017-attention}, "
+        r"\texttt{\detokenize{s9.p1}}" in tex
     )
-    assert r"\textbf{S1} \texttt{\detokenize{vaswani-2017-attention}}" in tex
-    assert "(result table) ``We apply dropout \\& more.''" in tex
-
-
-def test_a_record_without_literature_has_no_sources_block() -> None:
-    assert "Sources" not in render_claims_tex(_record(), {})
+    assert "Sources" not in tex and "dropout" not in tex

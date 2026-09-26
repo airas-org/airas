@@ -25,7 +25,11 @@ local stage.
    `\airasval` prints as a hyperlink pinned to the commit that wrote the
    record, at the line of record.json that holds the number; table cells
    are always `<row.run_id>.<column.ref_path>`, so
-   a label cannot be paired with another run's number), and commits
+   a label cannot be paired with another run's number; a column with
+   `reference: {passage, values}` instead shows a published number per
+   run read from that passage, and with `ref_path` as well the
+   measured-minus-published difference, so a prior work's table can sit
+   beside the runs with the paper as its source), and commits
    what it wrote. It does **not** judge the result: a local verdict
    could be pushed past regardless, so the judgement is CI's, on the
    pushed commit. This is the only sanctioned way an experimental
