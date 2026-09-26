@@ -28,6 +28,7 @@ from airas.research_record.render.render_claims_tex import (
 from airas.research_record.render.render_paper_values import (
     VALUES_TEX_FILENAME,
     record_link_commit,
+    record_link_json,
     render_values_tex,
     resolve_paper_values,
 )
@@ -105,7 +106,10 @@ def _verify_values_tex(
 ) -> list[str]:
     values_tex_path = latex_dir / VALUES_TEX_FILENAME
     problems: list[str] = []
-    paper_values, undefined_keys = resolve_paper_values(record, metrics_data, used_keys)
+    commit = record_link_commit(root)
+    paper_values, undefined_keys = resolve_paper_values(
+        record, metrics_data, used_keys, record_link_json(root, commit)
+    )
     if undefined_keys:
         problems.append(
             "\\airasval keys main.tex references that record.json does not declare: "
@@ -116,7 +120,7 @@ def _verify_values_tex(
         expected = render_values_tex(
             paper_values,
             normalize_git_url(origin) if origin else None,
-            record_link_commit(root),
+            commit,
         )
         if values_tex_path.read_text(encoding="utf-8") != expected:
             problems.append(

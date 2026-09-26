@@ -14,6 +14,9 @@ class PaperValue(BaseModel):
     derivation: str = Field(
         default="", description="Human-readable note of where the number came from"
     )
+    line: Optional[int] = Field(
+        default=None, description="Line of record.json that holds the number"
+    )
 
 
 class ReferenceValues(BaseModel):
