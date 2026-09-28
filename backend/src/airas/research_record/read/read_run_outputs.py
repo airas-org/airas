@@ -87,9 +87,9 @@ def file_sha256(path: Path) -> str:
 
 
 def load_eval_inputs_ref(root: Path, run_id: str) -> InputRef | None:
-    for path in sorted(
-        (root / RESULTS_DIR / run_id / _EVAL_INPUTS_DIRNAME).glob("*.json")
-    ):
+    # 評価入力が大きい run は .json.gz で置く（airas-eval の CLI がそのまま読む）。ハッシュはファイルのバイト列
+    inputs_dir = root / RESULTS_DIR / run_id / _EVAL_INPUTS_DIRNAME
+    for path in sorted([*inputs_dir.glob("*.json"), *inputs_dir.glob("*.json.gz")]):
         return InputRef(path=str(path.relative_to(root)), sha256=file_sha256(path))
     return None
 
