@@ -1,6 +1,6 @@
 [project]
 name = "airas"
-version = "0.4.0"
+version = "0.4.1"
 description = "Automated research toolkit: an MCP server, a Claude Code plugin, and a CLI that take a research topic through survey, hypothesis, experiments, and a verifiable paper"
 readme = "README.md"
 authors = [
