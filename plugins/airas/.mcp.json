@@ -2,7 +2,7 @@
   "mcpServers": {
     "airas": {
       "command": "uvx",
-      "args": ["airas==0.4.0"]
+      "args": ["airas==0.4.1"]
     }
   }
 }
