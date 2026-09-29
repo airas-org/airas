@@ -105,9 +105,6 @@ def passage_line(data: Any, passage_id: str) -> int | None:
     return None
 
 
-_record_line = record_line
-
-
 def resolve_paper_values(
     record: ResearchRecord,
     metrics_data: dict[str, Any],
@@ -131,7 +128,7 @@ def resolve_paper_values(
                 ref=ref,
                 display=display,
                 derivation=ref,
-                line=_record_line(data, ref) if isinstance(data, dict) else None,
+                line=record_line(data, ref) if isinstance(data, dict) else None,
             )
         )
     return values, undefined

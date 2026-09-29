@@ -170,9 +170,8 @@ def test_table_cells_link_to_their_lines_in_the_record() -> None:
         rf"Ours & \airasrecordlink[\#L{acc}]{{0.90}} & \airasrecordlink[\#L{quote}]{{0.90}}"
         rf" & \airasrecordlink[\#L{acc}]{{0.00}} \\" in tex
     )
-    # Without the record (or with an unparsable one) the cells stay plain.
+    # Without the record the cells stay plain.
     assert r"Ours & 0.90 & 0.90 & 0.00 \\" in render_table_tex(spec, METRICS_DATA)
-    assert r"Ours & 0.90 & 0.90 & 0.00 \\" in render_table_tex(spec, METRICS_DATA, "{")
 
 
 def test_table_reference_values_must_appear_in_their_passage() -> None:

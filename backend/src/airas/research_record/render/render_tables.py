@@ -21,12 +21,7 @@ def render_table_tex(
     # commit holds it, see values.tex) each cell links to its line there, like
     # \airasval does: a measured or difference cell to the metric's line, a
     # published cell to its passage's quote.
-    try:
-        data = json.loads(record_json) if record_json else None
-    except ValueError:
-        data = None
-    if not isinstance(data, dict):
-        data = None
+    data = json.loads(record_json) if record_json else None
     column_layout = "l" + "r" * len(spec.columns)
     header_cells = [""] + [column.header for column in spec.columns]
 
