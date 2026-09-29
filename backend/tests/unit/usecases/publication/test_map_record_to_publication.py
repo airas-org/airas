@@ -339,6 +339,52 @@ def test_values_tex_anchors_each_value_to_its_line_in_the_record(
     assert "#L" not in tex.replace(r"\#L", "")
 
 
+def test_refs_with_a_dotted_run_id_resolve_and_anchor(tmp_path: Path) -> None:
+    # Run ids like gemini-3.1-pro contain dots; the run is the longest declared
+    # id the ref starts with, not the text before the first dot.
+    _make_repo(tmp_path)
+    record = _record()
+    record.hypotheses[0].claims[0].designs[0].runs[0].run_id = "gemini-3.1-pro"
+    metrics_data = {"gemini-3.1-pro": {"accuracy": 0.5}, "run-2": {"accuracy": 0.9}}
+    record_json = json.dumps(
+        {
+            "hypotheses": [
+                {
+                    "claims": [
+                        {
+                            "designs": [
+                                {
+                                    "runs": [
+                                        {
+                                            "run_id": "gemini-3.1-pro",
+                                            "params": {"dataset": "cifar10"},
+                                            "results": [{"metrics": {"accuracy": 0.5}}],
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        indent=2,
+    )
+    refs = ["gemini-3.1-pro.accuracy", "gemini-3.1-pro.params.dataset"]
+    values, undefined = resolve_paper_values(record, metrics_data, refs, record_json)
+    assert undefined == []
+    text = record_json.splitlines()
+    by_ref = {value.ref: value for value in values}
+    assert by_ref["gemini-3.1-pro.params.dataset"].display == "cifar10"
+    assert by_ref["gemini-3.1-pro.accuracy"].line is not None
+    assert text[by_ref["gemini-3.1-pro.accuracy"].line - 1].strip() == '"accuracy": 0.5'
+    assert by_ref["gemini-3.1-pro.params.dataset"].line is not None
+    assert (
+        text[by_ref["gemini-3.1-pro.params.dataset"].line - 1].strip()
+        == '"dataset": "cifar10"'
+    )
+
+
 def test_record_line_is_none_when_the_record_has_no_such_number(
     tmp_path: Path,
 ) -> None:

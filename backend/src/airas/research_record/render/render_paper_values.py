@@ -26,10 +26,14 @@ def _resolve_paper_ref(
     metrics_data: dict[str, Any],
     ref: str,
 ) -> str:
-    head, _, tail = ref.partition(".")
-
+    # A run id may itself contain dots (gemini-3.1-pro), so the run is the
+    # longest declared id the ref starts with, as resolve_ref does.
     runs = record.run_index()
-    if head in runs and tail.startswith("params."):
+    head = max(
+        (k for k in runs if ref == k or ref.startswith(k + ".")), key=len, default=None
+    )
+    tail = ref[len(head) + 1 :] if head else ""
+    if head is not None and tail.startswith("params."):
         try:
             params = runs[head].params
             if isinstance(params, BaseModel):
@@ -74,19 +78,25 @@ def _line_at(data: Any, path: list[Any]) -> int | None:
 def record_line(data: Any, ref: str) -> int | None:
     """Line of record.json holding `ref`'s number (`<run_id>.<metric>` or
     `<run_id>.params.<key>`), or None."""
-    run_id, _, tail = ref.partition(".")
+    run_id = ""
     path: list[Any] = []
     live: dict[str, Any] = {}
     for h, hypothesis in enumerate(data.get("hypotheses") or []):
         for c, claim in enumerate(hypothesis.get("claims") or []):
             for d, design in enumerate(claim.get("designs") or []):
                 for r, run in enumerate(design.get("runs") or []):
-                    if run.get("run_id") == run_id:
-                        # last entry for an id is the live one (see `active`)
+                    # the run is the longest declared id the ref starts with (ids
+                    # may contain dots); the last entry for an id is the live one
+                    candidate = str(run.get("run_id") or "")
+                    if (ref == candidate or ref.startswith(candidate + ".")) and len(
+                        candidate
+                    ) >= len(run_id):
+                        run_id = candidate
                         path = ["hypotheses", h, "claims", c, "designs", d, "runs", r]
                         live = run
     if not path:
         return None
+    tail = ref[len(run_id) + 1 :]
     if tail.startswith("params."):
         path += ["params", *tail[len("params.") :].split(".")]
     elif results := live.get("results"):
