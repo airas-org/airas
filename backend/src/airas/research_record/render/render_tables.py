@@ -44,7 +44,7 @@ def render_table_tex(
             if column.ref_path is not None:
                 ref = f"{row.run_id}.{column.ref_path}"
                 value = resolve_ref(metrics_data, ref)
-                line = record_line(data, ref) if data else None
+                line = record_line(data, row.run_id, column.ref_path) if data else None
             if column.reference is not None:
                 if row.run_id not in column.reference.values:
                     raise ValueError(

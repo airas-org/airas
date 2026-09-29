@@ -21,18 +21,25 @@ def _walk_any(node: Any, path: str) -> Any:
     return node
 
 
+def _split_ref(record: ResearchRecord, ref: str) -> tuple[str | None, str]:
+    """(run id, metric or params path) of `ref`. A run id may itself contain
+    dots (gemini-3.1-pro), so the run is the longest active id the ref starts
+    with, as resolve_ref does."""
+    head = max(
+        (k for k in record.run_index() if ref == k or ref.startswith(k + ".")),
+        key=len,
+        default=None,
+    )
+    return head, ref[len(head) + 1 :] if head else ""
+
+
 def _resolve_paper_ref(
     record: ResearchRecord,
     metrics_data: dict[str, Any],
     ref: str,
 ) -> str:
-    # A run id may itself contain dots (gemini-3.1-pro), so the run is the
-    # longest declared id the ref starts with, as resolve_ref does.
     runs = record.run_index()
-    head = max(
-        (k for k in runs if ref == k or ref.startswith(k + ".")), key=len, default=None
-    )
-    tail = ref[len(head) + 1 :] if head else ""
+    head, tail = _split_ref(record, ref)
     if head is not None and tail.startswith("params."):
         try:
             params = runs[head].params
@@ -75,28 +82,22 @@ def _line_at(data: Any, path: list[Any]) -> int | None:
     return line
 
 
-def record_line(data: Any, ref: str) -> int | None:
-    """Line of record.json holding `ref`'s number (`<run_id>.<metric>` or
-    `<run_id>.params.<key>`), or None."""
-    run_id = ""
+def record_line(data: Any, run_id: str, tail: str) -> int | None:
+    """Line of record.json holding run `run_id`'s `tail` (a metric path or
+    `params.<key>`), or None. The caller has already split the ref, so a dot
+    in the run id is not mistaken for the separator."""
     path: list[Any] = []
     live: dict[str, Any] = {}
     for h, hypothesis in enumerate(data.get("hypotheses") or []):
         for c, claim in enumerate(hypothesis.get("claims") or []):
             for d, design in enumerate(claim.get("designs") or []):
                 for r, run in enumerate(design.get("runs") or []):
-                    # the run is the longest declared id the ref starts with (ids
-                    # may contain dots); the last entry for an id is the live one
-                    candidate = str(run.get("run_id") or "")
-                    if (ref == candidate or ref.startswith(candidate + ".")) and len(
-                        candidate
-                    ) >= len(run_id):
-                        run_id = candidate
+                    if run.get("run_id") == run_id:
+                        # last entry for an id is the live one (see `active`)
                         path = ["hypotheses", h, "claims", c, "designs", d, "runs", r]
                         live = run
     if not path:
         return None
-    tail = ref[len(run_id) + 1 :]
     if tail.startswith("params."):
         path += ["params", *tail[len("params.") :].split(".")]
     elif results := live.get("results"):
@@ -133,12 +134,15 @@ def resolve_paper_values(
         except ValueError:
             undefined.append(ref)
             continue
+        run_id, tail = _split_ref(record, ref)
         values.append(
             PaperValue(
                 ref=ref,
                 display=display,
                 derivation=ref,
-                line=record_line(data, ref) if isinstance(data, dict) else None,
+                line=record_line(data, run_id, tail)
+                if isinstance(data, dict) and run_id
+                else None,
             )
         )
     return values, undefined
