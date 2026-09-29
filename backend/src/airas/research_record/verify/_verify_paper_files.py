@@ -130,7 +130,10 @@ def _verify_values_tex(
 
 
 def _verify_tables(
-    latex_dir: Path, specs: list[TableSpec], metrics_data: dict[str, Any]
+    latex_dir: Path,
+    specs: list[TableSpec],
+    metrics_data: dict[str, Any],
+    record_json: str | None = None,
 ) -> list[str]:
     # The undeclared-file check matters as much as the diff: without it a
     # hand-written tables/<name>.tex could be \input alongside the
@@ -145,7 +148,7 @@ def _verify_tables(
             problems.append(f"{relpath} is missing (update_record writes it)")
             continue
         try:
-            expected = render_table_tex(spec, metrics_data)
+            expected = render_table_tex(spec, metrics_data, record_json)
         except ValueError as e:
             problems.append(f"{relpath}: {e}")
             continue
@@ -253,6 +256,11 @@ def verify_paper_files(
             problems.append(f"{TABLES_DIR_NAME}/ exists but no run outputs exist")
         return problems, unverified, uncited
     problems += _verify_values_tex(root, latex_dir, record, metrics_data, used_keys)
-    problems += _verify_tables(latex_dir, record.active_tables(), metrics_data)
+    problems += _verify_tables(
+        latex_dir,
+        record.active_tables(),
+        metrics_data,
+        record_link_json(root, record_link_commit(root)),
+    )
     problems += _verify_charts(record, str(root), metrics_data)
     return problems, unverified, uncited

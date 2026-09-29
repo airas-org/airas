@@ -56,9 +56,24 @@ def _json_lines(node: Any) -> int:
     return 2 + sum(_json_lines(item) for item in items) if items else 1
 
 
-def _record_line(data: Any, ref: str) -> int | None:
-    """1-based line of record.json holding `ref`'s number, or None. ponytail:
+def _line_at(data: Any, path: list[Any]) -> int | None:
+    """1-based line of record.json holding the node at `path`, or None. ponytail:
     counts the layout record.save writes; a hand-formatted record gets no line."""
+    node, line = data, 1
+    try:
+        for key in path:
+            items = list(node.values()) if isinstance(node, dict) else node
+            index = list(node).index(key) if isinstance(node, dict) else int(key)
+            line += 1 + sum(_json_lines(item) for item in items[:index])
+            node = items[index]
+    except (ValueError, IndexError, TypeError):
+        return None
+    return line
+
+
+def record_line(data: Any, ref: str) -> int | None:
+    """Line of record.json holding `ref`'s number (`<run_id>.<metric>` or
+    `<run_id>.params.<key>`), or None."""
     run_id, _, tail = ref.partition(".")
     path: list[Any] = []
     live: dict[str, Any] = {}
@@ -78,16 +93,16 @@ def _record_line(data: Any, ref: str) -> int | None:
         path += ["results", len(results) - 1, "metrics", *tail.split(".")]
     else:
         return None
-    node, line = data, 1
-    try:
-        for key in path:
-            items = list(node.values()) if isinstance(node, dict) else node
-            index = list(node).index(key) if isinstance(node, dict) else int(key)
-            line += 1 + sum(_json_lines(item) for item in items[:index])
-            node = items[index]
-    except (ValueError, IndexError, TypeError):
-        return None
-    return line
+    return _line_at(data, path)
+
+
+def passage_line(data: Any, passage_id: str) -> int | None:
+    """Line of record.json holding the quote of passage `sX.pY`, or None."""
+    for i, source in enumerate(data.get("literature") or []):
+        for j, passage in enumerate(source.get("passages") or []):
+            if passage.get("id") == passage_id:
+                return _line_at(data, ["literature", i, "passages", j, "quote"])
+    return None
 
 
 def resolve_paper_values(
@@ -113,7 +128,7 @@ def resolve_paper_values(
                 ref=ref,
                 display=display,
                 derivation=ref,
-                line=_record_line(data, ref) if isinstance(data, dict) else None,
+                line=record_line(data, ref) if isinstance(data, dict) else None,
             )
         )
     return values, undefined

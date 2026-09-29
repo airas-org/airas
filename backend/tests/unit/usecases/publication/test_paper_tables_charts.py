@@ -6,6 +6,7 @@ literal data numbers and re-render from the declared spec.
 """
 
 import copy
+import json
 from pathlib import Path
 from typing import Any
 
@@ -112,6 +113,65 @@ def test_table_reference_column_shows_published_and_difference() -> None:
         )
     with pytest.raises(ValueError, match="needs ref_path or reference"):
         TableColumnSpec(header="empty")
+
+
+def test_table_cells_link_to_their_lines_in_the_record() -> None:
+    # Same anchors as values.tex: a measured or difference cell points at the
+    # metric's line, a published cell at its passage's quote.
+    data = {
+        "literature": [
+            {"id": "s1", "passages": [{"id": "s1.p1", "quote": "acc 0.85 / 0.9"}]}
+        ],
+        "hypotheses": [
+            {
+                "id": "h1",
+                "claims": [
+                    {
+                        "id": "c1",
+                        "designs": [
+                            {
+                                "id": "d1",
+                                "runs": [
+                                    {
+                                        "run_id": run_id,
+                                        "results": [{"metrics": METRICS_DATA[run_id]}],
+                                    }
+                                    for run_id in ("run_2", "run_1")
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+    record_json = json.dumps(data, indent=2)
+    text = record_json.splitlines()
+    published = ReferenceValues(passage="s1.p1", values={"run_1": 0.85, "run_2": 0.9})
+    spec = TABLE.model_copy(
+        update={
+            "columns": [
+                TableColumnSpec(header="Acc", ref_path="accuracy", round=2),
+                TableColumnSpec(header="Acc (paper)", reference=published, round=2),
+                TableColumnSpec(
+                    header="$\\Delta$",
+                    ref_path="accuracy",
+                    reference=published,
+                    round=2,
+                ),
+            ]
+        }
+    )
+    tex = render_table_tex(spec, METRICS_DATA, record_json)
+    stripped = [line.strip() for line in text]
+    acc = stripped.index('"accuracy": 0.902,') + 1
+    quote = stripped.index('"quote": "acc 0.85 / 0.9"') + 1
+    assert (
+        rf"Ours & \airasrecordlink[\#L{acc}]{{0.90}} & \airasrecordlink[\#L{quote}]{{0.90}}"
+        rf" & \airasrecordlink[\#L{acc}]{{0.00}} \\" in tex
+    )
+    # Without the record the cells stay plain.
+    assert r"Ours & 0.90 & 0.90 & 0.00 \\" in render_table_tex(spec, METRICS_DATA)
 
 
 def test_table_reference_values_must_appear_in_their_passage() -> None:
