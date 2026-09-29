@@ -115,9 +115,8 @@ def _write_paper_values(
         else []
     )
     commit = record_link_commit(root)
-    paper_values, _ = resolve_paper_values(
-        record, metrics_data, used_keys, record_link_json(root, commit)
-    )
+    record_json = record_link_json(root, commit)
+    paper_values, _ = resolve_paper_values(record, metrics_data, used_keys, record_json)
     remote = remote_origin_url(root)
     values_tex = latex_dir / VALUES_TEX_FILENAME
     values_tex.write_text(
@@ -136,7 +135,7 @@ def _write_paper_values(
         for spec in specs:
             table_path = tables_dir / f"{spec.key}.tex"
             table_path.write_text(
-                render_table_tex(spec, metrics_data), encoding="utf-8"
+                render_table_tex(spec, metrics_data, record_json), encoding="utf-8"
             )
             tables[spec.key] = str(table_path)
         # git add is fatal on a pathspec that matches nothing

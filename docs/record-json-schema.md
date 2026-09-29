@@ -345,8 +345,8 @@ classDiagram
 | --- | --- | --- |
 | `claims.tex` | claims の statement / rationale / criterion / prediction / observed / verdict と hypothesis の assumptions。`grounded_on` / `cites_passages` は main.tex と同じ `\cite[s1.p2]{key}` として statement に付く（逐語引用は record.json のみ、論文には再掲しない） | prereg から（未着は pending） |
 | `references.bib` | literature[]（bibkey ごとに 1 エントリ） | preregister_record 時 |
-| `values.tex` | `\airasval{<run_id>.<metric>}` の値 | results 以降 |
-| `tables/<key>.tex` | tables[] | results 以降 |
+| `values.tex` | `\airasval{<run_id>.<metric>}` の値。各値は record.json の該当行へのリンク付き | results 以降 |
+| `tables/<key>.tex` | tables[]。各セルは values.tex と同じく record.json の該当行（測定値と差はその指標の行、引用値はその passage の行）へのリンク付き | results 以降 |
 
 いずれも gate が record から再生成して byte 比較するため、手編集は検出される。
 
