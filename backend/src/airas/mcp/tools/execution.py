@@ -151,7 +151,7 @@ async def get_experiment_run_status(
     return await get_experiment_run_status_usecase(
         execution_id,
         backend=backend,
-        github_client=_github_client(),
+        github_client=_github_client() if backend == "github_actions" else None,
         seyval_client=_seyval_client() if backend == "seyval" else None,
         github_owner=github_owner,
         repository_name=repository_name,
@@ -183,7 +183,7 @@ async def cancel_experiment(
     return await cancel_experiment_usecase(
         execution_id,
         backend=backend,
-        github_client=_github_client(),
+        github_client=_github_client() if backend == "github_actions" else None,
         seyval_client=_seyval_client() if backend == "seyval" else None,
         github_owner=github_owner,
         repository_name=repository_name,

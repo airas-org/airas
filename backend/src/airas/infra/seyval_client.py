@@ -280,11 +280,11 @@ class SeyvalClient(BaseHTTPClient):
         raise_for_status(resp, path=path)
         return resp.text
 
-    async def acancel_run(self, run_id: str) -> dict[str, Any]:
+    async def acancel_run(self, run_id: str) -> None:
+        # 成功時の本文形式は未確認なので parse しない。状態は aget_run で読み直す
         path = f"v1/runs/{run_id}/cancel"
         resp = await self.apost(path=path, timeout=30.0)
         raise_for_status(resp, path=path)
-        return self._parser.parse(resp, as_="json")
 
 
 _default_client: SeyvalClient | None = None

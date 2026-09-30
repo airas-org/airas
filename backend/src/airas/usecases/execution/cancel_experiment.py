@@ -10,13 +10,15 @@ async def cancel_experiment(
     execution_id: str,
     *,
     backend: Backend,
-    github_client: GithubClient,
+    github_client: GithubClient | None = None,
     seyval_client: SeyvalClient | None = None,
     github_owner: str | None = None,
     repository_name: str | None = None,
 ) -> dict[str, Any]:
     match backend:
         case "github_actions":
+            if github_client is None:
+                raise ValueError('backend="github_actions" needs a github_client')
             github_owner, repository_name = require_github_repo(
                 github_owner, repository_name
             )
