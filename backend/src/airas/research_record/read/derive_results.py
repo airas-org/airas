@@ -30,7 +30,7 @@ from airas.research_record.read.read_run_outputs import (
 
 class ClaimStatus(BaseModel):
     id: str
-    # Every run under the claim has its verifier's report in the results
+    # Every run under the claim (plus a run its criterion references) has its verifier's report in the results
     # directory: the data the claim rests on is in. Whether the claim was
     # declared before those runs executed is not modelled yet (TODO).
     verified: bool

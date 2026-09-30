@@ -39,8 +39,10 @@ each claim:
 - `rationale`: why its holding is evidence for the hypothesis, and for \
   which part.
 - `criterion`: the falsification line, `(subject.metric - reference) op \
-  margin`, where `reference` is another run under the claim or a constant. \
-  A difference exactly at the margin meets it.
+  margin`, where `subject` is a run under the claim and `reference` is a \
+  seyval run of the record (this claim's or another claim's, on the same \
+  metric — a shared baseline is declared once and referenced) or a \
+  constant. A difference exactly at the margin meets it.
 - `prediction`: the interval the difference is expected to land in — a \
   range, never a point — with its `basis`. A range too wide to miss is a \
   criterion, not a prediction.
