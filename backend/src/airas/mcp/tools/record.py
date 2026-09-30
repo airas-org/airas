@@ -91,8 +91,9 @@ async def preregister_record(
     words. The gate refuses a passage no source declares.
 
     `run_id` names the results directory the run will produce and must be
-    unique across the whole record — a run belongs to exactly one claim.
-    (Not a bare number: `criterion.reference` reads a number as a constant.)
+    unique across the whole record — a run belongs to exactly one claim,
+    though `criterion.reference` may name another claim's run as the
+    baseline. (Not a bare number: a number there reads as a constant.)
 
     The claims are meant to imply the hypothesis together (c1 ∧ … ∧ cn ⇒
     h1). `rationale` says why each claim is a member of that set; the

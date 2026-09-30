@@ -278,14 +278,14 @@ classDiagram
       - `verifier` 何が検証するか。必須。一つの claim に一つ（証明と実験の両方が要るなら claim を二つに分ける）
       - `cites_passages[]` 依拠する passage id。既定は空
       - `designs[]` 実験・証明・判定の構成
-      - `verified` 配下の全 run に verifier のレポートがあるか。false → true のみ
+      - `verified` 配下の全 run（criterion が別の主張の run を参照するときはその run も含む）に verifier のレポートがあるか。false → true のみ
       - `verdict` `"supported"` / `"refuted"` / `"inconclusive"`。未設定 → 設定の一回限り。再実行で反転した場合は gate が drift として報告
     - **[kind = seyval]** 実験
       - `verifier` `{kind: "seyval"}`
       - `criterion` 反証線。宣言時必須、凍結
         - `metric` metrics.json 内のパス（例 `"accuracy"`, `"loss.final"`）
         - `subject` 判定対象の run_id
-        - `reference` 比較対象の run_id（同じ metric）または定数
+        - `reference` 比較対象の run_id（同じ metric）または定数。run_id は同じ記録内の別の主張の run でもよい（共通の基準 run）。`subject` は必ずこの主張の run
         - `op` `">="` / `"<="` / `">"` / `"<"`
         - `margin` 既定 0.0。意味は `(subject.metric − reference) op margin`。境界は一致扱い
         - `reference_passage` `reference` が定数のとき、その値を読んだ passage id

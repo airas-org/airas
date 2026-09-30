@@ -32,21 +32,25 @@ def _verify_consistency(record: ResearchRecord) -> list[str]:
         if not claim.runs()
     ]
 
+    declared = set(record.run_index())
     for _, claim in record.active_claims():
         if not isinstance(claim, SeyvalClaim):
             continue
         own = {run.run_id for _, run in claim.runs()}
-        named = [claim.criterion.subject]
-        if isinstance(claim.criterion.reference, str):
-            named.append(claim.criterion.reference)
-        problems += [
-            f"claim {claim.id}: criterion names run '{rid}', which this claim "
-            "does not declare"
-            for rid in named
-            if rid not in own
-        ]
+        if claim.criterion.subject not in own:
+            problems.append(
+                f"claim {claim.id}: criterion names run '{claim.criterion.subject}', "
+                "which this claim does not declare"
+            )
+        # The reference may be another claim's run (a shared baseline): it is
+        # still a run of this record, and the verdict waits for its result.
+        reference = claim.criterion.reference
+        if isinstance(reference, str) and reference not in declared:
+            problems.append(
+                f"claim {claim.id}: criterion names run '{reference}', "
+                "which no claim declares"
+            )
 
-    declared = set(record.run_index())
     problems += [
         f"table {spec.key}: row references run '{row.run_id}', which no design declares"
         for spec in record.active_tables()
