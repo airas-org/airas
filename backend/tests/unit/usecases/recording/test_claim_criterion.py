@@ -10,6 +10,11 @@ from pydantic import ValidationError
 from airas.core.types.research_record import (
     Criterion,
     Hypothesis,
+    LeanClaim,
+    LeanDesign,
+    LeanParams,
+    LeanRun,
+    LeanVerifier,
     Prediction,
     ResearchRecord,
     SeyvalClaim,
@@ -185,6 +190,30 @@ def _two_claims(shared_result: dict[str, object] | None) -> ResearchRecord:
             )
         ]
     )
+
+
+def test_a_criterion_reference_must_be_a_seyval_run() -> None:
+    # A Lean run carries no metrics, so "the same metric" can never hold.
+    lean = LeanClaim(
+        id="c2",
+        statement="The lemma holds.",
+        rationale="Formal counterpart.",
+        verifier=LeanVerifier(kind=VerifierKind.LEAN),
+        designs=[
+            LeanDesign(
+                id="d1",
+                runs=[
+                    LeanRun(
+                        run_id="lemma",
+                        params=LeanParams(module="Airas.L", decl="l", statement="x"),
+                    )
+                ],
+            )
+        ],
+    )
+    record = _record(_criterion(reference="lemma"), {})
+    record.hypotheses[0].claims.append(lean)
+    assert any("'lemma'" in p and "seyval" in p for p in verify_consistency(record))
 
 
 def test_a_criterion_may_reference_another_claims_run() -> None:

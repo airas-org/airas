@@ -111,9 +111,10 @@ async def preregister_record(
       seyval    (experiment) params = dispatch conditions, e.g. {"mode":
                 "full"}, checked against what the platform recorded.
                 `criterion` is the falsification line, required:
-                (subject.metric - reference) op margin, where reference is
-                a run under this claim (its same metric) or a constant;
-                exactly at the margin counts as met. `prediction` is the
+                (subject.metric - reference) op margin, where subject is a
+                run under this claim and reference is a seyval run of the
+                record (this claim's or another's, its same metric) or a
+                constant; exactly at the margin counts as met. `prediction` is the
                 interval the difference is expected to land in, required,
                 a range never a point, with where it comes from. Verdict:
                 supported/refuted by the criterion on the runs' metrics;
