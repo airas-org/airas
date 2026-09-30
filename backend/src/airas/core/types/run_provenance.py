@@ -16,6 +16,7 @@ class ResultsDirProvenance(BaseModel):
     execution_id: str = Field(
         description="The backend's run id whose stored outputs this directory holds"
     )
+    # TODO(#1077): backend の Literal が 3 箇所に分かれている
     backend: Literal["seyval", "github_actions"] = "seyval"
     commit_hash: Optional[str] = Field(
         default=None,

@@ -10,6 +10,8 @@ from airas.usecases.execution.nodes.dispatch_on_github_actions import (
 )
 from airas.usecases.execution.nodes.dispatch_on_seyval import dispatch_on_seyval
 
+# TODO(#1077): backend の Literal は run_output_store / run_provenance にも別定義があり、
+# 各 match の case _ は mypy に漏れを検出させられない
 Backend = Literal["github_actions", "seyval"]
 
 # What the Makefile accepts for RUN_ID (it names a results directory and a

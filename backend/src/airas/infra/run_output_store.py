@@ -27,6 +27,7 @@ from airas.infra.seyval_client import (
     parse_parameters,
 )
 
+# TODO(#1077): usecases/execution/dispatch_experiment.Backend と二重定義
 Backend = Literal["seyval", "github_actions"]
 
 COMPLETED_STATUS = "completed"

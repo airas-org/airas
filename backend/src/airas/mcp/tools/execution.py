@@ -8,18 +8,23 @@ from typing import Any, Literal
 from airas.core.types.github import GitHubConfig
 from airas.core.types.run_stage import RunStage
 from airas.infra.github.nodes.download_artifact import download_and_parse_artifact
-from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
 from airas.mcp.app import mcp
 from airas.mcp.context import (
     _github_client,
     _output_store,
     _seyval_client,
 )
+from airas.usecases.execution.cancel_experiment import (
+    cancel_experiment as cancel_experiment_usecase,
+)
 from airas.usecases.execution.dispatch_experiment import (
     dispatch_experiment as dispatch_experiment_usecase,
 )
 from airas.usecases.execution.fetch_experiment_results import (
     fetch_experiment_results as fetch_experiment_results_usecase,
+)
+from airas.usecases.execution.get_experiment_run_status import (
+    get_experiment_run_status as get_experiment_run_status_usecase,
 )
 from airas.usecases.execution.import_run_outputs import (
     import_run_outputs as import_run_outputs_usecase,
@@ -143,68 +148,46 @@ async def get_experiment_run_status(
     them — use stderr to diagnose execution errors and fix the experiment
     code locally.
     """
-    if log_tail_lines <= 0:
-        raise ValueError("log_tail_lines must be a positive integer")
-    log_tail_lines = min(log_tail_lines, 10_000)
+    return await get_experiment_run_status_usecase(
+        execution_id,
+        backend=backend,
+        github_client=_github_client(),
+        seyval_client=_seyval_client() if backend == "seyval" else None,
+        github_owner=github_owner,
+        repository_name=repository_name,
+        log_tail_lines=log_tail_lines,
+    )
 
-    if backend == "github_actions":
-        if not github_owner or not repository_name:
-            raise ValueError(
-                "github_owner and repository_name are required for the "
-                "github_actions backend"
-            )
-        run_info = await _github_client().aget_workflow_run(
-            github_owner=github_owner,
-            repository_name=repository_name,
-            workflow_run_id=int(execution_id),
-        )
-        if run_info is None:
-            raise ValueError(
-                f"Workflow run {execution_id} not found in "
-                f"{github_owner}/{repository_name}"
-            )
-        return {
-            "execution_id": execution_id,
-            "backend": backend,
-            "status": run_info.get("status"),
-            "conclusion": run_info.get("conclusion"),
-            "execution_url": run_info.get("html_url"),
-            # Actions job logs are not exposed here; inspect the run page or
-            # use download_workflow_artifacts for outputs.
-            "stdout_tail": None,
-            "stderr_tail": None,
-        }
 
-    client = _seyval_client()
-    run = await client.aget_run(execution_id)
-    status = run.get("status")
+@mcp.tool()
+async def cancel_experiment(
+    execution_id: str,
+    backend: Literal["github_actions", "seyval"] = "github_actions",
+    github_owner: str | None = None,
+    repository_name: str | None = None,
+) -> dict[str, Any]:
+    """Cancel a running experiment (asynchronous, irreversible).
 
-    def _tail(text: str) -> str:
-        lines = text.splitlines()
-        return "\n".join(lines[-log_tail_lines:])
+    `execution_id` identifies the run on the selected `backend`, exactly as
+    for `get_experiment_run_status`: the `execution_id` returned by
+    `dispatch_experiment(backend="seyval")`, or a `workflow_run_id` from
+    `get_workflow_runs` for "github_actions" (pass `github_owner` and
+    `repository_name` in that case).
 
-    stdout_tail: str | None = None
-    stderr_tail: str | None = None
-    if status in ("completed", "failed", "cancelled"):
-        try:
-            stdout_tail = _tail(await client.aget_run_stdout(execution_id))
-        except (HTTPClientFatalError, HTTPClientRetryableError) as exc:
-            # logs may not be persisted (yet) for this run
-            logger.warning(f"Failed to fetch stdout for run {execution_id}: {exc}")
-        try:
-            stderr_tail = _tail(await client.aget_run_stderr(execution_id))
-        except (HTTPClientFatalError, HTTPClientRetryableError) as exc:
-            logger.warning(f"Failed to fetch stderr for run {execution_id}: {exc}")
-
-    return {
-        "execution_id": execution_id,
-        "backend": backend,
-        "status": status,
-        "compute_type": run.get("compute_type"),
-        "duration_seconds": run.get("duration_seconds"),
-        "stdout_tail": stdout_tail,
-        "stderr_tail": stderr_tail,
-    }
+    The cancel is only requested here; the run winds down on the backend's
+    side, so poll `get_experiment_run_status` until it reports "cancelled".
+    `cancelled` is False when the run had already finished, in which case
+    nothing changes. Outputs written before the cancel stay on the backend
+    and `import_run_outputs` can still collect them.
+    """
+    return await cancel_experiment_usecase(
+        execution_id,
+        backend=backend,
+        github_client=_github_client(),
+        seyval_client=_seyval_client() if backend == "seyval" else None,
+        github_owner=github_owner,
+        repository_name=repository_name,
+    )
 
 
 @mcp.tool()

@@ -132,6 +132,7 @@ Or add it to your project's `.mcp.json`:
 | `dispatch_experiment` | Start a sanity-check or main experiment run (async) on GitHub Actions or the Seyval compute platform (`backend` parameter) |
 | `get_workflow_runs` | Check the status of recent workflow runs (non-blocking) |
 | `get_experiment_run_status` | Check one run on any backend and fetch its stdout/stderr tails for error diagnosis |
+| `cancel_experiment` | Cancel one running experiment on either backend (async; poll `get_experiment_run_status` until it reports `cancelled`) |
 | `import_run_outputs` | Copy a finished run's outputs from the backend's store (Seyval storage or the workflow artifact) into `.research/results/` with a provenance manifest |
 | `fetch_experiment_results` | Read what the runs left under `.research/results/` in the clone: per run its metrics, evaluation report, figures and provenance entry |
 | `download_workflow_artifacts` | Download artifacts of a specific workflow run |
