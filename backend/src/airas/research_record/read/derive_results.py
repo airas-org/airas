@@ -30,7 +30,7 @@ from airas.research_record.read.read_run_outputs import (
 
 class ClaimStatus(BaseModel):
     id: str
-    # Every run under the claim has its verifier's report in the results
+    # Every run under the claim (plus a run its criterion references) has its verifier's report in the results
     # directory: the data the claim rests on is in. Whether the claim was
     # declared before those runs executed is not modelled yet (TODO).
     verified: bool
@@ -41,8 +41,19 @@ def compute_claim_statuses(
     record: ResearchRecord, present_run_ids: set[str]
 ) -> list[ClaimStatus]:
     statuses: list[ClaimStatus] = []
+    index = record.run_index()
     for _, claim in record.active_claims():
         runs = [run for _, run in claim.runs()]
+        # A criterion may compare against another claim's run; that run's
+        # result is data this claim rests on too.
+        if isinstance(claim, SeyvalClaim) and isinstance(
+            claim.criterion.reference, str
+        ):
+            reference = index.get(claim.criterion.reference)
+            if reference is not None and all(
+                r.run_id != reference.run_id for r in runs
+            ):
+                runs.append(reference)
         verified = bool(runs) and all(run.run_id in present_run_ids for run in runs)
         results = {
             run.run_id: r for run in runs if (r := run.latest_result()) is not None

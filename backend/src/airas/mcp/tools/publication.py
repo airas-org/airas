@@ -164,7 +164,7 @@ async def verify_paper_values(
     every results directory must belong to a declared run, the record's
     git history must be pure appends to the declaration section, and each
     claim's stored verified flag must be borne out by the recomputation:
-    verified means every run under the claim has results. A claim that is
+    verified means every run under the claim (and any run its criterion references) has results. A claim that is
     merely not yet verified does not fail the check — only a stored flag
     the recomputation contradicts does.
 

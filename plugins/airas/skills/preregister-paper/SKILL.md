@@ -106,8 +106,9 @@ are stated.
    later — the gate compares them with what the platform recorded.
 
    `criterion` is the falsification line, required for every seyval
-   claim: `(subject.metric - reference) op margin`, where `reference` is
-   another run under the claim (its same metric) or a constant. The
+   claim: `(subject.metric - reference) op margin`, where `subject` is a
+   run under the claim and `reference` is a run of the record (this
+   claim's or another claim's, on the same metric) or a constant. The
    verdict — supported or refuted — is derived from it once the runs are
    in, and it is frozen with the claim: moving the margin later fails
    the gate like rewording the statement. `prediction` is the interval
