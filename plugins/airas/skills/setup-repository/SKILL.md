@@ -34,8 +34,11 @@ description: Create an AIRAS experiment repository from the template and clone i
 4. **Work through a staging ref, not by pushing to `main`.** A commit
    reaches the protected branch only once the record gate is green on
    that exact sha, and the check cannot run on a commit nobody has
-   pushed. So push local `main` to a scratch ref, wait for the gate,
-   then fast-forward:
+   pushed. Start every piece of work from the current `main`
+   (`git pull --ff-only origin main`): `Publish Paper` commits the built
+   PDF onto `main` after each paper, so a branch that was not brought up
+   to date can no longer fast-forward onto it. Then push local `main`
+   to a scratch ref, wait for the gate, then fast-forward:
 
    ```
    git push origin main:verify    # the gate runs on this sha
