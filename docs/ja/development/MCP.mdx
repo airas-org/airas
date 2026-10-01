@@ -132,6 +132,7 @@ claude mcp add airas -- uvx airas
 | `dispatch_experiment` | サニティチェック／本実験の実行を開始（非同期）。`backend` パラメータで GitHub Actions / Seyval 計算基盤を選択 |
 | `get_workflow_runs` | 直近のワークフロー実行のステータス確認（ノンブロッキング） |
 | `get_experiment_run_status` | 任意のバックエンドの実行1件のステータス確認と stdout/stderr の取得（エラー診断用） |
+| `cancel_experiment` | 任意のバックエンドで実行中の実験1件を中止（非同期。`get_experiment_run_status` で `cancelled` になるまでポーリング） |
 | `import_run_outputs` | 完了した実行の出力をバックエンドの保存先（Seyval のストレージ、または workflow の artifact）から `.research/results/` に provenance マニフェスト付きで取り込む |
 | `fetch_experiment_results` | clone の `.research/results/` を読む: run ごとの metrics、評価レポート、図、provenance エントリ |
 | `download_workflow_artifacts` | 特定のワークフロー実行のアーティファクトを取得 |

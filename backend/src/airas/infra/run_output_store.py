@@ -12,7 +12,7 @@ import os
 import re
 import zipfile
 from functools import partial
-from typing import Any, Callable, Literal, Protocol
+from typing import Any, Callable, Protocol
 
 import httpx
 from pydantic import BaseModel
@@ -26,8 +26,6 @@ from airas.infra.seyval_client import (
     parse_overrides,
     parse_parameters,
 )
-
-Backend = Literal["seyval", "github_actions"]
 
 COMPLETED_STATUS = "completed"
 

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
 from airas.core.research_paths import RESULTS_DIR
+from airas.core.types.execution_backend import ExecutionBackend
 
 PROVENANCE_MANIFEST_FILENAME = ".provenance.json"
 PROVENANCE_MANIFEST_PATH = f"{RESULTS_DIR}/{PROVENANCE_MANIFEST_FILENAME}"
@@ -16,7 +17,7 @@ class ResultsDirProvenance(BaseModel):
     execution_id: str = Field(
         description="The backend's run id whose stored outputs this directory holds"
     )
-    backend: Literal["seyval", "github_actions"] = "seyval"
+    backend: ExecutionBackend = "seyval"
     commit_hash: Optional[str] = Field(
         default=None,
         description="Commit that run executed, as recorded by the backend",
