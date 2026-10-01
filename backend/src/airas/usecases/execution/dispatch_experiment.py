@@ -1,6 +1,7 @@
 import re
-from typing import Any, Literal
+from typing import Any
 
+from airas.core.types.execution_backend import ExecutionBackend
 from airas.core.types.github import GitHubConfig
 from airas.core.types.run_stage import RunStage
 from airas.infra.github_client import GithubClient
@@ -9,10 +10,6 @@ from airas.usecases.execution.nodes.dispatch_on_github_actions import (
     dispatch_on_github_actions,
 )
 from airas.usecases.execution.nodes.dispatch_on_seyval import dispatch_on_seyval
-
-# TODO(#1077): backend の Literal は run_output_store / run_provenance にも別定義があり、
-# 各 match の case _ は mypy に漏れを検出させられない
-Backend = Literal["github_actions", "seyval"]
 
 # What the Makefile accepts for RUN_ID (it names a results directory and a
 # config file): letters, digits, '_', '.' and '-', not starting with '.'.
@@ -32,7 +29,7 @@ async def dispatch_experiment(
     github_config: GitHubConfig,
     run_id: str,
     *,
-    backend: Backend,
+    backend: ExecutionBackend,
     github_client: GithubClient,
     seyval_client: SeyvalClient | None = None,
     run_stage: RunStage = RunStage.SANITY,

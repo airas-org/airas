@@ -1,31 +1,21 @@
 import logging
 from typing import Any
 
+from airas.core.types.execution_backend import ExecutionBackend
+from airas.core.types.github import require_github_repo
 from airas.infra.github_client import GithubClient
 from airas.infra.retry_policy import HTTPClientFatalError, HTTPClientRetryableError
 from airas.infra.seyval_client import SeyvalClient
-from airas.usecases.execution.dispatch_experiment import Backend
 
 logger = logging.getLogger(__name__)
 
 MAX_LOG_TAIL_LINES = 10_000
 
 
-def require_github_repo(
-    github_owner: str | None, repository_name: str | None
-) -> tuple[str, str]:
-    if not github_owner or not repository_name:
-        raise ValueError(
-            "github_owner and repository_name are required for the "
-            "github_actions backend"
-        )
-    return github_owner, repository_name
-
-
 async def get_experiment_run_status(
     execution_id: str,
     *,
-    backend: Backend,
+    backend: ExecutionBackend,
     github_client: GithubClient | None = None,
     seyval_client: SeyvalClient | None = None,
     github_owner: str | None = None,

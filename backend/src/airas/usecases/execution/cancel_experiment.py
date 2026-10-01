@@ -1,24 +1,27 @@
 from typing import Any
 
+from airas.core.types.execution_backend import ExecutionBackend
+from airas.core.types.github import require_github_repo
 from airas.infra.github_client import GithubClient
 from airas.infra.seyval_client import SeyvalClient
-from airas.usecases.execution.dispatch_experiment import Backend
-from airas.usecases.execution.get_experiment_run_status import require_github_repo
 
 
 async def cancel_experiment(
     execution_id: str,
     *,
-    backend: Backend,
+    backend: ExecutionBackend,
     github_client: GithubClient | None = None,
     seyval_client: SeyvalClient | None = None,
     github_owner: str | None = None,
     repository_name: str | None = None,
 ) -> dict[str, Any]:
+    # cancelled は中止要求が受理されたかどうかで、run が実際に止まったかは
+    # get_experiment_run_status で確認する（TODO: 名前を accepted に寄せるか検討）
     match backend:
         case "github_actions":
             if github_client is None:
                 raise ValueError('backend="github_actions" needs a github_client')
+
             github_owner, repository_name = require_github_repo(
                 github_owner, repository_name
             )

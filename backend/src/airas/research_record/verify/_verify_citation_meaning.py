@@ -161,10 +161,12 @@ async def verify_citation_meaning(
     if model is not None:
         if litellm_client is None:
             raise ValueError("a model needs a litellm_client")
+
         pending = [c for c in citations if _judgment_of(c) is None]
         verdicts = await asyncio.gather(
             *(_judge(litellm_client, model, c) for c in pending)
         )
+
         for citation, verdict in zip(pending, verdicts, strict=True):
             citation.passage.judgments.append(
                 CitationJudgment(

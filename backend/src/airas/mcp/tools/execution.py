@@ -5,6 +5,7 @@ import logging
 import os
 from typing import Any, Literal
 
+from airas.core.types.execution_backend import ExecutionBackend
 from airas.core.types.github import GitHubConfig
 from airas.core.types.run_stage import RunStage
 from airas.infra.github.nodes.download_artifact import download_and_parse_artifact
@@ -41,7 +42,7 @@ async def dispatch_experiment(
     run_id: str,
     run_stage: Literal["sanity", "pilot", "full"] = "sanity",
     runner_label: list[str] | None = None,
-    backend: Literal["github_actions", "seyval"] = "github_actions",
+    backend: ExecutionBackend = "github_actions",
     compute_type: str = "gpu-a10",
     compute_id: str | None = None,
     inputs_from_runs: list[str] | None = None,
@@ -131,7 +132,7 @@ async def dispatch_experiment(
 @mcp.tool()
 async def get_experiment_run_status(
     execution_id: str,
-    backend: Literal["github_actions", "seyval"] = "github_actions",
+    backend: ExecutionBackend = "github_actions",
     github_owner: str | None = None,
     repository_name: str | None = None,
     log_tail_lines: int = 200,
@@ -162,7 +163,7 @@ async def get_experiment_run_status(
 @mcp.tool()
 async def cancel_experiment(
     execution_id: str,
-    backend: Literal["github_actions", "seyval"] = "github_actions",
+    backend: ExecutionBackend = "github_actions",
     github_owner: str | None = None,
     repository_name: str | None = None,
 ) -> dict[str, Any]:
@@ -261,7 +262,7 @@ async def import_run_outputs(
     run_id: str,
     execution_id: str,
     run_stage: Literal["sanity", "pilot", "full", "visualization"] = "full",
-    backend: Literal["github_actions", "seyval"] = "github_actions",
+    backend: ExecutionBackend = "github_actions",
     confirm_overwrite: bool = False,
 ) -> dict[str, Any]:
     """Copy a finished run's result files from the backend's store into the repository.

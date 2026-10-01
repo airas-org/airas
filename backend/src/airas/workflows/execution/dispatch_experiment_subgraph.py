@@ -4,11 +4,12 @@ from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
 from airas.core.execution_timers import ExecutionTimeState, time_node
+from airas.core.types.execution_backend import ExecutionBackend
 from airas.core.types.github import GitHubConfig
 from airas.core.types.run_stage import RunStage
 from airas.infra.github_client import GithubClient
 from airas.infra.seyval_client import SeyvalClient
-from airas.usecases.execution.dispatch_experiment import Backend, dispatch_experiment
+from airas.usecases.execution.dispatch_experiment import dispatch_experiment
 
 
 class DispatchExperimentSubgraphInputState(TypedDict):
@@ -35,7 +36,7 @@ class DispatchExperimentSubgraph:
 
     def __init__(
         self,
-        backend: Backend,
+        backend: ExecutionBackend,
         github_client: GithubClient,
         seyval_client: SeyvalClient | None = None,
         run_stage: RunStage | None = None,
@@ -43,6 +44,7 @@ class DispatchExperimentSubgraph:
     ):
         if backend == "seyval" and seyval_client is None:
             raise ValueError('backend="seyval" needs a seyval_client')
+
         self.backend = backend
         self.github_client = github_client
         self.seyval_client = seyval_client

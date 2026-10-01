@@ -13,6 +13,17 @@ class GitHubConfig(BaseModel):
 GitHubRepositoryInfo = GitHubConfig
 
 
+def require_github_repo(
+    github_owner: str | None, repository_name: str | None
+) -> tuple[str, str]:
+    if not github_owner or not repository_name:
+        raise ValueError(
+            "github_owner and repository_name are required for the "
+            "github_actions backend"
+        )
+    return github_owner, repository_name
+
+
 # See: https://docs.github.com/ja/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks#check-statuses-and-conclusions
 class GitHubActionsStatus(str, Enum):
     COMPLETED = "completed"
