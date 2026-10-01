@@ -6,6 +6,8 @@ from typing import Any
 
 from airas.core.research_paths import (
     RECORD_PATH,
+    record_path,
+    repo_root,
 )
 from airas.core.types.research_record import (
     ChartDeclaration,
@@ -18,7 +20,7 @@ from airas.mcp.context import (
     _kroki_client,
 )
 from airas.research_record.read.find_by_id import find_hypothesis
-from airas.research_record.read.load_record import load_record, record_path
+from airas.research_record.read.load_record import load_record
 from airas.research_record.read.read_run_outputs import load_metrics_data
 from airas.research_record.render.render_charts import (
     CHART_DIR,
@@ -74,7 +76,7 @@ async def render_chart(
             "verified (vl-convert's PDF bytes are not deterministic across "
             "processes), and LaTeX includes png directly"
         )
-    chart_root = Path(local_path).expanduser().resolve() / CHART_DIR
+    chart_root = repo_root(local_path) / CHART_DIR
     try:
         relative = path.relative_to(chart_root).as_posix()
     except ValueError:
@@ -117,7 +119,7 @@ async def render_chart(
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
         commit = commit_paths(
-            Path(local_path).expanduser().resolve(),
+            repo_root(local_path),
             [RECORD_PATH, f"{CHART_DIR}/{relative}"],
             f"record: declare and render chart {relative}",
         )

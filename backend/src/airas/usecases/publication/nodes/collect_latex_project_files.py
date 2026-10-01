@@ -3,7 +3,7 @@ import logging
 import zipfile
 from pathlib import Path
 
-from airas.core.research_paths import LEGACY_DIAGRAM_DIR, RESULTS_DIR
+from airas.core.research_paths import LEGACY_DIAGRAM_DIR, RESULTS_DIR, repo_root
 from airas.core.types.github import GitHubConfig
 from airas.core.types.latex import LATEX_TEMPLATE_NAME, select_engine
 from airas.infra.github_client import GithubClient
@@ -147,7 +147,7 @@ def collect_latex_project_files_local(
     Reads the current state on disk (no push required), so figures rendered
     locally (e.g. by render_chart / render_diagram) are included as-is.
     """
-    root = Path(local_repo_path).expanduser().resolve()
+    root = repo_root(local_repo_path)
     if not root.is_dir():
         raise ValueError(f"local_repo_path is not a directory: {root}")
 

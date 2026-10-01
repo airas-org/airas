@@ -1,7 +1,6 @@
-from pathlib import Path
 from typing import Any
 
-from airas.core.research_paths import RESULTS_DIR
+from airas.core.research_paths import RESULTS_DIR, repo_root
 from airas.research_record.read.read_run_outputs import (
     load_eval_report,
     load_metrics_data,
@@ -15,7 +14,7 @@ def fetch_experiment_results(local_path: str) -> dict[str, Any]:
     """What the runs left under .research/results/ in the clone: per results
     directory its metrics, its airas-eval report and its figures, plus which
     directories the provenance manifest covers."""
-    root = Path(local_path).expanduser().resolve()
+    root = repo_root(local_path)
     results_dir = root / RESULTS_DIR
     if not results_dir.is_dir():
         raise ValueError(f"No {RESULTS_DIR} directory under {root}")

@@ -34,7 +34,7 @@ from airas.core.types.run_provenance import (
 from airas.infra.local_git import commit_paths
 from airas.research_record.read.derive_results import compute_claim_statuses
 from airas.research_record.read.load_record import load_record
-from airas.research_record.verify._verify_record_history import (
+from airas.research_record.verify._verify_record_git_history import (
     _verify_append_only as verify_append_only,
 )
 

@@ -10,7 +10,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from airas.core.research_paths import RECORD_PATH
+from airas.core.research_paths import RECORD_PATH, repo_root
 from airas.core.types.latex import LATEX_TEMPLATE_NAME, LatexBuildReport
 from airas.core.types.paper_verification import PaperVerification
 from airas.core.types.record_verification import RecordVerification
@@ -37,7 +37,6 @@ async def verify_paper(
     pdf_path: str | None = None,
     build: Callable[[str, LATEX_TEMPLATE_NAME, str], LatexBuildReport] | None = None,
     check_provenance: bool = True,
-    require_record: bool = True,
     require_provenance: bool = True,
     require_history: bool = True,
     store_factory: StoreFactory = default_store,
@@ -52,10 +51,9 @@ async def verify_paper(
             check_provenance=check_provenance,
             require_provenance=require_provenance,
             require_history=require_history,
-            require_record=require_record,
             store_factory=store_factory,
         )
-    root = Path(local_path).expanduser().resolve()
+    root = repo_root(local_path)
     latex_dir = root / ".research" / "latex" / template
     main_tex_path = latex_dir / "main.tex"
     main_tex = (
@@ -116,12 +114,6 @@ async def verify_paper(
             record.stage,
         )
         problems += file_problems
-    if require_record and not (root / RECORD_PATH).is_file():
-        problems.append(
-            "record.json is missing: the paper does not use the canonical-record "
-            "system, so its claims and numbers cannot be verified "
-            "(preregister_record creates it)"
-        )
     build_report: LatexBuildReport | None = None
     if pdf_path is not None:
         if build is None:

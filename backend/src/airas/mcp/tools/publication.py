@@ -130,7 +130,6 @@ async def _verify_paper(
         pdf_path=pdf_path,
         build=build_paper,
         check_provenance=check_provenance,
-        require_record=False,
         require_provenance=False,
         require_history=False,
         store_factory=_output_store,

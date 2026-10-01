@@ -1,15 +1,10 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 from airas.core.research_paths import (
     RECORD_PATH,
+    record_path,
 )
 from airas.core.types.research_record import ResearchRecord
-
-
-def record_path(local_repo_path: str) -> Path:
-    return Path(local_repo_path).expanduser().resolve() / RECORD_PATH
 
 
 def load_record(local_repo_path: str) -> ResearchRecord:

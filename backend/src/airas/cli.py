@@ -85,7 +85,6 @@ def _run_verify_paper(args: argparse.Namespace) -> None:
                 args.local_path,
                 template,
                 check_provenance=not args.no_provenance,
-                require_record=not args.no_require_paper_values,
                 require_provenance=not (
                     args.no_provenance or args.allow_unavailable_provenance
                 ),
@@ -300,11 +299,6 @@ def main() -> None:
             "Do not fail when the provenance check cannot reach the execution backend "
             "(a real mismatch still fails); CI should not pass this"
         ),
-    )
-    verify.add_argument(
-        "--no-require-paper-values",
-        action="store_true",
-        help="Allow a paper that does not use the canonical-record system",
     )
     verify.add_argument(
         "--allow-unavailable-history",

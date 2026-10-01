@@ -1,18 +1,18 @@
 import json
-from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment
 from pydantic import BaseModel
 
 from airas.core.llm_config import NodeLLMConfig
+from airas.core.research_paths import repo_root
 from airas.core.types.research_record import ResearchRecord, SeyvalClaim, active
 from airas.infra.litellm_client import LiteLLMClient
 from airas.research_record.read.derive_results import compute_claim_statuses
 from airas.research_record.read.load_record import load_record
 from airas.research_record.read.read_run_outputs import (
     load_metrics_data,
-    runs_with_reports,
+    run_ids_with_verifier_report,
 )
 from airas.usecases.analysis.analyze_experiment_prompt import analyze_experiment_prompt
 
@@ -78,13 +78,13 @@ def analysis_context(
 
 
 def analysis_context_of(local_path: str) -> dict[str, Any]:
-    root = Path(local_path).expanduser().resolve()
+    root = repo_root(local_path)
     record = load_record(local_path)
     try:
         metrics = load_metrics_data(local_path)
     except ValueError:
         metrics = {}
-    return analysis_context(record, metrics, runs_with_reports(root, record))
+    return analysis_context(record, metrics, run_ids_with_verifier_report(root, record))
 
 
 def render_analysis_prompt(context: dict[str, Any]) -> str:

@@ -8,7 +8,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from airas.core.research_paths import SESSIONS_DIR
+from airas.core.research_paths import SESSIONS_DIR, repo_root
 from airas.core.types.agent_state import (
     AgentState,
     Harness,
@@ -184,7 +184,7 @@ def harness_state(pointer: SessionPointer, transcripts: list[Path]) -> HarnessSt
 
 
 def _state_dir(local_path: str, harness: Harness, session_id: str) -> Path:
-    return Path(local_path).expanduser().resolve() / SESSIONS_DIR / harness / session_id
+    return repo_root(local_path) / SESSIONS_DIR / harness / session_id
 
 
 def capture_agent_state(
@@ -192,7 +192,7 @@ def capture_agent_state(
 ) -> tuple[AgentState, str]:
     """Copy the live session into the repository; returns the state and the
     repo-relative path of agent_state.json."""
-    root = Path(local_path).expanduser().resolve()
+    root = repo_root(local_path)
     target = _state_dir(local_path, pointer.harness, pointer.session_id)
     target.mkdir(parents=True, exist_ok=True)
     sources = transcript_files(pointer)
@@ -250,7 +250,7 @@ def harness_diff(before: HarnessState, after: HarnessState) -> dict[str, Any]:
 
 
 def _list_agent_states(local_path: str) -> list[Path]:
-    root = Path(local_path).expanduser().resolve() / SESSIONS_DIR
+    root = repo_root(local_path) / SESSIONS_DIR
     return sorted(
         root.glob(f"*/*/{AGENT_STATE_FILENAME}"), key=lambda p: p.stat().st_mtime
     )
@@ -285,7 +285,7 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
 def neutral_messages(local_path: str, state: AgentState) -> list[dict[str, Any]]:
     """The session as a harness-neutral message list: role, content parts
     (text / thinking / tool_use / tool_result), ids and timestamps."""
-    root = Path(local_path).expanduser().resolve()
+    root = repo_root(local_path)
     messages: list[dict[str, Any]] = []
     for rel in state.session.transcripts:
         agent = Path(rel).stem if "/subagents/" in rel else None
@@ -398,7 +398,7 @@ def restore_claude_session(local_path: str, state: AgentState) -> tuple[str, Pat
         raise ValueError(
             f"cannot resume a {state.harness.kind} transcript in Claude Code"
         )
-    root = Path(local_path).expanduser().resolve()
+    root = repo_root(local_path)
     project = _claude_project_dir(str(root))
     project.mkdir(parents=True, exist_ok=True)
     new_id = str(uuid.uuid4())

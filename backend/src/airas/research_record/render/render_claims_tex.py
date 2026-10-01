@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
+from airas.core.research_paths import repo_root
 from airas.core.types.research_record import (
     LeanClaim,
     LeanResult,
@@ -129,7 +129,7 @@ def render_claims_tex(record: ResearchRecord, metrics_data: dict[str, Any]) -> s
 
 
 def write_claims_tex(local_path: str, template: str, record: ResearchRecord) -> str:
-    root = Path(local_path).expanduser().resolve()
+    root = repo_root(local_path)
     try:
         metrics_data = load_metrics_data(local_path)
     except ValueError:

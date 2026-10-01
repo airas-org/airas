@@ -21,24 +21,25 @@ from airas.agent_session.agent_state import (
     load_agent_state,
     transcript_files,
 )
-from airas.core.research_paths import DERIVED_FROM_PATH, SOURCES_DIR, STEPS_PATH
+from airas.core.research_paths import (
+    DERIVED_FROM_PATH,
+    SOURCES_DIR,
+    STEPS_PATH,
+    repo_root,
+)
 from airas.core.types.agent_state import SessionPointer
 from airas.core.types.research_trace import DerivedFromRepository, ResearchTraceEvent
 from airas.infra.local_git import commit_paths, head_commit
 
 
-def _root(local_path: str) -> Path:
-    return Path(local_path).expanduser().resolve()
-
-
 def is_experiment_repository(local_path: str) -> bool:
     # Hooks fire in every session of the harness; only a clone with a
     # .research/ directory is a research the trace belongs to.
-    return (_root(local_path) / ".research").is_dir()
+    return (repo_root(local_path) / ".research").is_dir()
 
 
 def _read_trace(local_path: str) -> list[ResearchTraceEvent]:
-    path = _root(local_path) / STEPS_PATH
+    path = repo_root(local_path) / STEPS_PATH
     if not path.is_file():
         return []
     return [
@@ -49,14 +50,14 @@ def _read_trace(local_path: str) -> list[ResearchTraceEvent]:
 
 
 def _append(local_path: str, event: ResearchTraceEvent) -> None:
-    path = _root(local_path) / STEPS_PATH
+    path = repo_root(local_path) / STEPS_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a") as f:
         f.write(event.model_dump_json(exclude_defaults=True) + "\n")
 
 
 def _read_derived_from(local_path: str) -> DerivedFromRepository | None:
-    path = _root(local_path) / DERIVED_FROM_PATH
+    path = repo_root(local_path) / DERIVED_FROM_PATH
     return (
         DerivedFromRepository.model_validate_json(path.read_text())
         if path.is_file()
@@ -65,7 +66,7 @@ def _read_derived_from(local_path: str) -> DerivedFromRepository | None:
 
 
 def write_derived_from(local_path: str, origin: DerivedFromRepository) -> Path:
-    path = _root(local_path) / DERIVED_FROM_PATH
+    path = repo_root(local_path) / DERIVED_FROM_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(origin.model_dump_json(indent=2, exclude_defaults=True))
     return path
@@ -100,7 +101,7 @@ def record_step(
         kind="step",
         timestamp=_now(),
         session_id=pointer.session_id,
-        head=head_commit(_root(local_path)),
+        head=head_commit(repo_root(local_path)),
         step=step,
         iteration=sum(1 for e in trace if e.kind == "step" and e.step == step) + 1,
         intervention=_intervention(local_path, pointer, trace),
@@ -113,7 +114,7 @@ def record_access(
     local_path: str, pointer: SessionPointer, paths: list[str]
 ) -> ResearchTraceEvent | None:
     """Which registered source files a tool call touched; None when none."""
-    root = _root(local_path)
+    root = repo_root(local_path)
     touched = []
     for raw in paths:
         path = Path(raw) if Path(raw).is_absolute() else root / raw
@@ -147,12 +148,12 @@ def capture(
         kind="capture",
         timestamp=_now(),
         session_id=pointer.session_id,
-        head=head_commit(_root(local_path)),
+        head=head_commit(repo_root(local_path)),
         agent_state=capture_agent_state(local_path, pointer)[1],
         intervention=_intervention(local_path, pointer, trace),
     )
     _append(local_path, event)
     commit = commit_paths(
-        _root(local_path), ["."], f"capture: session {pointer.session_id[:8]}"
+        repo_root(local_path), ["."], f"capture: session {pointer.session_id[:8]}"
     )
     return event, commit

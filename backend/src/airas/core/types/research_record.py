@@ -18,7 +18,7 @@ from typing import (
 
 from pydantic import BaseModel, Discriminator, Field, Tag, model_validator
 
-from airas.core.research_paths import RECORD_PATH
+from airas.core.research_paths import record_path
 from airas.core.types.map_record_to_publication import TableSpec
 
 HYPOTHESIS_ID_PATTERN = r"^h[1-9][0-9]*$"
@@ -501,7 +501,7 @@ class ResearchRecord(BaseModel):
     hypotheses: list[Hypothesis] = Field(default_factory=list)
 
     def save(self, local_repo_path: str) -> Path:
-        path = Path(local_repo_path).expanduser().resolve() / RECORD_PATH
+        path = record_path(local_repo_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         # Defaults are omitted so the file reads as what was declared;
         # containment compares model dumps, not text.

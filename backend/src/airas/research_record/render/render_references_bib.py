@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from pathlib import Path
 
 import bibtexparser
 from bibtexparser.bibdatabase import BibDatabase
 
-from airas.core.research_paths import REFERENCES_BIB_FILENAME
+from airas.core.research_paths import REFERENCES_BIB_FILENAME, repo_root
 from airas.core.types.research_record import LiteratureSource, ResearchRecord
 
 
@@ -73,7 +72,7 @@ def render_references_bib(literature: list[LiteratureSource]) -> str:
 
 def write_references_bib(local_path: str, template: str, record: ResearchRecord) -> str:
     relpath = f".research/latex/{template}/{REFERENCES_BIB_FILENAME}"
-    path = Path(local_path).expanduser().resolve() / relpath
+    path = repo_root(local_path) / relpath
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(render_references_bib(record.active_literature()), encoding="utf-8")
     return relpath
