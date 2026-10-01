@@ -1,8 +1,12 @@
 import asyncio
-from pathlib import Path
 from typing import Any
 
-from airas.core.research_paths import RECORD_PATH, REFERENCES_BIB_FILENAME
+from airas.core.research_paths import (
+    RECORD_PATH,
+    REFERENCES_BIB_FILENAME,
+    record_path,
+    repo_root,
+)
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.literature_material import LiteratureMaterial
 from airas.core.types.research_record import (
@@ -11,7 +15,7 @@ from airas.core.types.research_record import (
     ResearchRecord,
 )
 from airas.infra.local_git import commit_paths, restore_paths
-from airas.research_record.read.load_record import load_record, record_path
+from airas.research_record.read.load_record import load_record
 from airas.research_record.render.render_claims_tex import (
     CLAIMS_TEX_FILENAME,
     write_claims_tex,
@@ -60,7 +64,7 @@ async def preregister_record(
             )
 
         record = load_record(local_path) if path.is_file() else ResearchRecord()
-        root = Path(local_path).expanduser().resolve()
+        root = repo_root(local_path)
         snapshots: list[str] = []
         try:
             sources, written = add_literatures(root, record, materials)

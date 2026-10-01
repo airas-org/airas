@@ -1,3 +1,5 @@
+from pathlib import Path
+
 # Where an experiment run writes its results, relative to the repository
 # root (and, during a run, to the working directory). Passed to the entry
 # point as `results_dir=`.
@@ -36,3 +38,11 @@ DIAGRAM_DIR = f"{RESULTS_DIR}/diagram"
 # Diagrams used to live at the repository root instead. Kept for older
 # repositories; remove in the next major release (see issue #913).
 LEGACY_DIAGRAM_DIR = ".research/diagrams"
+
+
+def repo_root(local_path: str) -> Path:
+    return Path(local_path).expanduser().resolve()
+
+
+def record_path(local_path: str) -> Path:
+    return repo_root(local_path) / RECORD_PATH

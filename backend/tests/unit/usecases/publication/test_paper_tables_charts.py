@@ -175,8 +175,8 @@ def test_table_cells_link_to_their_lines_in_the_record() -> None:
 
 
 def test_table_reference_values_must_appear_in_their_passage() -> None:
-    from airas.research_record.verify._verify_record_declarations import (
-        verify_record_declarations,
+    from airas.research_record.verify._verify_record_in_itself import (
+        verify_record_in_itself,
     )
 
     def record(values: dict[str, float]) -> ResearchRecord:
@@ -228,10 +228,10 @@ def test_table_reference_values_must_appear_in_their_passage() -> None:
             ],
         )
 
-    assert verify_record_declarations(record({"run_1": 0.85})) == []
-    problems = verify_record_declarations(record({"run_1": 0.86}))
+    assert verify_record_in_itself(record({"run_1": 0.85})) == []
+    problems = verify_record_in_itself(record({"run_1": 0.86}))
     assert any("does not state" in p for p in problems), problems
-    problems = verify_record_declarations(
+    problems = verify_record_in_itself(
         record({"run_1": 0.85}).model_copy(update={"literature": []})
     )
     assert any("no source declares" in p for p in problems), problems

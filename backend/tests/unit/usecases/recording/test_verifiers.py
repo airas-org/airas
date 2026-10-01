@@ -24,7 +24,9 @@ from airas.core.types.research_record import (
 from airas.research_record.update.append_to_record import (
     _append_run_results as update_record_with_results,
 )
-from airas.research_record.verify._verify_record_history import _containment_violations
+from airas.research_record.verify._verify_record_git_history import (
+    _containment_violations,
+)
 from airas.research_record.verify.verify_record import RecordVerification, verify_record
 
 

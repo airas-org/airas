@@ -1,9 +1,9 @@
 from pathlib import Path
 
+from airas.core.hashing import file_sha256
 from airas.core.research_paths import FULLTEXT_FILENAME, PAGE_SEPARATOR, SOURCES_DIR
 from airas.core.types.literature_material import LiteratureMaterial
 from airas.core.types.research_record import InputRef, LiteratureSource, ResearchRecord
-from airas.research_record.read.read_run_outputs import file_sha256
 from airas.research_record.render.render_references_bib import unique_bibkey
 
 

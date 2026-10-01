@@ -186,7 +186,7 @@ def test_a_repository_with_no_record_fails(tmp_path: Path) -> None:
     _init(tmp_path)
     report = _verify(str(tmp_path))
     assert not report.ok
-    assert any("record.json is missing" in p for p in report.problems)
+    assert any("not found" in p for p in report.problems)
 
 
 def test_a_preregistered_record_with_no_runs_passes(tmp_path: Path) -> None:
@@ -459,14 +459,6 @@ def test_a_reworded_claim_is_reported_as_violated_history(tmp_path: Path) -> Non
     assert any("statement" in p for p in result.problems)
 
 
-def test_a_missing_record_is_tolerated_when_not_required(tmp_path: Path) -> None:
-    # The escape hatch for a paper that opts out of the record system.
-    _init(tmp_path)
-    result = _verify(str(tmp_path), require_record=False)
-    assert result.ok
-    assert result.stage == "prereg"
-
-
 def test_unreachable_provenance_fails_where_required(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
     result = _verify(str(repo), check_provenance=True, store_factory=_no_store)
@@ -561,8 +553,7 @@ def test_a_paper_without_a_record_fails(tmp_path: Path) -> None:
 
     result = _verify_paper(str(tmp_path))
     assert not result.ok
-    assert any("record.json is missing" in p for p in result.problems)
-    assert _verify_paper(str(tmp_path), require_record=False).ok
+    assert any("not found" in p for p in result.record.problems)
 
 
 def test_an_undeclared_airasval_key_fails(tmp_path: Path) -> None:
@@ -669,7 +660,7 @@ def test_deleting_the_record_after_declaring_it_fails(tmp_path: Path) -> None:
 
     result = _verify(str(tmp_path))
     assert not result.ok
-    assert any("record.json is missing" in p for p in result.problems)
+    assert any("not found" in p for p in result.problems)
 
 
 def test_a_merge_cannot_hide_a_landed_declaration(tmp_path: Path) -> None:

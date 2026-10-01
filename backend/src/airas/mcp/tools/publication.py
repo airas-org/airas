@@ -73,9 +73,9 @@ async def verify_latex(
     lualatex (`texlive-luatex`, `texlive-lang-japanese`); everything else
     with pdflatex.
 
-    When checking a local clone of a paper that uses the canonical-record
-    system (a `.research/record.json` created by `preregister_record`
-    exists), the record is verified too — the same checks as
+    A local clone must hold `.research/record.json` (every AIRAS
+    repository ships one; `preregister_record` fills it) — a missing
+    record fails the check. The record is verified too — the same checks as
     `verify_paper_values`: declarations, append-only history, value/
     table/chart recomputation, claim flags, and (unless
     `check_provenance=False`) the Seyval provenance cross-check. The
@@ -130,7 +130,6 @@ async def _verify_paper(
         pdf_path=pdf_path,
         build=build_paper,
         check_provenance=check_provenance,
-        require_record=False,
         require_provenance=False,
         require_history=False,
         store_factory=_output_store,

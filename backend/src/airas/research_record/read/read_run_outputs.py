@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 from typing import Any
 
 from pydantic import ValidationError
 
+from airas.core.hashing import file_sha256
 from airas.core.research_paths import (
     COMPARISON_KEY,
     COMPARISON_METRICS_FILENAME,
     METRICS_FILENAME,
     RESULTS_DIR,
+    repo_root,
 )
 from airas.core.types.research_record import (
     EvalReport,
@@ -41,9 +42,10 @@ VERIFIER_REPORT_FILENAMES = tuple(
 
 
 def load_metrics_data(local_repo_path: str) -> dict[str, Any]:
-    results_dir = Path(local_repo_path).expanduser().resolve() / RESULTS_DIR
+    results_dir = repo_root(local_repo_path) / RESULTS_DIR
     if not results_dir.is_dir():
         raise ValueError(f"No {RESULTS_DIR} directory under {results_dir.parent}")
+
     metrics_data: dict[str, Any] = {}
     for run_dir in sorted(p for p in results_dir.iterdir() if p.is_dir()):
         filename = (
@@ -53,8 +55,10 @@ def load_metrics_data(local_repo_path: str) -> dict[str, Any]:
         )
         if (run_dir / filename).is_file():
             metrics_data[run_dir.name] = _read_json(run_dir / filename)
+
     if not metrics_data:
         raise ValueError(f"No {METRICS_FILENAME} found under {results_dir}")
+
     return metrics_data
 
 
@@ -67,7 +71,7 @@ def load_provenance_manifest(root: Path) -> RunProvenanceManifest | None:
         return None
 
 
-def runs_with_reports(root: Path, record: ResearchRecord) -> set[str]:
+def run_ids_with_verifier_report(root: Path, record: ResearchRecord) -> set[str]:
     """The declared runs whose verifier report is on disk and readable. A
     file that does not parse is no report: the run stays unexecuted rather
     than verified with nothing to check."""
@@ -80,10 +84,6 @@ def runs_with_reports(root: Path, record: ResearchRecord) -> set[str]:
             dict,
         )
     }
-
-
-def file_sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def load_eval_inputs_ref(root: Path, run_id: str) -> InputRef | None:

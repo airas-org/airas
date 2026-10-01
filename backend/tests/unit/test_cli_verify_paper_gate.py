@@ -16,7 +16,6 @@ def _verify_args(local_path: str) -> argparse.Namespace:
         template=None,
         no_provenance=False,
         allow_unavailable_provenance=False,
-        no_require_paper_values=False,
         allow_unavailable_history=False,
         model=None,
     )

@@ -190,7 +190,7 @@ def _containment_violations(older: Any, newer: Any, path: str = "") -> list[str]
     return []
 
 
-def verify_record_history(
+def verify_record_git_history(
     root: Path,
     record: ResearchRecord,
     require_history: bool,

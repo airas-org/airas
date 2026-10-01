@@ -5,7 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Literal
 
-from airas.core.research_paths import RECORD_FILENAME, REFERENCES_BIB_FILENAME
+from airas.core.research_paths import (
+    RECORD_FILENAME,
+    REFERENCES_BIB_FILENAME,
+    repo_root,
+)
 from airas.core.types.map_record_to_publication import TableSpec
 from airas.core.types.research_record import ResearchRecord
 from airas.infra.local_git import normalize_git_url, remote_origin_url
@@ -172,7 +176,7 @@ def _verify_charts(
 ) -> list[str]:
     """Re-render every declared chart; reject undeclared chart files."""
 
-    chart_dir = Path(local_repo_path).expanduser().resolve() / CHART_DIR
+    chart_dir = repo_root(local_repo_path) / CHART_DIR
     charts = record.active_charts()
     declared = {c.path: c for c in charts}
     renderers = {c.path: c.renders[-1].renderer for c in charts if c.renders}

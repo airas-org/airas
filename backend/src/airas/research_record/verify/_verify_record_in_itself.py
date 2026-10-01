@@ -152,7 +152,7 @@ def _verify_passage_references(record: ResearchRecord) -> list[str]:
     return problems
 
 
-def verify_record_declarations(record: ResearchRecord) -> list[str]:
+def verify_record_in_itself(record: ResearchRecord) -> list[str]:
     return (
         _verify_consistency(record)
         + _verify_pinned_once(record)

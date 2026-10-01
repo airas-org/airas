@@ -489,19 +489,13 @@ def test_prereg_stage_rejects_leftover_values_tex(tmp_path: Path) -> None:
     assert any("values.tex exists" in p for p in result.problems)
 
 
-def test_a_paper_without_a_record_passes_only_when_not_required(tmp_path: Path) -> None:
+def test_a_paper_without_a_record_fails(tmp_path: Path) -> None:
     latex_dir = tmp_path / ".research" / "latex" / TEMPLATE
     latex_dir.mkdir(parents=True)
     (latex_dir / "main.tex").write_text(MAIN_TEX)
     result = _verify(str(tmp_path))
     assert not result.ok
-    assert any("record.json is missing" in p for p in result.problems)
-    relaxed = asyncio.run(
-        verify_paper(
-            str(tmp_path), TEMPLATE, check_provenance=False, require_record=False
-        )
-    )
-    assert relaxed.ok
+    assert any("not found" in p for p in result.record.problems)
 
 
 # -------------------------------------------- the commit values.tex links into

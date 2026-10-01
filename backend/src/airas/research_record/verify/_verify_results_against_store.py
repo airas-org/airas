@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-import hashlib
 from pathlib import Path
 from typing import Any, Callable, Literal
 
 from pydantic import BaseModel, Field
 
+from airas.core.hashing import file_sha256
 from airas.core.research_paths import (
     COMPARISON_KEY,
     COMPARISON_METRICS_FILENAME,
     METRICS_FILENAME,
     RESULTS_DIR,
+    repo_root,
 )
 from airas.core.types.research_record import ResearchRecord
 from airas.core.types.run_provenance import (
@@ -114,7 +115,7 @@ async def verify_results_against_store(
 async def _cross_check(
     store_factory: StoreFactory, local_repo_path: str, used_dirs: set[str]
 ) -> _ProvenanceCheckResult:
-    root = Path(local_repo_path).expanduser().resolve()
+    root = repo_root(local_repo_path)
 
     manifest = load_provenance_manifest(root)
     if manifest is None:
@@ -337,7 +338,7 @@ def _check_expired(
             "the import declared"
         )
     for path in local_paths:
-        if hashlib.sha256((root / path).read_bytes()).hexdigest() != expected[path]:
+        if file_sha256(root / path) != expected[path]:
             return fail(f"{reason}; local {path} differs from the import-time hash")
     return _anchored(
         root,

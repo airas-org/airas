@@ -4,7 +4,12 @@ from typing import Any
 
 from pydantic import TypeAdapter
 
-from airas.core.research_paths import RECORD_PATH, REFERENCES_BIB_FILENAME
+from airas.core.research_paths import (
+    RECORD_PATH,
+    REFERENCES_BIB_FILENAME,
+    record_path,
+    repo_root,
+)
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.literature_material import LiteratureMaterial
 from airas.core.types.map_record_to_publication import TableSpec
@@ -28,11 +33,11 @@ from airas.research_record.read.derive_results import (
     derive_result,
 )
 from airas.research_record.read.find_by_id import find_hypothesis, find_source
-from airas.research_record.read.load_record import load_record, record_path
+from airas.research_record.read.load_record import load_record
 from airas.research_record.read.read_run_outputs import (
     load_metrics_data,
     load_provenance_manifest,
-    runs_with_reports,
+    run_ids_with_verifier_report,
 )
 from airas.research_record.read.scan_main_tex import scan_main_tex
 from airas.research_record.render.render_claims_tex import (
@@ -88,7 +93,9 @@ def _append_run_results(
                 run.results.append(result)
                 appended += 1
 
-    statuses = compute_claim_statuses(record, runs_with_reports(root, record))
+    statuses = compute_claim_statuses(
+        record, run_ids_with_verifier_report(root, record)
+    )
     claims = record.claim_index()
     for status in statuses:
         claim = claims[status.id]
@@ -176,7 +183,7 @@ async def append_to_record(
 
     def _run() -> dict[str, Any]:
         record = load_record(local_path)
-        root = Path(local_path).expanduser().resolve()
+        root = repo_root(local_path)
         snapshots: list[str] = []
         try:
             return _append(record, root, snapshots)

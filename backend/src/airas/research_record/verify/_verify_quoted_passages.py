@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from airas.core.hashing import file_sha256
 from airas.core.research_paths import FULLTEXT_FILENAME, SOURCES_DIR
 from airas.core.types.research_record import ResearchRecord
 from airas.research_record.read.find_quote import find_quote
-from airas.research_record.read.read_run_outputs import file_sha256
 
 
 def passage_is_quoted(fulltext: str, quote: str) -> bool:
