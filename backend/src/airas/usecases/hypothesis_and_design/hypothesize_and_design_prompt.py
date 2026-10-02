@@ -1,8 +1,8 @@
 hypothesize_and_design_prompt = """\
 You are authoring the hypothesis and the experimental design of a \
 preregistered study. What you write is frozen by `preregister_record` \
-before any experiment runs, and every later revision is append-only, so \
-settle it here.
+on top of the experiment code, before any pilot or full run, and every \
+later revision is append-only, so settle it here.
 
 ## What you work from
 The full texts `fetch_paper_fulltext` wrote (read them; a paper runs to \
@@ -28,9 +28,20 @@ metrics, and the compute they need.
 Leave run ids and metrics settled: downstream tooling addresses every \
 result as `<run_id>.<metric.path>` (e.g. `proposed.accuracy`), so a design \
 that leaves run naming open is not finished. A run belongs to exactly one \
-claim and its `run_id` is unique across the record. `params` declares only \
-what the commit cannot fix (the dispatch conditions, e.g. `{"mode": \
-"full"}`); batch size, seeds and datasets live in the repository's config.
+claim and its `run_id` is unique across the record. `params` declares \
+every condition that can change a result: the dispatch conditions \
+(`mode`) and every key the run's config will fix (iterations, \
+temperature, model, context window, timeouts, …); the gate compares them \
+with the committed config and with what the platform recorded, so a value \
+left out of `params` is an undeclared input.
+
+When the design reuses an existing implementation, list its knobs from \
+the repository at the commit you pin — config keys, keyword defaults of \
+the entry points you call, module constants, prompt and resource files — \
+and classify each: varied (in `params`, on the grid), fixed away from the \
+upstream default (with the passage stating the default and the reason), \
+or kept at the default (with the reason). A knob you choose not to \
+consider is an assumption, not an omission.
 
 ## The claims
 The claims together should imply the hypothesis (c1 ∧ … ∧ cn ⇒ h1). For \
@@ -45,15 +56,23 @@ each claim:
   constant. A difference exactly at the margin meets it.
 - `prediction`: the interval the difference is expected to land in — a \
   range, never a point — with its `basis`. A range too wide to miss is a \
-  criterion, not a prediction.
+  criterion, not a prediction. A pilot before the freeze is allowed only \
+  when the literature gives no basis, on instances the confirmation runs \
+  will not use, and is named in `basis`.
 - `cites_passages`: the passages the claim follows.
 - `designs` → `runs`: the runs that decide it.
 List in `assumptions` what has to be granted for the claims together to \
 reach the hypothesis (the metric stands for the property, the datasets \
 generalise, the baseline is representative, …), each naming the claims it \
-concerns; an assumption that can be measured is a missing claim. Put the \
-gap in prose, why each margin and interval was chosen, the compute target \
-and the run-to-claim table into `notes`.
+concerns; an assumption that can be measured is a missing claim. State, \
+whenever they apply: that the served model weights are what the server \
+reports; that the adapter's mapping of the environment onto a reused \
+method preserves the method's intent; that the upstream code implements \
+its paper; that the knob inventory is complete beyond what the code \
+enumerates; that LLM sampling is non-deterministic; that the platform's \
+and git's records are correct. Put the gap in prose, why each margin and \
+interval was chosen, the compute target, the run-to-claim table and the \
+design ⇄ sanity rounds that preceded the freeze into `notes`.
 
 Produce the `literature` and `hypotheses` arguments of `preregister_record` \
 exactly (output_json_schema describes `hypotheses`; each `literature` entry \

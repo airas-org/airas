@@ -40,11 +40,13 @@ async def preregister_record(
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
     literature: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Create the research record before any experiment has run.
+    """Create the research record before any pilot or full run.
 
     Writes `.research/record.json` — the canonical record the whole
     verification system keys on — and commits it in the same step
-    (`freeze_commit` in the result). That commit is the freeze point: every
+    (`freeze_commit` in the result). That commit is the freeze point,
+    sitting on top of the experiment code and its platform sanity run
+    (sanity outputs are never evidence): every
     later revision must *contain* this one whole, so a claim cannot be
     reworded, its criterion cannot be moved, a run's conditions cannot be
     changed and a result cannot be dropped once written.

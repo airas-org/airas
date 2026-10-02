@@ -29,15 +29,16 @@ in-memory copy would be a second, unverifiable truth. Each usecase loads
 the record, changes it, saves and commits it; a node just names the path.
 A fresh session must be able to resume from the clone alone.
 
-**Order is an invariant, not a convention.** Nothing is dispatched before
-the freeze commit exists, so the paper is written *before* the experiment
-runs:
+**Order is an invariant, not a convention.** No pilot or full run is
+dispatched before the freeze commit exists, so the paper is written
+*before* the experiments run; the code and its sanity run come first so
+the freeze commit contains what the design was written against:
 
     setup_repository → search_papers → fetch_paper_fulltext
       → generate_hypothesis → generate_design
+      → write_experiment_code → dispatch_experiment(sanity)
       → preregister_record(literature, hypotheses)   ← the freeze commit
-      → write_experiment_code
-      → dispatch_experiment → import_run_outputs
+      → dispatch_experiment(pilot, full) → import_run_outputs
       → analyze_results
       → update_record → verify → publish
 
