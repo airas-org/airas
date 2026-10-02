@@ -6,10 +6,15 @@ description: Execute committed experiment code on the chosen compute platform (G
 # Run the experiments
 
 Needs a clone with committed experiment code that passes local sanity
-(built to the `write-experiment-code` contract, `uv.lock` committed). Every run you
-dispatch must already be declared in `.research/record.json` **in a
-commit the run will execute** — results for an undeclared run_id fail
-verification, and a claim is verified once every run under it has results — but declare before you dispatch: the record cannot yet tell a preregistered claim from a post-hoc one. Declare late additions with `append_to_record`
+(built to the `write-experiment-code` contract, `uv.lock` committed). A
+`sanity` run needs no declaration — its outputs are never imported — and
+is how `write-experiment-code` checks the code on the platform before
+the freeze. Every `pilot` or `full` run you dispatch must already be
+declared in `.research/record.json` **in a commit the run will
+execute** — results for an undeclared run_id fail verification, and a
+claim is verified once every run under it has results — but declare
+before you dispatch: the record cannot yet tell a preregistered claim
+from a post-hoc one. Declare late additions with `append_to_record`
 (it commits the append itself) and push before dispatching.
 
 1. **Resolve the platform.** It should already be settled — the code

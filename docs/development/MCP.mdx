@@ -168,17 +168,24 @@ A typical paper-reproduction flow: `prepare_repository` (once, to create a runne
 airas-template) → `set_github_actions_secrets` → `dispatch_paper_reproduction_generate` (returns
 `repro_id`; every later reproduction tool requires it) → (poll `get_workflow_runs`) → `dispatch_paper_reproduction_run` → (poll) → `fetch_paper_reproduction_results` → (optionally) `dispatch_parameter_tuning_run` (poll) → `fetch_parameter_tuning_results`. Each reproduction lives in its own `.reproduction/<repro_id>/` directory, so one branch can hold multiple reproductions.
 
-A typical flow (the `auto-research` skill holds the order and the invariants): `prepare_repository` → `set_github_actions_secrets` → `search_papers` → `fetch_paper_fulltext` (read the files) → **write the hypothesis and the design yourself** (`get_prompts(step="hypothesis_and_design")`) → `preregister_record` (the freeze commit) → **write the preregistration paper** (`get_prompts(step="paper_writing")`) → `verify_latex` → push to the staging ref, fast-forward when the gate is green → **write the experiment code yourself** (`get_prompts(step="experiment_code")`, see below) → `dispatch_experiment` → (poll `get_experiment_run_status`) → `import_run_outputs` → `fetch_experiment_results` → `update_record` → **analyse** (`get_prompts(step="experiment_analysis")` or `analyze_experiment`) → **create figures** (`render_chart`, see below) → **fill Results and Discussion** → `verify_paper_values` with `model` → `verify_latex` → push; CI re-verifies and the Publish Paper workflow builds and commits the PDF of record. `open_in_overleaf` hands the project to the user for editing (with `local_path`, no push needed).
+A typical flow (the `auto-research` skill holds the order and the invariants): `prepare_repository` → `set_github_actions_secrets` → `search_papers` → `fetch_paper_fulltext` (read the files) → **write the hypothesis and the design yourself** (`get_prompts(step="hypothesis_and_design")`) → **write the experiment code yourself** (`get_prompts(step="experiment_code")`, see below) → `dispatch_experiment` (`sanity`) → `preregister_record` (the freeze commit, on top of the code) → **write the preregistration paper** (`get_prompts(step="paper_writing")`) → `verify_latex` → push to the staging ref, fast-forward when the gate is green → `dispatch_experiment` (`pilot`, then `full`) → (poll `get_experiment_run_status`) → `import_run_outputs` → `fetch_experiment_results` → `update_record` → **analyse** (`get_prompts(step="experiment_analysis")` or `analyze_experiment`) → **create figures** (`render_chart`, see below) → **fill Results and Discussion** → `verify_paper_values` with `model` → `verify_latex` → push; CI re-verifies and the Publish Paper workflow builds and commits the PDF of record. `open_in_overleaf` hands the project to the user for editing (with `local_path`, no push needed).
+
+### Why the freeze follows the code
+
+- The freeze protects one thing: claims, criteria and predictions cannot move once pilot or full results exist. Writing the code and running one sanity run first changes nothing there, and the freeze commit then contains the code the design was written against.
+- The sanity run is where a reused implementation shows what it really reads and calls. The design declares that (`params`, deviations from the upstream defaults) before the freeze instead of appending it afterwards.
+- A pilot runs after the freeze by default. A pilot before it, to place a predicted interval the literature cannot, runs on instances the confirmation runs will not use and is disclosed in `prediction.basis` and the notes — that is what keeps it preregistration rather than HARKing.
+- Rare failures surface only at scale, so an append with the same id before the pilot or full run is the normal path, not a failure of the freeze.
 
 ### Writing the experiment code
 
 The MCP host is expected to be a capable coding agent (Claude Code, Cursor, ...), so AIRAS does not generate the experiment code for you. After `prepare_repository`:
 
 1. Clone the experiment repository locally with git.
-2. Read the contract from `get_prompts(step="experiment_code")` — the allowed files, the CLI shape, the `sanity` / `pilot` / `full` modes and their validation lines, and the three files verification reads; the run ids and metrics it binds you to are in `.research/record.json`.
+2. Read the contract from `get_prompts(step="experiment_code")` — the allowed files, the CLI shape, the `sanity` / `pilot` / `full` modes and their validation lines, and the three files verification reads; the run ids and metrics it binds you to are the design's (in `.research/record.json` once frozen).
 3. For any library the design relies on, call `get_library_docs` and fetch the returned `llms.txt` (or docs) to work from current APIs rather than memory.
-4. Implement the experiment, run `mode=sanity` locally until it prints `SANITY_VALIDATION: PASS`, then commit and push.
-5. Dispatch GPU-scale runs with `dispatch_experiment` and fetch errors/results with `get_experiment_run_status` / `fetch_experiment_results`.
+4. Implement the experiment, run `mode=sanity` locally until it prints `SANITY_VALIDATION: PASS`, then commit, push and dispatch one `sanity` run on the platform; `preregister_record` then freezes the record on top of that code.
+5. After the freeze, dispatch pilot and full runs with `dispatch_experiment` and fetch errors/results with `get_experiment_run_status` / `fetch_experiment_results`.
 
 Headless pipelines (the built-in autonomous research workflows) still generate code remotely on GitHub Actions; that path is not exposed as an MCP tool.
 

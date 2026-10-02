@@ -154,17 +154,24 @@ claude mcp add airas -- uvx airas
 
 執筆ステップには 2 車線があります。skills に導かれて agent 自身が書く車線では、`get_prompts` がその step のプロンプトを返します（`hypothesis_and_design` / `experiment_code` / `experiment_analysis` / `paper_writing`、キー不要）。これらのプロンプトを共有するバックエンド LLM ツールは `analyze_experiment`（プロバイダーキーが必要）だけで、`experiment_analysis` のプロンプトに答えます。`model` 付きの `verify_paper_values` は別の引用判定プロンプトを使います。各プロンプトには作成すべきデータ形式を示す `output_json_schema` と、出力の行き先を示す `flow` が付きます。
 
-典型的なフロー（順序と不変条件は `auto-research` skill が持つ）: `prepare_repository` → `set_github_actions_secrets` → `search_papers` → `fetch_paper_fulltext`（ファイルを読む）→ **仮説と実験設計を自分で書く**（`get_prompts(step="hypothesis_and_design")`）→ `preregister_record`（freeze commit）→ **事前登録論文を書く**（`get_prompts(step="paper_writing")`）→ `verify_latex` → staging ref に push、gate が green なら fast-forward → **実験コードを自分で書く**（`get_prompts(step="experiment_code")`、下記参照）→ `dispatch_experiment` →（`get_experiment_run_status` でポーリング）→ `import_run_outputs` → `fetch_experiment_results` → `update_record` → **分析**（`get_prompts(step="experiment_analysis")` か `analyze_experiment`）→ **図を作る**（`render_chart`、下記参照）→ **Results と Discussion を埋める** → `model` 付きの `verify_paper_values` → `verify_latex` → push。CI が再検証し、Publish Paper workflow が正式版の PDF をビルドしてコミットします。`open_in_overleaf` はユーザーが編集できる形で Overleaf に引き渡します（`local_path` 指定なら push 不要）。
+典型的なフロー（順序と不変条件は `auto-research` skill が持つ）: `prepare_repository` → `set_github_actions_secrets` → `search_papers` → `fetch_paper_fulltext`（ファイルを読む）→ **仮説と実験設計を自分で書く**（`get_prompts(step="hypothesis_and_design")`）→ **実験コードを自分で書く**（`get_prompts(step="experiment_code")`、下記参照）→ `dispatch_experiment`（`sanity`）→ `preregister_record`（freeze commit。コードの上に乗る）→ **事前登録論文を書く**（`get_prompts(step="paper_writing")`）→ `verify_latex` → staging ref に push、gate が green なら fast-forward → `dispatch_experiment`（`pilot`、次に `full`）→（`get_experiment_run_status` でポーリング）→ `import_run_outputs` → `fetch_experiment_results` → `update_record` → **分析**（`get_prompts(step="experiment_analysis")` か `analyze_experiment`）→ **図を作る**（`render_chart`、下記参照）→ **Results と Discussion を埋める** → `model` 付きの `verify_paper_values` → `verify_latex` → push。CI が再検証し、Publish Paper workflow が正式版の PDF をビルドしてコミットします。`open_in_overleaf` はユーザーが編集できる形で Overleaf に引き渡します（`local_path` 指定なら push 不要）。
+
+### 凍結がコードの後に来る理由
+
+- 凍結が守るのは一つだけ: pilot と full の結果が出たあとに claim・criterion・prediction が動かないこと。コードを先に書いて sanity を 1 回回しても、ここは何も変わらない。むしろ凍結 commit に、設計が前提にしたコードが含まれる。
+- 既存実装を流用するとき、それが本当に何を読み何を呼ぶかは sanity run で初めて分かる。それを凍結後に append するのではなく、凍結前に設計へ宣言する（`params`、上流既定からの逸脱）。
+- pilot は既定で凍結後。文献だけでは予測区間を置けないときに限り凍結前に回し、確証に使わない件で回して `prediction.basis` と notes に開示する。これが事前登録と HARKing の境界。
+- 稀な失敗は規模が出て初めて現れるので、pilot や full の前に同 id で append するのは正常な経路であって、凍結の失敗ではない。
 
 ### 実験コードの書き方
 
 MCP ホストは有能なコーディングエージェント（Claude Code、Cursor など）である前提のため、AIRAS は実験コードを代わりに生成しません。`prepare_repository` の後:
 
 1. 実験リポジトリを git でローカルに clone する
-2. `get_prompts(step="experiment_code")` で契約を読む — 編集可能ファイル、CLI の形、`sanity` / `pilot` / `full` モードと検証判定行、検証が読む 3 ファイル。従うべき run id と metric は `.research/record.json` にあります
+2. `get_prompts(step="experiment_code")` で契約を読む — 編集可能ファイル、CLI の形、`sanity` / `pilot` / `full` モードと検証判定行、検証が読む 3 ファイル。従うべき run id と metric は設計のもの（凍結後は `.research/record.json`）です
 3. 設計が依存する各ライブラリについて `get_library_docs` を呼び、返される `llms.txt`（またはドキュメント）を取得して、記憶に頼らず最新のAPIをもとに実装する
-4. 実験を実装し、ローカルで `mode=sanity` を実行して `SANITY_VALIDATION: PASS` が出るまで修正してから commit・push する
-5. GPU 規模の実行は `dispatch_experiment` でディスパッチし、エラーと結果は `get_experiment_run_status` / `fetch_experiment_results` で取得する
+4. 実験を実装し、ローカルで `mode=sanity` を実行して `SANITY_VALIDATION: PASS` が出るまで修正してから commit・push し、実行先で `sanity` を 1 回ディスパッチする。`preregister_record` はそのコードの上に record を凍結する
+5. 凍結後に pilot と full を `dispatch_experiment` でディスパッチし、エラーと結果は `get_experiment_run_status` / `fetch_experiment_results` で取得する
 
 ヘッドレスなパイプライン（組み込みの全自動研究ワークフロー）は従来どおり GitHub Actions 上でコードをリモート生成しますが、その経路は MCP ツールとしては公開していません。
 
