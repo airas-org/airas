@@ -63,7 +63,13 @@ async def dispatch_experiment(
     `backend` selects where the run executes; either way the run's outputs
     stay on the backend's side until `import_run_outputs` copies them into
     the repository with their provenance, and the returned `execution_id` is
-    what that call and `get_experiment_run_status` take.
+    what that call and `get_experiment_run_status` take. Either way the run
+    receives the *names* of the secrets registered in
+    `~/.airas/credentials.json` as `AIRAS_SECRET_NAMES` (the workflow input
+    `secret_names` on GitHub Actions, an `env` prefix of the command on
+    Seyval): the repository's observation hook redacts those values from
+    `observed.json`. The values themselves come from the backend's own
+    secret store.
     - "github_actions" (default): dispatches run_experiment.yml in the
       experiment repository; `runner_label` picks the runner. Requires
       GH_PERSONAL_ACCESS_TOKEN.

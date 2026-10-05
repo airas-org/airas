@@ -1,7 +1,7 @@
 import logging
 import os
 
-from airas.core.credentials import GITHUB_ACTIONS_SECRET_NAMES
+from airas.core import credentials
 from airas.core.types.github import GitHubConfig
 from airas.infra.github_client import GithubClient, GithubClientError
 
@@ -14,7 +14,17 @@ def set_github_actions_secrets(
     secret_names: list[str] | None = None,
 ) -> bool:
     if secret_names is None:
-        secret_names = GITHUB_ACTIONS_SECRET_NAMES
+        credentials.refresh_environment()  # 固定ワークフロー経由でも credentials.json を読む
+        missing = [
+            n for n in credentials.GITHUB_ACTIONS_SECRET_NAMES if not os.getenv(n)
+        ]
+        if missing:
+            raise ValueError(
+                f"{', '.join(missing)} must be set locally (in {credentials.CREDENTIALS_PATH} "
+                "or the environment): the record gate and Publish Paper cannot run "
+                "without them. Pass secret_names explicitly to copy a chosen set instead."
+            )
+        secret_names = credentials.secret_names()
     try:
         # Get repository public key once for all secrets
         public_key_info = github_client.get_repository_public_key(

@@ -25,10 +25,14 @@ description: Create an AIRAS experiment repository from the template and clone i
    cause is fixed (admin rights, a public repository): it is safe on the
    repository it already created and redoes only what is missing.
 
-3. `set_github_actions_secrets` — copies this machine's API keys into
-   the repository's Actions secrets. Without `SEYVAL_API_KEY` there,
-   the provenance cross-check **degrades to a skip rather than a
-   failure**, so an unprovisioned repository looks like it is passing.
+3. `set_github_actions_secrets` — copies the keys in
+   `~/.airas/credentials.json` into the repository's Actions secrets. It
+   refuses when `GH_PERSONAL_ACCESS_TOKEN` or `SEYVAL_API_KEY` is missing
+   locally: without the first Publish Paper cannot push the PDF, and
+   without the second the provenance cross-check **degrades to a skip
+   rather than a failure**, so an unprovisioned repository looks like it
+   is passing. The same key names reach every dispatched run as
+   `AIRAS_SECRET_NAMES`, so the observation hook can redact their values.
    Run it again whenever a key is added or rotated.
 
 4. **Work through a staging ref, not by pushing to `main`.** A commit

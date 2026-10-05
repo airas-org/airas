@@ -1,6 +1,7 @@
 import re
 from typing import Any
 
+from airas.core.credentials import secret_names
 from airas.core.types.execution_backend import ExecutionBackend
 from airas.core.types.github import GitHubConfig
 from airas.core.types.run_stage import RunStage
@@ -45,6 +46,9 @@ async def dispatch_experiment(
 ) -> dict[str, Any]:
     run_id = check_run_id(run_id)
     mode = run_stage.value
+    # 秘密の名前だけを run に渡す。値は Actions secrets / Seyval の env var から入り、
+    # run の観測フックがこの名前で伏せる
+    names = secret_names()
     match backend:
         case "github_actions":
             return await dispatch_on_github_actions(
@@ -53,6 +57,7 @@ async def dispatch_experiment(
                 run_id,
                 mode,
                 runner_label or ["ubuntu-latest"],
+                names,
             )
         case "seyval":
             if seyval_client is None:
@@ -70,6 +75,7 @@ async def dispatch_experiment(
                 user_dockerfile_path=user_dockerfile_path,
                 command_args=command_args,
                 workspace_id=workspace_id,
+                secret_names=names,
             )
         case _:
             raise ValueError(f"unknown backend {backend!r}")

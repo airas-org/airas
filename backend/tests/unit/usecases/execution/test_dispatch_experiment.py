@@ -8,6 +8,7 @@ from airas.core.types.github import GitHubConfig
 from airas.core.types.run_stage import RunStage
 from airas.infra.github_client import GithubClient
 from airas.infra.seyval_client import SeyvalClient, parse_overrides
+from airas.usecases.execution import dispatch_experiment as dispatch_module
 from airas.usecases.execution.dispatch_experiment import (
     check_run_id,
     dispatch_experiment,
@@ -20,6 +21,12 @@ from airas.usecases.execution.nodes.dispatch_on_seyval import (
 GITHUB_CONFIG = GitHubConfig(
     github_owner="airas-org", repository_name="experiment-repo", branch_name="main"
 )
+
+
+@pytest.fixture(autouse=True)
+def no_local_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
+    """このマシンの credentials.json に依存しない"""
+    monkeypatch.setattr(dispatch_module, "secret_names", lambda: [])
 
 
 async def test_seyval_needs_its_client():
@@ -148,3 +155,67 @@ async def test_seyval_dispatch_starts_the_analyzed_experiment_with_the_chain() -
 async def test_seyval_dispatch_asks_for_a_retry_while_the_analysis_runs() -> None:
     with pytest.raises(ValueError, match="still analyzing"):
         await _dispatch_seyval({"status": "running", "analysis_id": "an-1"})
+
+
+def _github_client(handler) -> GithubClient:
+    return GithubClient(
+        github_token="t",
+        async_session=httpx.AsyncClient(transport=httpx.MockTransport(handler)),
+    )
+
+
+async def test_the_secret_names_reach_the_github_run_as_a_workflow_input(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        dispatch_module, "secret_names", lambda: ["OPENAI_API_KEY", "RIKYU_API_KEY"]
+    )
+    bodies: list[dict] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(json.loads(request.content))
+        return httpx.Response(200, json={"workflow_run_id": 1, "html_url": "u"})
+
+    await dispatch_experiment(
+        GITHUB_CONFIG,
+        "run-1",
+        backend="github_actions",
+        github_client=_github_client(handler),
+    )
+    assert bodies[0]["inputs"]["secret_names"] == "OPENAI_API_KEY,RIKYU_API_KEY"
+
+
+async def test_a_workflow_without_the_secret_names_input_is_dispatched_without_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(dispatch_module, "secret_names", lambda: ["OPENAI_API_KEY"])
+    bodies: list[dict] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(json.loads(request.content))
+        if "secret_names" in bodies[-1]["inputs"]:
+            return httpx.Response(422, json={"message": "Unexpected inputs provided"})
+        return httpx.Response(200, json={"workflow_run_id": 1, "html_url": "u"})
+
+    result = await dispatch_experiment(
+        GITHUB_CONFIG,
+        "run-1",
+        backend="github_actions",
+        github_client=_github_client(handler),
+    )
+    assert result["dispatched"] is True
+    assert [("secret_names" in b["inputs"]) for b in bodies] == [True, False]
+
+
+async def test_the_secret_names_reach_the_seyval_run_in_front_of_the_command(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(dispatch_module, "secret_names", lambda: ["RIKYU_API_KEY"])
+    _, fake = await _dispatch_seyval(
+        {"status": "completed", "analysis_id": "an-1", "experiments": [{"id": "e"}]}
+    )
+    command = fake.started[0]["command_args"]
+    assert command[:2] == ["env", "AIRAS_SECRET_NAMES=RIKYU_API_KEY"]
+    assert command[2:] == ["bash", "-c", "make run RUN_ID=run-1 MODE=sanity"]
+    # 名前は provenance の overrides に残るが、宣言した params とは照合されない
+    assert parse_overrides(command)["airas_secret_names"] == "RIKYU_API_KEY"
