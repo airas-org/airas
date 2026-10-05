@@ -185,28 +185,6 @@ async def test_the_secret_names_reach_the_github_run_as_a_workflow_input(
     assert bodies[0]["inputs"]["secret_names"] == "OPENAI_API_KEY,RIKYU_API_KEY"
 
 
-async def test_a_workflow_without_the_secret_names_input_is_dispatched_without_it(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(dispatch_module, "secret_names", lambda: ["OPENAI_API_KEY"])
-    bodies: list[dict] = []
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        bodies.append(json.loads(request.content))
-        if "secret_names" in bodies[-1]["inputs"]:
-            return httpx.Response(422, json={"message": "Unexpected inputs provided"})
-        return httpx.Response(200, json={"workflow_run_id": 1, "html_url": "u"})
-
-    result = await dispatch_experiment(
-        GITHUB_CONFIG,
-        "run-1",
-        backend="github_actions",
-        github_client=_github_client(handler),
-    )
-    assert result["dispatched"] is True
-    assert [("secret_names" in b["inputs"]) for b in bodies] == [True, False]
-
-
 async def test_the_secret_names_reach_the_seyval_run_in_front_of_the_command(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

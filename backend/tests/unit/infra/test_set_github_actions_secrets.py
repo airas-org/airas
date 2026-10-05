@@ -24,6 +24,13 @@ class FakeGithubClient:
         return True
 
 
+@pytest.fixture(autouse=True)
+def no_local_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
+    """このマシンの ~/.airas/credentials.json に依存しない"""
+    monkeypatch.setattr(credentials, "refresh_environment", lambda: None)
+    monkeypatch.setattr(credentials, "load_credentials", lambda: {})
+
+
 def test_the_ci_secrets_are_required(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GH_PERSONAL_ACCESS_TOKEN", "ghp_x")
     monkeypatch.delenv("SEYVAL_API_KEY", raising=False)
@@ -37,7 +44,12 @@ def test_the_default_set_is_the_credentials_file_plus_the_ci_secrets(
     monkeypatch.setenv("GH_PERSONAL_ACCESS_TOKEN", "ghp_x")
     monkeypatch.setenv("SEYVAL_API_KEY", "sk_x")
     monkeypatch.setenv("MY_LLM_KEY", "v")
-    monkeypatch.setattr(credentials, "load_credentials", lambda: {"MY_LLM_KEY": "v"})
+    monkeypatch.setenv("GITHUB_OWNER", "o")
+    monkeypatch.setattr(
+        credentials,
+        "load_credentials",
+        lambda: {"MY_LLM_KEY": "v", "GITHUB_OWNER": "o"},  # GITHUB_OWNER は非秘密
+    )
     client = FakeGithubClient()
     assert set_github_actions_secrets(CONFIG, cast(GithubClient, client)) is True
     assert client.set == ["GH_PERSONAL_ACCESS_TOKEN", "MY_LLM_KEY", "SEYVAL_API_KEY"]

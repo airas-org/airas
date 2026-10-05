@@ -28,9 +28,11 @@ GITHUB_ACTIONS_SECRET_NAMES = [
 
 def secret_names() -> list[str]:
     """基盤に登録する秘密の名前 = 実験 run の観測フックが値を伏せる名前。
-    credentials.json の全キーと、環境にある固定リストの名前"""
+    credentials.json のキー（CREDENTIAL_SPECS で非秘密と分かっているものを除く）と、
+    環境にある固定リストの名前"""
+    non_secret = {s.name for s in CREDENTIAL_SPECS if not s.is_secret}
     return sorted(
-        set(load_credentials())
+        (set(load_credentials()) - non_secret)
         | {n for n in GITHUB_ACTIONS_SECRET_NAMES if os.getenv(n)}
     )
 
