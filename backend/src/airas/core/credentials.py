@@ -16,26 +16,25 @@ SETUP_INSTRUCTIONS = (
     "(chmod 600 recommended). Edits take effect on the next tool call."
 )
 
-# Copied into an experiment repository's Actions secrets when present locally.
+# 実験リポジトリの CI に要る secrets。set_github_actions_secrets はこれが手元に無ければ拒む。
+# 実験が使う LLM の鍵などは credentials.json のキーとして一緒にコピーされる（無ければ飛ばす）
 GITHUB_ACTIONS_SECRET_NAMES = [
-    "OPENAI_API_KEY",
-    "GEMINI_API_KEY",
-    "ANTHROPIC_API_KEY",
-    "OPENROUTER_API_KEY",
-    "VERCEL_AI_GATEWAY_API_KEY",
-    "RIKYU_API_KEY",
-    "AWS_BEARER_TOKEN_BEDROCK",
-    "WANDB_API_KEY",
-    "HF_TOKEN",
-    "LANGFUSE_SECRET_KEY",
-    "LANGFUSE_PUBLIC_KEY",
-    "LANGFUSE_BASE_URL",
+    # Publish Paper が PDF を保護ブランチへ push する
     "GH_PERSONAL_ACCESS_TOKEN",
-    "AWS_ACCESS_KEY_ID",
-    "AWS_SECRET_ACCESS_KEY",
     # The record gate reads Seyval's per-run storage for the provenance check.
     "SEYVAL_API_KEY",
 ]
+
+
+def secret_names() -> list[str]:
+    """基盤に登録する秘密の名前 = 実験 run の観測フックが値を伏せる名前。
+    credentials.json のキー（CREDENTIAL_SPECS で非秘密と分かっているものを除く）と、
+    環境にある固定リストの名前"""
+    non_secret = {s.name for s in CREDENTIAL_SPECS if not s.is_secret}
+    return sorted(
+        (set(load_credentials()) - non_secret)
+        | {n for n in GITHUB_ACTIONS_SECRET_NAMES if os.getenv(n)}
+    )
 
 
 def load_credentials() -> dict[str, str]:

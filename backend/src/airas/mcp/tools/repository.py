@@ -72,16 +72,21 @@ async def set_github_actions_secrets(
     """Copy locally configured API keys into the repository's Actions secrets.
 
     Run once right after `prepare_repository`, and again when a key is
-    added or rotated. The record gate needs `SEYVAL_API_KEY`
-    in the repository to re-fetch each run's stored outputs and compare them
-    against what the repository holds; without it that check is skipped
-    rather than failed, so CI looks green without having run it.
+    added or rotated. Two secrets are required and the call refuses when
+    either is missing locally: `GH_PERSONAL_ACCESS_TOKEN` (Publish Paper
+    pushes the PDF onto the protected branch) and `SEYVAL_API_KEY` (the
+    record gate re-fetches each run's stored outputs; without it that check
+    is skipped rather than failed, so CI would look green without having
+    run it).
 
     Reads the values from this machine's environment and writes them
     encrypted; no value appears in the result. `secret_names` defaults to
-    every key airas knows about, and a name with no local value is skipped
-    rather than failing. Requires GH_PERSONAL_ACCESS_TOKEN with admin rights
-    on the repository.
+    every key in `~/.airas/credentials.json` plus the two above — the same
+    names the dispatched runs receive as `AIRAS_SECRET_NAMES` for
+    redaction — and a name with no local value is skipped. Pass
+    `secret_names` explicitly to copy a chosen set (then nothing is
+    required). Requires GH_PERSONAL_ACCESS_TOKEN with admin rights on the
+    repository.
     """
     secrets_set = await set_github_actions_secrets_usecase.set_github_actions_secrets(
         GitHubConfig(

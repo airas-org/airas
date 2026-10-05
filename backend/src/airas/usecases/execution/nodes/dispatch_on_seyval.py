@@ -58,6 +58,7 @@ async def dispatch_on_seyval(
     user_dockerfile_path: str | None,
     command_args: list[str] | None,
     workspace_id: str | None,
+    secret_names: list[str],
 ) -> dict[str, Any]:
     git_url = f"https://github.com/{github_config.github_owner}/{github_config.repository_name}"
     repository = await client.aregister_repository(git_url, workspace_id=workspace_id)
@@ -85,6 +86,14 @@ async def dispatch_on_seyval(
         f"Starting Seyval run for run_id={run_id} (mode={mode}, "
         f"compute_id={compute_id}, compute_type={compute_type}) at commit {commit_hash[:12]}"
     )
+
+    command = command_args or ["bash", "-c", run_command(run_id, mode)]
+    if secret_names:
+        # Seyval の run に環境変数を渡す欄は無いので argv の先頭で渡す。名前だけで、
+        # run の観測フック（.airas/sitecustomize.py）がこの名前の値を伏せる。
+        # provenance の overrides に airas_secret_names として現れるが params とは照合されない
+        command = ["env", f"AIRAS_SECRET_NAMES={','.join(secret_names)}", *command]
+
     run = await client.astart_run(
         repository_id,
         commit_hash,
@@ -96,7 +105,7 @@ async def dispatch_on_seyval(
         time_limit=time_limit,
         resource_count=resource_count,
         user_dockerfile_path=user_dockerfile_path,
-        command_args=command_args or ["bash", "-c", run_command(run_id, mode)],
+        command_args=command,
     )
     return {
         "dispatched": True,

@@ -16,6 +16,7 @@ async def dispatch_on_github_actions(
     run_id: str,
     mode: str,
     runner_label: list[str],
+    secret_names: list[str],
 ) -> dict[str, Any]:
     inputs = {
         "branch_name": github_config.branch_name,
@@ -23,6 +24,10 @@ async def dispatch_on_github_actions(
         "runner_label": json.dumps(runner_label),
         "mode": mode,
     }
+    if secret_names:
+        # 名前だけ。run の観測フック（.airas/sitecustomize.py）がこの名前の値を伏せる。
+        # 入力を持たない古い template の workflow は 422 で拒む: template を更新する
+        inputs["secret_names"] = ",".join(secret_names)
     logger.info(
         f"Dispatching {EXPERIMENT_WORKFLOW_FILE} for run_id={run_id} on branch "
         f"'{github_config.branch_name}' with runner_label={runner_label}"

@@ -3,7 +3,6 @@ import logging
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
-from airas.core.credentials import GITHUB_ACTIONS_SECRET_NAMES
 from airas.core.execution_timers import ExecutionTimeState, time_node
 from airas.core.logging_utils import setup_logging
 from airas.core.types.github import GitHubConfig
@@ -38,16 +37,17 @@ class SetGithubActionsSecretsSubgraph:
         self,
         github_client: GithubClient,
         secret_names: list[str]
-        | None = None,  # None syncs the default set; the dashboard passes one name
+        | None = None,  # None syncs the default set (credentials.json + the CI
+        # secrets, which are required); the dashboard passes one name
     ):
-        self.secret_names = secret_names or GITHUB_ACTIONS_SECRET_NAMES
+        self.secret_names = secret_names
         self.github_client = github_client
 
     @record_execution_time
     def _set_github_actions_secrets(
         self, state: SetGithubActionsSecretsState
     ) -> dict[str, bool]:
-        if not self.secret_names:
+        if self.secret_names == []:
             logger.info(
                 "No secret names provided, skipping GitHub Actions secrets setup"
             )

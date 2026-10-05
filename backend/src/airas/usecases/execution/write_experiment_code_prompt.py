@@ -19,8 +19,8 @@ verification rejects results directories no declared run accounts for, \
 and a claim whose metric the code never emits can never be realized. \
 Library docs via `get_library_docs`.
 
-Edit or create ONLY these files (`.github/` is managed by AIRAS, and \
-everything must run on a Linux runner):
+Edit or create ONLY these files (`.github/` and `.airas/` are managed by \
+AIRAS, and everything must run on a Linux runner):
 
 | Path | Role |
 | --- | --- |
