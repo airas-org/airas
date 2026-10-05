@@ -1,6 +1,6 @@
 ---
 name: auto-research
-description: End-to-end automated research with the AIRAS integrity flow — the paper is preregistered (claims, criteria and expected results frozen in git) before any experiment runs, and every reported number is realized and verified from run outputs afterwards. This skill holds only the ordering and the rules that span steps; each step's contract lives in its own skill. Use when the user wants to run an AIRAS research project start to finish, or asks where in the flow they are or what comes next.
+description: End-to-end automated research with the AIRAS integrity flow — the paper is preregistered (claims, criteria and expected results frozen in git, on top of the experiment code) before any pilot or full run, and every reported number is realized and verified from run outputs afterwards. This skill holds only the ordering and the rules that span steps; each step's contract lives in its own skill. Use when the user wants to run an AIRAS research project start to finish, or asks where in the flow they are or what comes next.
 ---
 
 # AIRAS research orchestrator
@@ -19,13 +19,21 @@ Run these skills in order:
 - `setup-repository` — experiment repo created and cloned
 - `search-papers` — literature found and downloaded
 - `hypothesize-and-design` — papers read, falsifiable hypothesis; run
-  ids and metrics settled; loops back to `search-papers` as needed
-- `preregister-paper` — the full paper written and committed **before
-  any experiment**; this commit is the freeze point
+  ids, metrics and params settled, **agreed with the user before any
+  code is written** and committed as `.research/design.json` (the exact
+  `preregister_record` arguments); loops back to `search-papers` as
+  needed
 - `write-experiment-code` — code to the execution and airas-eval
-  contracts, environment fixed by lockfile + Dockerfile
-- `run-experiments` — execute on the platform, bring results back
-  with provenance
+  contracts, environment fixed by lockfile + Dockerfile; local sanity,
+  then **one sanity run on the platform**. What that run reads and
+  calls is what the design must declare, so this step and the design
+  loop until the sanity run touches nothing undeclared
+- `preregister-paper` — the full paper written and committed **on top
+  of the code, before any pilot or full run**; this commit is the
+  freeze point. The record's `notes` say how many design ⇄ sanity
+  rounds preceded it and what each changed
+- `run-experiments` — pilot, then full, on the platform; bring results
+  back with provenance
 - `analyze-results` — analysis and verifiable figures
 - `publish-paper` — numbers realized from declarations, compile +
   recompute + provenance checks until green locally, then push: CI
@@ -55,11 +63,19 @@ carry the answers through the session:
 
 These are the orchestrator's own rules; no step may relax them.
 
-- **Nothing is dispatched before the freeze commit exists.**
+- **No pilot or full run is dispatched before the freeze commit
+  exists.** Sanity runs may precede it — their outputs are never
+  imported and carry no evidence — but the pilot and full phase of
   `run-experiments` must not start until `preregister-paper` has
-  committed. Carry the freeze commit sha through the session and
-  report it to the user; verification argues from runs being
-  descendants of it.
+  committed. There is no pre-freeze pilot: a predicted interval rests
+  on the literature and may miss. Carry the freeze commit sha through
+  the session and report it to the user; verification argues from runs
+  being descendants of it.
+- **Everything a run reads is in the repository or the platform's
+  record.** A model server you start outside the platform (Slurm
+  script, `.args`) is committed and referenced from the run yaml; a
+  value the code hardcodes or reads from the environment is an
+  undeclared input.
 - **Runs descend from the freeze commit.** Fixes are committed on top
   of it, never instead of it — no amending or rebasing away the
   prereg commit.
@@ -147,10 +163,12 @@ nothing is anchored yet, so nothing can be hidden.
 many times each has run; `.research/derived_from.json` says this clone was
 forked from another repository's fork point. Otherwise read the clone
 to find where it stands: a
+`.research/design.json` and no `src/` means `write-experiment-code`
+is next; `src/` written but no `.research/record.json` means
+`preregister-paper` is next (after the platform sanity run);
 `.research/record.json` and preregistered main.tex with stub
-Results/Discussion and no
-`.research/results/` means `write-experiment-code` (or, with `src/`
-already written, `run-experiments`) is next; results with a
+Results/Discussion and no `.research/results/` means
+`run-experiments` is next; results with a
 provenance manifest but placeholder values means `analyze-results`
 then `publish-paper`; a `values.tex` with real numbers means
 `publish-paper` (its local stage if not yet green, its CI stage

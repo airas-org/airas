@@ -1,13 +1,15 @@
 write_experiment_code_prompt = """\
-You are writing the experiment code of a preregistered study, into the \
-clone. The repository ships empty source files; the contract below is what \
+You are writing the experiment code of a study that will be \
+preregistered on top of it, into the clone. The repository ships empty source files; the contract below is what \
 they must become. However the code is produced, this is what the \
 repository holds it to.
 
 ## What you work from
-`.research/record.json`: every declared run (`run_id`, `params`) and the \
-metric each claim's criterion reads — these names are the contract, not \
-suggestions. `.research/evaluation.json`: the eval plan (write it first if \
+`.research/design.json`: the agreed design, the exact arguments \
+`preregister_record` freezes into `.research/record.json` after this \
+step (binding once the record exists): every run (`run_id`, `params`) \
+and the metric each claim's criterion reads — these names are the \
+contract, not suggestions. `.research/evaluation.json`: the eval plan (write it first if \
 it still says `REPLACE_ME`). The platform reference under \
 `_shared/references/` for the compute target's constraints.
 
@@ -63,10 +65,16 @@ Per run, under `{results_dir}/{run_id}/`:
 | `evaluation/<task>.json` | `make evaluate` | airas-eval's verdict, its versions and `skipped` |
 | `metrics.json` | `src/evaluate.py` | copied from the airas-eval report; the file the record is checked against |
 
-Do not write out the resolved configuration: the record takes the \
-parameters a run executed with from the platform's record of the \
-dispatch, never from a file the run wrote. All three go under \
-`.research/results/` — the only tree the executor collects back. \
+Every value that can change a result lives in `config/config.yaml` or \
+`config/run/<run_id>.yaml` and is declared in the run's `params`: the \
+gate compares `params` with the committed config and with what the \
+platform recorded, so a value the code hardcodes, reads from the \
+environment, or takes from a file outside the repository is an \
+undeclared input. A model server started outside the platform (Slurm \
+script, `.args`) is committed and referenced from the run yaml. Do not \
+write out the resolved configuration — the gate reads it from the \
+commit. All three go under `.research/results/` — the only tree the \
+executor collects back. \
 `src/evaluate.py` computes no metric of its own: it copies airas-eval's \
 numbers into `metrics.json` and builds the figures.
 

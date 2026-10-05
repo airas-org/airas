@@ -297,7 +297,7 @@ classDiagram
         - `id` / `summary` / `cites_passages[]`
         - **runs[]** 実行単位。`.research/results/<run_id>/` を生む
           - `run_id` / `description` / `cites_passages[]`
-          - `params` dispatch 条件（自由 dict、例 `{"mode": "full"}`）。基盤の記録と照合される
+          - `params` 結果に効く全条件。dispatch 条件（`mode`）と `config/config.yaml ⊕ config/run/<run_id>.yaml` の全キー（例 `{"mode": "full", "epochs": 10}`）。run commit 時点の config と基盤の記録に照合される
           - **results[]** metrics.json と provenance manifest から機械が追記
             - `id` Seyval の実行 id
             - `commit` 実行したコミット
@@ -391,12 +391,12 @@ classDiagram
       "verifier": {"kind": "seyval"},
       "criterion": {"metric": "accuracy", "subject": "proposed-resnet18-cifar10",
                     "reference": "comparative-1-resnet18-cifar10", "op": ">=", "margin": 0.01},
-      "prediction": {"low": 0.02, "high": 0.04, "basis": "pilot run on 10% of the data"},
+      "prediction": {"low": 0.02, "high": 0.04, "basis": "prior work (s1.p2)"},
       "designs": [{
         "id": "d1", "summary": "同一データ・同一予算での直接比較",
         "runs": [
-          {"run_id": "proposed-resnet18-cifar10", "params": {"mode": "full"}},
-          {"run_id": "comparative-1-resnet18-cifar10", "params": {"mode": "full"}}
+          {"run_id": "proposed-resnet18-cifar10", "params": {"mode": "full", "epochs": 10}},
+          {"run_id": "comparative-1-resnet18-cifar10", "params": {"mode": "full", "epochs": 10}}
         ]
       }]
     }]

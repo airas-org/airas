@@ -1,16 +1,19 @@
 ---
 name: preregister-paper
-description: Write the preregistration paper (prereg main.tex) for a research repository whose hypothesis and experimental design already exist, before any experiment has run. Hypothesis, predictions and design are written in full as numbered claims with criteria and predicted intervals; Results and Discussion stay stubs until experiments fill them, and every experimental number is an \airasval placeholder. Use when the user wants the paper declared before experiments (the AIRAS integrity flow), asks for a prereg PDF, or says 事前登録 / preregister / "write the paper first".
+description: Write the preregistration paper (prereg main.tex) for a research repository whose hypothesis, experimental design and experiment code already exist, before any pilot or full run. Hypothesis, predictions and design are written in full as numbered claims with criteria and predicted intervals; Results and Discussion stay stubs until experiments fill them, and every experimental number is an \airasval placeholder. Use when the user wants the paper declared before experiments (the AIRAS integrity flow), asks for a prereg PDF, or says 事前登録 / preregister / "write the paper first".
 ---
 
 # Preregister the paper
 
-You write the paper **before** the experiments, from the hypothesis and
-experimental design alone. The commit that adds this paper is the
+You write the paper **before** the pilot and full runs, from the
+hypothesis and experimental design. The experiment code and its
+platform sanity run come first, so the freeze commit contains the code
+the design was written against; sanity outputs are never imported and
+are not evidence. The commit that adds this paper is the
 preregistration record: every claim, criterion and expected result is
 frozen in git history before any result exists, so nothing can be
-quietly rewritten to fit the data later. Runs are expected to descend
-from this commit.
+quietly rewritten to fit the data later. Pilot and full runs are
+expected to descend from this commit.
 
 main.tex lives in `.research/latex/{template}/`, where `{template}` is
 one of the bundled template directories (`iclr2024`, `mdpi`,
@@ -28,19 +31,28 @@ are stated.
 ## Preconditions
 
 - A local clone of the experiment repository.
-- Hypothesis and experimental design exist, from
-  `hypothesize-and-design` or supplied by the user. The design must fix
-  the run ids (e.g. `proposed`, `baseline`) and the metrics; if it does
-  not, settle those with the user first, because the placeholders below
-  are named after them.
+- Hypothesis and experimental design exist as `.research/design.json`
+  — the exact `literature` and `hypotheses` arguments of
+  `preregister_record`, committed by `hypothesize-and-design` — or are
+  supplied by the user. The design must fix the run ids (e.g.
+  `proposed`, `baseline`) and the metrics; if it does not, settle those
+  with the user first, because the placeholders below are named after
+  them.
 - The papers the hypothesis rests on, each with its identifiers, the
   `fulltext_path` `fetch_paper_fulltext` wrote, and the passages (page
   and verbatim quote) picked while reading. Nothing is in the record yet.
+- The experiment code is committed and one platform sanity run passed
+  (`write-experiment-code`): everything that run read and called is
+  covered by the design's `params`.
+- No pilot or full run has executed. Only sanity runs precede the
+  freeze; pilot and full runs come after it.
 
 ## Steps
 
 1. **Create the canonical record with `preregister_record`**, passing
-   the `literature` and the `hypotheses` together. This writes
+   the `literature` and the `hypotheses` from `.research/design.json`
+   together, and delete that draft in the same commit so the record is
+   the only copy. This writes
    `.research/record.json` — the machine-readable original the whole
    verification system keys on — and pins each source: a registry
    (doi.org, arXiv, git) confirms it exists, its full text is
@@ -74,7 +86,7 @@ are stated.
        "criterion": {"metric": "accuracy", "subject": "proposed-...",
                      "reference": "comparative-1-...", "op": ">=",
                      "margin": 0.02},
-       "prediction": {"low": 0.02, "high": 0.04, "basis": "pilot run"},
+       "prediction": {"low": 0.02, "high": 0.04, "basis": "prior work (s1.p2)"},
        "designs": [{
          "id": "d1", "summary": "...",
          "runs": [{"run_id": "proposed-...", "description": "...",
@@ -87,8 +99,10 @@ are stated.
 
    `notes` (free text on the hypothesis) holds what the fields above
    cannot: the gap in prose, why each margin and interval was chosen, the
-   compute target. It is frozen with the record and is where a fresh
-   session reads the design rationale from.
+   compute target, and how many design ⇄ sanity rounds preceded the
+   freeze and what each changed. It is frozen with
+   the record and is where a fresh session reads the design rationale
+   from.
 
    `grounded_on` and `cites_passages` (also on designs and runs, and
    `reference_passage` on a criterion whose `reference` is a constant
@@ -99,11 +113,13 @@ are stated.
    `run_id` names the results directory the run will produce and must be
    unique across the record — a run belongs to exactly one claim, and
    results for an undeclared run_id fail verification. `params` declares
-   only what the commit *cannot* fix: the conditions the dispatch will
-   apply. Everything else (batch size, seeds, dataset) already lives in
-   the repository's config files, which the commit freezes. Declaring
-   the params is what makes "we said full and ran pilot" detectable
-   later — the gate compares them with what the platform recorded.
+   every condition that can change a result: the dispatch conditions
+   (`mode`) and the values the run's config fixes (iterations,
+   temperature, model, context window, timeouts, …) — every key of
+   `config/config.yaml` ⊕ `config/run/<run_id>.yaml`, not a subset.
+   Declaring them is what makes "we said full and ran pilot" and "we
+   said 20 iterations and ran 5" detectable later — the gate compares
+   them with the committed config and with what the platform recorded.
 
    `criterion` is the falsification line, required for every seyval
    claim: `(subject.metric - reference) op margin`, where `subject` is a
@@ -190,7 +206,10 @@ are stated.
    results
    exist, the legitimate diff to main.tex is what the results force
    (values realized, negative results discussed) — a compiling freeze
-   keeps that diff small enough to review.
+   keeps that diff small enough to review. A sanity run does not
+   surface everything (rare failures appear only at scale), so an
+   append with the same id before the pilot or full run is the normal
+   path, not a failure of the freeze.
 
 ## After the experiments
 

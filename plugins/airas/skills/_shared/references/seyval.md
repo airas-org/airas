@@ -236,6 +236,12 @@ git pull --ff-only origin verify
 `git push origin main:verify` で揃えておく。以後の `update_record` はこの
 ローカル clone を読む。
 
+**取り込みが `verify` を進めるので、複数 run の dispatch 元は別の ref に固定する。**
+1 本目の import が `verify` の HEAD を動かすと、以後の dispatch は別 commit になる。
+`git push origin main:run` のように run 専用の ref を切って全 run をそこから
+dispatch し、import は `verify` に入れる。run の commit が宣言 commit の子孫である
+ことは変わらない。
+
 **BYO Slurm では outputs はジョブ終了後に SSH で回収される。** 実行中に空でも
 異常ではない。
 

@@ -1,14 +1,17 @@
 ---
 name: write-experiment-code
-description: Produce the experiment code in an AIRAS experiment repository — against the execution contract stated here and the airas-eval input schema, with the environment fixed by lockfile and Dockerfile. Use to write, fix, or regenerate experiment code, whether authored directly or via an external code-generation tool.
+description: Produce the experiment code in an AIRAS experiment repository — against the execution contract stated here and the airas-eval input schema, with the environment fixed by lockfile and Dockerfile. Comes before the freeze — the design is settled, the record is not yet written. Use to write, fix, or regenerate experiment code, whether authored directly or via an external code-generation tool.
 ---
 
 # Write the experiment code
 
-Needs a clone with its research context committed and the execution
-platform settled — the platform's reference under `_shared/references/`
-states the architecture and environment constraints the code must
-satisfy, so read it before writing.
+Needs a clone with the agreed design committed as
+`.research/design.json` (the `preregister_record` arguments: run ids,
+params, metrics) and the execution platform settled — the platform's reference
+under `_shared/references/` states the architecture and environment
+constraints the code must satisfy, so read it before writing. The
+record may not exist yet: `preregister-paper` freezes it on top of this
+code.
 
 However the code is produced — authored here or by an external
 code-generation tool — the contract below is what the repository holds
@@ -20,8 +23,9 @@ contract in `_shared/references/lean.md`; both kinds start through the same
 `make run` and can live in one repository.
 
 1. **Read the contract**: `get_prompts(step="experiment_code")` returns
-   it; the runs it binds you to are in `.research/record.json` and the
-   eval plan in `.research/evaluation.json` — the files you may touch, the fixed CLI shape, the three modes and their
+   it; the runs it binds you to are in `.research/design.json` (in
+   `.research/record.json` once frozen) and the eval plan is
+   `.research/evaluation.json` — the files you may touch, the fixed CLI shape, the three modes and their
    validation lines, the three files verification reads, how the outputs
    feed airas-eval, and how the environment is pinned. Run ids and
    metric paths come from the record; a claim whose metric the code never
@@ -37,7 +41,21 @@ contract in `_shared/references/lean.md`; both kinds start through the same
    `make validate-inputs RUN_ID=<sanity run id>` to check the
    prediction files against the eval contract without scoring.
    Commit and push.
+5. **One sanity run on the platform** (`run-experiments`, steps 2–3; a
+   sanity run needs no declaration in the record). A local run proves
+   nothing about the target architecture or the model the run will
+   talk to. Read what the run read and called: every value it took and
+   every upstream function it reached must be covered by the design's
+   `params`, and a model server started outside the platform must be
+   committed and referenced from the run yaml. Fix the code or the
+   design and repeat until the sanity run touches nothing undeclared.
+   Until the runtime observation lands (`observed.json`, airas #1092),
+   this is a static audit: read the run yaml, `config/config.yaml`, the
+   Dockerfile and the code the run executed, and compare them with
+   `params` yourself — `get_experiment_run_status` returns only the log
+   tail.
 
-**Output**: committed, pushed experiment code that passes local sanity
-and input validation, with `uv.lock` and a Dockerfile that fix its
-environment.
+**Output**: committed, pushed experiment code that passes local sanity,
+input validation and one platform sanity run, with `uv.lock` and a
+Dockerfile that fix its environment — what `preregister-paper` freezes
+on top of.
