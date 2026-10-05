@@ -5,10 +5,11 @@ they must become. However the code is produced, this is what the \
 repository holds it to.
 
 ## What you work from
-The design (frozen into `.research/record.json` by `preregister_record` \
-after this step, and binding once it exists): every run (`run_id`, \
-`params`) and the metric each claim's criterion reads — these names are \
-the contract, not suggestions. `.research/evaluation.json`: the eval plan (write it first if \
+`.research/design.json`: the agreed design, the exact arguments \
+`preregister_record` freezes into `.research/record.json` after this \
+step (binding once the record exists): every run (`run_id`, `params`) \
+and the metric each claim's criterion reads — these names are the \
+contract, not suggestions. `.research/evaluation.json`: the eval plan (write it first if \
 it still says `REPLACE_ME`). The platform reference under \
 `_shared/references/` for the compute target's constraints.
 

@@ -19,8 +19,10 @@ Run these skills in order:
 - `setup-repository` — experiment repo created and cloned
 - `search-papers` — literature found and downloaded
 - `hypothesize-and-design` — papers read, falsifiable hypothesis; run
-  ids, metrics and params settled and **agreed with the user before any
-  code is written**; loops back to `search-papers` as needed
+  ids, metrics and params settled, **agreed with the user before any
+  code is written** and committed as `.research/design.json` (the exact
+  `preregister_record` arguments); loops back to `search-papers` as
+  needed
 - `write-experiment-code` — code to the execution and airas-eval
   contracts, environment fixed by lockfile + Dockerfile; local sanity,
   then **one sanity run on the platform**. What that run reads and
@@ -63,14 +65,12 @@ These are the orchestrator's own rules; no step may relax them.
 
 - **No pilot or full run is dispatched before the freeze commit
   exists.** Sanity runs may precede it — their outputs are never
-  imported and carry no evidence — but `run-experiments` must not
-  start until `preregister-paper` has committed. Carry the freeze
-  commit sha through the session and report it to the user;
-  verification argues from runs being descendants of it. A pilot
-  before the freeze is the exception, taken only when the literature
-  gives no basis for a predicted interval: run it on instances the
-  confirmation runs will not use, and disclose it in the prediction's
-  `basis` and the notes.
+  imported and carry no evidence — but the pilot and full phase of
+  `run-experiments` must not start until `preregister-paper` has
+  committed. There is no pre-freeze pilot: a predicted interval rests
+  on the literature and may miss. Carry the freeze commit sha through
+  the session and report it to the user; verification argues from runs
+  being descendants of it.
 - **Everything a run reads is in the repository or the platform's
   record.** A model server you start outside the platform (Slurm
   script, `.args`) is committed and referenced from the run yaml; a
@@ -163,7 +163,8 @@ nothing is anchored yet, so nothing can be hidden.
 many times each has run; `.research/derived_from.json` says this clone was
 forked from another repository's fork point. Otherwise read the clone
 to find where it stands: a
-`src/` written but no `.research/record.json` means
+`.research/design.json` and no `src/` means `write-experiment-code`
+is next; `src/` written but no `.research/record.json` means
 `preregister-paper` is next (after the platform sanity run);
 `.research/record.json` and preregistered main.tex with stub
 Results/Discussion and no `.research/results/` means

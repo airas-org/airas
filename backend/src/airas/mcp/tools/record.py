@@ -65,11 +65,11 @@ async def preregister_record(
           "criterion": {"metric": "accuracy", "subject": "proposed-...",
                         "reference": "comparative-1-...", "op": ">=",
                         "margin": 0.02},
-          "prediction": {"low": 0.02, "high": 0.04, "basis": "pilot run"},
+          "prediction": {"low": 0.02, "high": 0.04, "basis": "prior work (s1.p2)"},
           "designs": [{
             "id": "d1", "summary": "...",
             "runs": [{"run_id": "proposed-...", "description": "...",
-                      "params": {"mode": "full"}}]
+                      "params": {"mode": "full", "epochs": 10, "seed": 0}}]
           }]
         }],
         "tables": [...], "charts": [...], "notes": [...]
@@ -110,8 +110,11 @@ async def preregister_record(
     is two claims), and required. The kind decides what `params` declares
     and what the gate re-derives:
 
-      seyval    (experiment) params = dispatch conditions, e.g. {"mode":
-                "full"}, checked against what the platform recorded.
+      seyval    (experiment) params = every condition that can change the
+                result: the dispatch conditions (`mode`) and every key of
+                `config/config.yaml` ⊕ `config/run/<run_id>.yaml`, e.g.
+                {"mode": "full", "epochs": 10, "seed": 0}; checked against
+                the committed config and what the platform recorded.
                 `criterion` is the falsification line, required:
                 (subject.metric - reference) op margin, where subject is a
                 run under this claim and reference is a seyval run of the

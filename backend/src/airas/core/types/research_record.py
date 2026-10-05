@@ -263,8 +263,10 @@ class SeyvalResult(BaseModel):
 class SeyvalRun(Run[dict[str, Any], SeyvalResult]):
     params: dict[str, Any] = Field(
         default_factory=dict,
-        description="Conditions this run is declared to be dispatched with, "
-        "e.g. {'mode': 'full'}. Checked against what the platform recorded",
+        description="Every condition that can change this run's result: the "
+        "dispatch conditions (mode) and every key of config/config.yaml ⊕ "
+        "config/run/<run_id>.yaml. Checked against the committed config and "
+        "what the platform recorded",
     )
 
 

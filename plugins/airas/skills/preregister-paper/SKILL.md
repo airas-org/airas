@@ -31,26 +31,28 @@ are stated.
 ## Preconditions
 
 - A local clone of the experiment repository.
-- Hypothesis and experimental design exist, from
-  `hypothesize-and-design` or supplied by the user. The design must fix
-  the run ids (e.g. `proposed`, `baseline`) and the metrics; if it does
-  not, settle those with the user first, because the placeholders below
-  are named after them.
+- Hypothesis and experimental design exist as `.research/design.json`
+  — the exact `literature` and `hypotheses` arguments of
+  `preregister_record`, committed by `hypothesize-and-design` — or are
+  supplied by the user. The design must fix the run ids (e.g.
+  `proposed`, `baseline`) and the metrics; if it does not, settle those
+  with the user first, because the placeholders below are named after
+  them.
 - The papers the hypothesis rests on, each with its identifiers, the
   `fulltext_path` `fetch_paper_fulltext` wrote, and the passages (page
   and verbatim quote) picked while reading. Nothing is in the record yet.
 - The experiment code is committed and one platform sanity run passed
   (`write-experiment-code`): everything that run read and called is
   covered by the design's `params`.
-- A pilot runs after the freeze by default. Run one before it only when
-  the literature gives no basis for a predicted interval, on instances
-  the confirmation runs will not use, and disclose it in
-  `prediction.basis` and `notes`.
+- No pilot or full run has executed. Only sanity runs precede the
+  freeze; pilot and full runs come after it.
 
 ## Steps
 
 1. **Create the canonical record with `preregister_record`**, passing
-   the `literature` and the `hypotheses` together. This writes
+   the `literature` and the `hypotheses` from `.research/design.json`
+   together, and delete that draft in the same commit so the record is
+   the only copy. This writes
    `.research/record.json` — the machine-readable original the whole
    verification system keys on — and pins each source: a registry
    (doi.org, arXiv, git) confirms it exists, its full text is
@@ -84,7 +86,7 @@ are stated.
        "criterion": {"metric": "accuracy", "subject": "proposed-...",
                      "reference": "comparative-1-...", "op": ">=",
                      "margin": 0.02},
-       "prediction": {"low": 0.02, "high": 0.04, "basis": "pilot run"},
+       "prediction": {"low": 0.02, "high": 0.04, "basis": "prior work (s1.p2)"},
        "designs": [{
          "id": "d1", "summary": "...",
          "runs": [{"run_id": "proposed-...", "description": "...",
@@ -97,8 +99,8 @@ are stated.
 
    `notes` (free text on the hypothesis) holds what the fields above
    cannot: the gap in prose, why each margin and interval was chosen, the
-   compute target, how many design ⇄ sanity rounds preceded the freeze
-   and what each changed, and any pilot run before it. It is frozen with
+   compute target, and how many design ⇄ sanity rounds preceded the
+   freeze and what each changed. It is frozen with
    the record and is where a fresh session reads the design rationale
    from.
 

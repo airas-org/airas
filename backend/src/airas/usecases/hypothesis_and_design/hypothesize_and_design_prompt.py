@@ -56,9 +56,8 @@ each claim:
   constant. A difference exactly at the margin meets it.
 - `prediction`: the interval the difference is expected to land in — a \
   range, never a point — with its `basis`. A range too wide to miss is a \
-  criterion, not a prediction. A pilot before the freeze is allowed only \
-  when the literature gives no basis, on instances the confirmation runs \
-  will not use, and is named in `basis`.
+  criterion, not a prediction. No pilot runs before the freeze, so \
+  `basis` rests on the literature; sanity runs carry no evidence.
 - `cites_passages`: the passages the claim follows.
 - `designs` → `runs`: the runs that decide it.
 List in `assumptions` what has to be granted for the claims together to \

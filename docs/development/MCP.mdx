@@ -174,7 +174,7 @@ A typical flow (the `auto-research` skill holds the order and the invariants): `
 
 - The freeze protects one thing: claims, criteria and predictions cannot move once pilot or full results exist. Writing the code and running one sanity run first changes nothing there, and the freeze commit then contains the code the design was written against.
 - The sanity run is where a reused implementation shows what it really reads and calls. The design declares that (`params`, deviations from the upstream defaults) before the freeze instead of appending it afterwards.
-- A pilot runs after the freeze by default. A pilot before it, to place a predicted interval the literature cannot, runs on instances the confirmation runs will not use and is disclosed in `prediction.basis` and the notes — that is what keeps it preregistration rather than HARKing.
+- Pilot and full runs come only after the freeze; before it, only sanity runs, whose outputs are never imported and carry no evidence. That is what keeps the design preregistration rather than HARKing: no hypothesis is adjusted on data the confirmation will reuse.
 - Rare failures surface only at scale, so an append with the same id before the pilot or full run is the normal path, not a failure of the freeze.
 
 ### Writing the experiment code

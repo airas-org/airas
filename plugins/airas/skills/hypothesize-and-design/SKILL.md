@@ -46,17 +46,22 @@ refine until the hypothesis rests on passages you have actually read.
    English identifiers.
 5. **Agree the design with the user before any code is written**: run
    ids, params, claims with criteria and predictions, tables. A
-   consultation is not a go-ahead to build.
+   consultation is not a go-ahead to build. Then write the agreed
+   design to `.research/design.json` — exactly the `literature` and
+   `hypotheses` arguments `preregister_record` will take — and commit
+   it.
 
 **Output**: hypothesis + experimental design, and the papers they rest
-on with their `fulltext_path` and quoted passages. Nothing is in the
-record yet: `write-experiment-code` comes next, and its platform sanity
+on with their `fulltext_path` and quoted passages, committed as
+`.research/design.json`. Nothing is in the record yet:
+`write-experiment-code` reads the draft next, and its platform sanity
 run shows what the design missed (a value read, a function called, a
-server started outside the platform) — fold that back in here, then
-`preregister-paper` freezes all of it into the canonical
-`.research/record.json`, after which revision is append-only. What the
-declarations cannot carry — the gap in prose, why each margin and
-interval was chosen, the compute target, the run-to-claim table — goes
-into the hypothesis's `notes` in that same call, so it is frozen with the
-record and a fresh session reads it from the clone; do not keep a draft
-file beside the record.
+server started outside the platform) — fold that back into
+`design.json`, then `preregister-paper` passes it to
+`preregister_record`, which freezes it into the canonical
+`.research/record.json` and removes the draft in the same commit, after
+which revision is append-only. What the declarations cannot carry — the
+gap in prose, why each margin and interval was chosen, the compute
+target, the run-to-claim table — goes into the hypothesis's `notes`, so
+it is frozen with the record and a fresh session reads it from the
+clone.
