@@ -39,7 +39,18 @@ def _record(port: Port, source_kind: str = "repository") -> ResearchRecord:
                         id="s2.p1", node_type="setup", quote="max_iterations: 5"
                     )
                 ],
-            )
+            ),
+            LiteratureSource(
+                id="s1",
+                kind="paper",
+                title="SciGym",
+                bibkey="scigym-2025",
+                arxiv_id="2507.00001",
+                verified_by="arxiv",
+                passages=[
+                    QuotedPassage(id="s1.p1", node_type="setup", quote="5 rounds")
+                ],
+            ),
         ],
         hypotheses=[
             Hypothesis(
@@ -89,7 +100,13 @@ def test_the_source_must_be_a_repository() -> None:
     assert any("not a repository source" in p for p in problems)
 
 
-def test_a_knob_must_quote_a_declared_passage() -> None:
-    port = PORT.model_copy(update={"knobs": [Knob(key="k", upstream="s2.p9")]})
+@pytest.mark.parametrize("upstream", ["s2.p9", "s1.p1"])
+def test_a_knob_must_quote_a_passage_of_the_port_source(upstream: str) -> None:
+    port = PORT.model_copy(update={"knobs": [Knob(key="k", upstream=upstream, ours=1)]})
     problems = verify_record_in_itself(_record(port))
-    assert any("s2.p9" in p for p in problems)
+    assert any(upstream in p for p in problems)
+
+
+def test_a_knob_set_to_none_survives_saving() -> None:
+    knob = Knob(key="timeout", upstream="s2.p1", ours=None)
+    assert "ours" in knob.model_dump(exclude_defaults=True)

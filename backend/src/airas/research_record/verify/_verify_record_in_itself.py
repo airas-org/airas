@@ -155,7 +155,7 @@ def _verify_passage_references(record: ResearchRecord) -> list[str]:
 def _verify_ports(record: ResearchRecord) -> list[str]:
     """A port names a repository source of this record, and its knobs quote it."""
     sources = {source.id: source for source in record.literature}
-    known = set(record.passage_index())
+    passages = record.passage_index()
     problems: list[str] = []
     for _, claim in record.active_claims():
         if not isinstance(claim, SeyvalClaim):
@@ -172,9 +172,10 @@ def _verify_ports(record: ResearchRecord) -> list[str]:
                 )
             problems += [
                 f"design {design.id}: knob '{knob.key}' quotes passage "
-                f"'{knob.upstream}', which no source declares"
+                f"'{knob.upstream}', which port.source '{port.source}' does not declare"
                 for knob in port.knobs
-                if knob.upstream not in known
+                if knob.upstream not in passages
+                or passages[knob.upstream][0].id != port.source
             ]
     return problems
 

@@ -271,19 +271,20 @@ class SeyvalRun(Run[dict[str, Any], SeyvalResult]):
 
 
 class Knob(BaseModel):
-    """One upstream setting the port decided on: changed (`ours` given) or kept
-    at the upstream default (`ours` omitted). `upstream` quotes the default."""
+    """One upstream setting the port decided on. `upstream` quotes the default
+    from the port's source; `ours` is the value we run with, stated even when
+    it equals the default, so the gate always has a value to compare."""
 
     key: str
     upstream: str = Field(description="Passage id stating the upstream default")
-    ours: Any = Field(default=None, description="Our value; omitted = default kept")
+    ours: Any = Field(description="The value we run with")
     reason: str = ""
 
 
 class Port(BaseModel):
     """An existing method reused from a repository source: what the adapter
-    calls, what it watches, and how it departs from the upstream. The run's
-    observed.json is checked against this."""
+    calls, what it watches, and how it departs from the upstream. The gate
+    will check the run's observed.json against this (#1094)."""
 
     source: str = Field(description="Repository source id, e.g. 's2'")
     entry: str = Field(description="module.Class.method the adapter calls")
@@ -296,8 +297,8 @@ class Port(BaseModel):
     knobs: list[Knob] = Field(default_factory=list)
     patches: list[str] = Field(
         default_factory=list,
-        description="Unified diffs against the source snapshot; the running "
-        "module must hash to snapshot + diff, so a diff is also complete",
+        description="Unified diffs against the source snapshot; the gate will "
+        "require the running module to hash to snapshot + diff",
     )
     extension_points: list[str] = Field(
         default_factory=list,

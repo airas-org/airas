@@ -311,13 +311,13 @@ classDiagram
       - `verdict` verified 時に criterion を runs の metrics に適用して導出。metric が解決できなければ `inconclusive`
       - **designs[]**
         - `id` / `summary` / `cites_passages[]`
-        - `port` 既存手法を repository 文献から移植して使うときの宣言。run の `observed.json` と照合される（省略可）
+        - `port` 既存手法を repository 文献から移植して使うときの宣言（省略可）。run の `observed.json` との照合は後続の gate で追加予定（#1094）
           - `source` repository 文献の id
           - `entry` adapter が呼ぶ上流の入口（`module.Class.method`）。`components` に含める
           - `components[]` 呼び出しを観測する上流の関数（`module.Class.method`）
           - `adapter_files[]` agent が書いた `src/` のファイル
-          - `knobs[]` 上流の設定に対する判断。`key`、既定を引いた passage `upstream`、こちらの値 `ours`（省略 = 既定のまま）、`reason`
-          - `patches[]` 上流への変更を unified diff 本文で。実行時に読み込まれたモジュールのハッシュがスナップショット + diff と一致することを gate が確かめる
+          - `knobs[]` 上流の設定に対する判断。`key`、既定を引いた `source` の passage `upstream`、実行する値 `ours`（既定のままでもその値を書く）、`reason`
+          - `patches[]` 上流への変更を unified diff 本文で。スナップショット + diff のハッシュと実行時に読み込まれたモジュールのハッシュとの照合も後続の gate で追加予定
           - `extension_points[]` adapter が継承・override・呼び出しをしてよい上流の名前
         - **runs[]** 実行単位。`.research/results/<run_id>/` を生む
           - `run_id` / `description` / `cites_passages[]`
