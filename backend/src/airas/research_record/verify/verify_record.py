@@ -32,6 +32,9 @@ from airas.research_record.verify._verify_results_against_store import (
     provenance_scope,
     verify_results_against_store,
 )
+from airas.research_record.verify._verify_run_observations import (
+    verify_run_observations,
+)
 from airas.research_record.verify._verify_run_results import verify_run_results
 
 
@@ -87,6 +90,7 @@ async def verify_record(
     )
 
     if stage == "results":
+        problems += await asyncio.to_thread(verify_run_observations, root, record)
         if check_provenance and (
             scope := provenance_scope(record, metrics_data, reported_run_ids)
         ):

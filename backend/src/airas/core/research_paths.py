@@ -16,6 +16,11 @@ RECORD_PATH = f".research/{RECORD_FILENAME}"
 METRICS_FILENAME = "metrics.json"
 COMPARISON_KEY = "comparison"
 COMPARISON_METRICS_FILENAME = "aggregated_metrics.json"
+OBSERVED_FILENAME = "observed.json"
+
+# The observation hook the template ships; the Makefile puts it on
+# PYTHONPATH so every Python process of a run writes what it loaded and called.
+HOOK_PATH = ".airas/sitecustomize.py"
 
 # The literature the research drew on: one directory per source holding
 # the paper's text and/or its repository's snapshot (one page per file),
