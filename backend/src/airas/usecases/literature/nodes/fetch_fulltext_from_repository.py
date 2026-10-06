@@ -35,9 +35,11 @@ def fetch_fulltext_from_repository(
 
             pages = []
             for file in listed.decode().splitlines():
+                raw = git("show", f"FETCH_HEAD:{file}")
+                if b"\0" in raw:  # binary, as git judges it
+                    continue
                 with contextlib.suppress(UnicodeDecodeError):
-                    content = git("show", f"FETCH_HEAD:{file}").decode()
-                    pages.append(f"==> {file} <==\n{content}")
+                    pages.append(f"==> {file} <==\n{raw.decode()}")
             return pages
 
         git("init", "-q")

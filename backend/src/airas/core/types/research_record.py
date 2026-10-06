@@ -183,8 +183,7 @@ class Repository(BaseModel):
     )
     method_entry: str = Field(
         default="",
-        description="module.Class.method whose call runs the method this source "
-        "holds: what a design's port runs, and the gate requires to have run",
+        description="module.Class.method whose call runs the method this source holds",
     )
 
 
@@ -219,6 +218,9 @@ class LiteratureSource(BaseModel):
             raise ValueError(
                 f"source {self.id}: {', '.join(foreign)} carry another source's id"
             )
+        ids = [r.id for r in self.repositories]
+        if len(set(ids)) != len(ids):
+            raise ValueError(f"source {self.id}: repository ids must be unique")
         if self.verified_by in ("git", "airas_records") and not self.repositories:
             raise ValueError(
                 f"source {self.id}: {self.verified_by} verifies a repository, "

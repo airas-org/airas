@@ -1,6 +1,7 @@
 """A design that runs the method a source's repository holds."""
 
 import pytest
+from pydantic import ValidationError
 
 from airas.core.types.research_record import (
     ArgumentValue,
@@ -101,6 +102,17 @@ def test_the_source_must_ship_code_with_a_method_entry(
 ) -> None:
     problems = verify_record_in_itself(_record(INTEGRATION, source))
     assert any("repository_integration.repository_id" in p for p in problems), problems
+
+
+def test_repository_ids_are_unique_within_a_source() -> None:
+    source = _source()
+    with pytest.raises(ValidationError, match="unique"):
+        LiteratureSource.model_validate(
+            {
+                **source.model_dump(),
+                "repositories": [source.repositories[0].model_dump()] * 2,
+            }
+        )
 
 
 def test_an_argument_set_to_none_survives_saving() -> None:

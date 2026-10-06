@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from airas.core.types.research_record import ResearchRecord, SeyvalClaim
+from airas.core.types.research_record import ResearchRecord, SeyvalClaim, active
 
 
 def _verify_consistency(record: ResearchRecord) -> list[str]:
@@ -167,7 +167,7 @@ def _verify_repository_integrations(record: ResearchRecord) -> list[str]:
     for _, claim in record.active_claims():
         if not isinstance(claim, SeyvalClaim):
             continue
-        for design in claim.designs:
+        for design in active(claim.designs, "id"):
             integration = design.repository_integration
             if integration is None:
                 continue

@@ -11,6 +11,23 @@ from airas.research_record.render.render_paper_values import passage_line, recor
 TABLES_DIR_NAME = "tables"
 
 
+def _passage_stating(data: Any, passage_ids: list[str], value: float) -> str:
+    """The cited passage whose quote states the value, else the first cited."""
+    quotes = {
+        passage.get("id"): passage.get("quote", "")
+        for source in data.get("literature") or []
+        for passage in source.get("passages") or []
+    }
+    return next(
+        (
+            pid
+            for pid in passage_ids
+            if str(value) in quotes.get(pid, "") or f"{value:g}" in quotes.get(pid, "")
+        ),
+        passage_ids[0],
+    )
+
+
 def render_table_tex(
     spec: TableSpec, metrics_data: dict[str, Any], record_json: str | None = None
 ) -> str:
@@ -54,7 +71,12 @@ def render_table_tex(
                 published = column.reference.values[row.run_id]
                 value = value - published if column.ref_path is not None else published
                 if column.ref_path is None and data:
-                    line = passage_line(data, column.reference.quoted_passage_ids[0])
+                    line = passage_line(
+                        data,
+                        _passage_stating(
+                            data, column.reference.quoted_passage_ids, published
+                        ),
+                    )
             text = (
                 f"{value:.{column.round}f}"
                 if column.round is not None

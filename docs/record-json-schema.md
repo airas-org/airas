@@ -146,7 +146,7 @@ classDiagram
         repository_integration: RepositoryIntegration
     }
     class RepositoryIntegration {
-        source: source id
+        repository_id: repository id
         extension_points: str[]
         arguments: ArgumentValue[]
     }
@@ -277,7 +277,7 @@ classDiagram
     - `id` `"s1.r1"`, `"s1.r2"`, …
     - `url` / `commit` 40 桁の sha
     - `snapshot` `{path, sha256}` `.research/sources/<source>/<r>.txt`（`s1.r1` なら `.research/sources/s1/r1.txt`）。`files` に挙げたファイル（ディレクトリならその下の全テキストファイル）を 1 ファイル 1 ページ（`==> path <==` 見出し）で。コードからの引用と、実行時に読み込まれたモジュールのハッシュ照合の原本
-    - `method_entry` design の `repository_integration` が走らせる手法の入口（`module.Class.method`）。これが 1 回以上呼ばれたことを gate が要求する
+    - `method_entry` design の `repository_integration` が走らせる手法の入口（`module.Class.method`）。1 回以上呼ばれたことの照合は後続の gate で追加予定
   - **passages[]** 引いた箇所。`append_to_record(source_id, passages)` で追記
     - `id` `"s1.p1"`, `"s1.p2"`, …
     - `node_type` `claim` / `result` / `method` / `setup` / `gap` / `definition`。何を述べる箇所か（グラフ探索はここで絞る）
@@ -319,7 +319,7 @@ classDiagram
         - `repository_integration` 文献のリポジトリが持つ手法をこの design がどう走らせるか（省略可）。上流のファイルは改変しない前提。run の `observed.json` との照合は後続の gate で追加予定（#1094）
           - `repository_id` 走らせるリポジトリ（`"s1.r1"`）。その `method_entry` が手法の入口
           - `extension_points[]` adapter が継承・override・差し替えしてよい上流の名前
-          - `arguments[]` 上流の引数に渡す値。`argument` は `module.Class.method.arg`、`value` は実行する値（既定のままでもその値を書く）、`reason`。フックは `method_entry` と各 `argument` の関数を観測し、gate は観測された引数と `value` を照合する
+          - `arguments[]` 上流の引数に渡す値。`argument` は `module.Class.method.arg`、`value` は実行する値（既定のままでもその値を書く）、`reason`。フックは `method_entry` と各 `argument` の関数を観測し、観測された引数と `value` の照合は後続の gate で追加予定
         - **runs[]** 実行単位。`.research/results/<run_id>/` を生む
           - `run_id` / `description`
           - `params` 結果に効く全条件。dispatch 条件（`mode`）と `config/config.yaml ⊕ config/run/<run_id>.yaml` の全キー（例 `{"mode": "full", "epochs": 10}`）。run commit 時点の config と基盤の記録に照合される

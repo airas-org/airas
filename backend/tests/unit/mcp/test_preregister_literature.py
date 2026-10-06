@@ -382,6 +382,24 @@ async def test_a_paper_and_the_code_it_ships_are_one_source(tmp_path: Path) -> N
     )
 
 
+async def test_code_appended_to_a_pinned_paper_joins_it_as_the_next_repository(
+    tmp_path: Path,
+) -> None:
+    repo = _repo(tmp_path)
+    await _preregister(repo, [DB_PAPER])
+
+    await record_tools.append_to_record(
+        str(repo), literature=[{**DB_PAPER, "repositories": [REPO]}]
+    )
+
+    record = load_record(str(repo))
+    assert [s.id for s in record.literature] == ["s1"]
+    assert [r.id for r in record.literature[0].repositories] == ["s1.r1"]
+    assert (
+        repo / record.literature[0].repositories[0].snapshot.path
+    ).read_text() == REPO_PAGE
+
+
 async def test_a_repository_that_cannot_be_fetched_is_refused(tmp_path: Path) -> None:
     repo = _repo(tmp_path)
     with pytest.raises(ValueError, match="git fetch failed"):

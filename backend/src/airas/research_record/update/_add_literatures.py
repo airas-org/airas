@@ -6,7 +6,10 @@ from airas.core.research_paths import (
     fulltext_relpath,
     repository_snapshot_relpath,
 )
-from airas.core.types.literature_material import LiteratureMaterial
+from airas.core.types.literature_material import (
+    LiteratureMaterial,
+    RepositoryMaterial,
+)
 from airas.core.types.research_record import (
     InputRef,
     LiteratureSource,
@@ -36,11 +39,15 @@ def _same(s: LiteratureSource, m: LiteratureMaterial) -> bool:
         return bool(
             (m.doi and s.doi == m.doi) or (m.arxiv_id and s.arxiv_id == m.arxiv_id)
         )
-    if m.repositories:
-        return any(
-            (theirs.url, theirs.commit) == (ours.url, ours.commit)
-            for theirs in s.repositories
-            for ours in m.repositories
+    if (
+        m.repositories
+    ):  # code-only work: named after, and identified by, its first repository
+        return bool(s.repositories) and (
+            s.repositories[0].url,
+            s.repositories[0].commit,
+        ) == (
+            m.repositories[0].url,
+            m.repositories[0].commit,
         )
     return bool(m.url) and s.url == m.url
 
@@ -49,12 +56,43 @@ def _existing(record: ResearchRecord, m: LiteratureMaterial) -> LiteratureSource
     return next((s for s in record.active_literature() if _same(s, m)), None)
 
 
+def _pin_repositories(
+    root: Path,
+    source_id: str,
+    pinned: list[Repository],
+    materials: list[RepositoryMaterial],
+) -> tuple[list[Repository], list[str]]:
+    """Snapshot each repository not pinned yet as the source's next rN."""
+    known = {(r.url, r.commit) for r in pinned}
+    added: list[Repository] = []
+    paths: list[str] = []
+    for material in materials:
+        if (material.url, material.commit) in known:
+            continue
+        repository_id = f"{source_id}.r{len(pinned) + len(added) + 1}"
+        snapshot = _write_pages(
+            root, repository_snapshot_relpath(repository_id), material.pages
+        )
+        paths.append(snapshot.path)
+        added.append(
+            Repository(
+                id=repository_id,
+                url=material.url,
+                commit=material.commit,
+                snapshot=snapshot,
+                method_entry=material.method_entry,
+            )
+        )
+    return added, paths
+
+
 def add_literatures(
     root: Path, record: ResearchRecord, materials: list[LiteratureMaterial]
 ) -> tuple[list[LiteratureSource], list[str]]:
-    """Pin each material as a source, or find it already pinned. Returns the
-    sources in the materials' order and the snapshot paths written, so a
-    caller can discard them if anything later fails."""
+    """Pin each material as a source, or find it already pinned and add the
+    code it ships that is not pinned yet. Returns the sources in the
+    materials' order and the snapshot paths written, so a caller can discard
+    them if anything later fails."""
     sources: list[LiteratureSource] = []
     snapshots: list[str] = []
     for m in materials:
@@ -65,22 +103,8 @@ def add_literatures(
             if m.pages:
                 fulltext = _write_pages(root, fulltext_relpath(source_id), m.pages)
                 snapshots.append(fulltext.path)
-            repositories = []
-            for n, material in enumerate(m.repositories, start=1):
-                repository_id = f"{source_id}.r{n}"
-                snapshot = _write_pages(
-                    root, repository_snapshot_relpath(repository_id), material.pages
-                )
-                snapshots.append(snapshot.path)
-                repositories.append(
-                    Repository(
-                        id=repository_id,
-                        url=material.url,
-                        commit=material.commit,
-                        snapshot=snapshot,
-                        method_entry=material.method_entry,
-                    )
-                )
+            repositories, paths = _pin_repositories(root, source_id, [], m.repositories)
+            snapshots += paths
             source = LiteratureSource(
                 id=source_id,
                 title=m.title,
@@ -103,5 +127,11 @@ def add_literatures(
                 repositories=repositories,
             )
             record.literature.append(source)
+        else:
+            added, paths = _pin_repositories(
+                root, source.id, source.repositories, m.repositories
+            )
+            source.repositories.extend(added)
+            snapshots += paths
         sources.append(source)
     return sources, snapshots
