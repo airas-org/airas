@@ -257,7 +257,8 @@ def _run_problems(
     problems += [
         f"{label}: upstream {name} is defined in {file}, which no extension_point declares"
         for name, file in _definition_origins(observed)
-        if (file.startswith(src) or file.startswith("<")) and not _covered(name, points)
+        if (file.startswith(src) or file.startswith("<string>"))
+        and not _covered(name, points)
     ]
     problems += [
         f"{label}: {cls} overrides {base}.{', '.join(uncovered)}, which no extension_point declares"
