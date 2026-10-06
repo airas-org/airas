@@ -1,0 +1,32 @@
+name: Pin airas in airas-template
+
+# airas-template の workflow が引く airas を main 先頭の commit SHA に書き換える。
+on:
+  push:
+    branches: [main]
+    paths: ["backend/**"]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: pin-airas-template
+  cancel-in-progress: true
+
+jobs:
+  pin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: airas-org/airas-template
+          token: ${{ secrets.AIRAS_ORG_TOKEN }}
+
+      - name: Replace the airas ref with this commit and push
+        run: |
+          sed -i -E "s|(airas\.git@)[^#\"[:space:]]+(#subdirectory=backend)|\1${GITHUB_SHA}\2|" .github/workflows/*.yml
+          git diff --quiet && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "CI: pin airas to airas-org/airas@${GITHUB_SHA}"
+          git push
