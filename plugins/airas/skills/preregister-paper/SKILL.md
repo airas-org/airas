@@ -93,8 +93,14 @@ are stated.
        "prediction": {"low": 0.02, "high": 0.04, "basis": "prior work (s1.p2)"},
        "designs": [{
          "id": "d1", "summary": "...",
+         "repository_integration": {           // when the design runs a source's code
+           "repository_id": "s2.r1", "extension_points": ["pkg.Model"],
+           "arguments": [{"argument": "pkg.Runner.__init__.n_basis", "value": 20,
+                          "reason": "as in the paper's main setting"},
+                         {"argument": "pkg.Runner.__init__.seed", "params_key": "seed",
+                          "reason": "varied over the runs"}]},
          "runs": [{"run_id": "proposed-...", "description": "...",
-                   "params": {"mode": "full"}}]
+                   "params": {"mode": "full", "seed": 0}}]
        }]
      }],
      "tables": [...], "notes": [...]

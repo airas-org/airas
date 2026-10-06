@@ -115,6 +115,7 @@ def test_repository_ids_are_unique_within_a_source() -> None:
         )
 
 
-def test_an_argument_set_to_none_survives_saving() -> None:
+def test_an_argument_set_to_none_reads_back_as_none() -> None:
     setting = ArgumentValue(argument=MAX_ITERATIONS, value=None)
-    assert "value" in setting.model_dump(exclude_defaults=True)
+    saved = setting.model_dump(exclude_defaults=True)
+    assert ArgumentValue.model_validate(saved).value is None

@@ -45,6 +45,24 @@ def current_branch(repo_root: Path) -> str | None:
     return None if branch in (None, "HEAD") else branch  # HEAD = detached
 
 
+def root_commit(repo_root: Path) -> str | None:
+    roots = (
+        text.splitlines()
+        if (text := _text(repo_root, "rev-list", "--max-parents=0", "HEAD"))
+        else []
+    )
+    return (
+        roots[0] if len(roots) == 1 else None
+    )  # several roots: merged-in history, no single origin
+
+
+def paths_changed_between(
+    repo_root: Path, commit_a: str, commit_b: str, paths: tuple[str, ...]
+) -> list[str] | None:
+    text = _text(repo_root, "diff", "--name-only", commit_a, commit_b, "--", *paths)
+    return text.splitlines() if text is not None else None
+
+
 def is_shallow(repo_root: Path) -> bool:
     return _text(repo_root, "rev-parse", "--is-shallow-repository") == "true"
 

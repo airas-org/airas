@@ -276,7 +276,12 @@ class SeyvalRun(Run[dict[str, Any], SeyvalResult]):
 
 class ArgumentValue(BaseModel):
     argument: str = Field(description="module.Class.method.arg of the upstream")
-    value: Any
+    value: Any = Field(default=None, description="The value passed, when fixed")
+    params_key: str = Field(
+        default="",
+        description="When varied over the design's runs: the key of each run's "
+        "params holding the value; value is then not used",
+    )
     reason: str = ""
 
 
