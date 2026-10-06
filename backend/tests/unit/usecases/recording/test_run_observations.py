@@ -170,6 +170,10 @@ def _tamper_hook(o: dict[str, Any]) -> None:
     o["hook"]["sha256"] = "0" * 64
 
 
+def _drop_hashes(o: dict[str, Any]) -> None:
+    o["loaded_file_hashes"] = {}
+
+
 def _modify_upstream(o: dict[str, Any]) -> None:
     o["loaded_file_hashes"]["pkg.runner"]["sha256"] = "0" * 64
 
@@ -204,6 +208,7 @@ def _undeclared_base(o: dict[str, Any]) -> None:
     ("mutate", "expected"),
     [
         (_tamper_hook, "was not written by this repository's .airas/sitecustomize.py"),
+        (_drop_hashes, "no loaded module of pkg.runner.Runner.run has a file hash"),
         (_modify_upstream, "loaded module pkg.runner differs from the snapshot"),
         (
             _load_unknown_module,

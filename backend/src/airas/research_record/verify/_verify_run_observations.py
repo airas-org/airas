@@ -153,6 +153,11 @@ def _run_problems(
     upstream = [
         (m, e) for m, e in _loaded_files(observed) if m.split(".")[0] == package
     ]
+    # Without the entry's own module among the hashes, the checks below pass on nothing.
+    if not any(repository.method_entry.startswith(m + ".") for m, _ in upstream):
+        problems.append(
+            f"{label}: no loaded module of {repository.method_entry} has a file hash"
+        )
     problems += [
         f"{label}: loaded module {module} ({entry.get('file')}) has no file in the snapshot "
         f"of {repository.id} — generated at build, or the snapshot's files were too narrow"
