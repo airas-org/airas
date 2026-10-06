@@ -48,10 +48,13 @@ def _template_import(root: Path) -> str:
     hook.parent.mkdir(parents=True, exist_ok=True)
     hook.write_text("# hook\n")
     (root / "Makefile").write_text("run:\n\tmake run-experiment\n")
+    workflow = root / ".github/workflows/verify_record.yml"
+    workflow.parent.mkdir(parents=True, exist_ok=True)
+    workflow.write_text("on: push\n")
     _git(root, "init", "-q")
     _git(root, "config", "user.email", "t@example.com")
     _git(root, "config", "user.name", "t")
-    _git(root, "add", ".airas", "Makefile")
+    _git(root, "add", ".airas", ".github", "Makefile")
     _git(root, "commit", "-q", "-m", "Initial commit")
     return _git(root, "rev-parse", "HEAD")
 
@@ -272,11 +275,8 @@ def test_a_run_from_a_commit_that_edited_the_trusted_files_fails(
 def test_a_workflow_edited_after_the_import_is_reported(tmp_path: Path) -> None:
     _template_import(tmp_path)
     observed = _observed(tmp_path)
-    workflow = tmp_path / ".github/workflows/verify_record.yml"
-    workflow.parent.mkdir(parents=True)
-    workflow.write_text("on: push\n")
-    _git(tmp_path, "add", ".github")
-    _git(tmp_path, "commit", "-q", "-m", "own gate")
+    (tmp_path / ".github/workflows/verify_record.yml").write_text("on: never\n")
+    _git(tmp_path, "commit", "-q", "-am", "own gate")
     record = _record(tmp_path, _git(tmp_path, "rev-parse", "HEAD"))
     _write(tmp_path, observed)
     problems = verify_run_observations(tmp_path, record)
@@ -317,6 +317,17 @@ def test_a_repository_without_the_template_hook_in_its_first_commit_is_reported(
     assert verify_run_observations(tmp_path, record) == [
         "the repository's first commit has no .airas/sitecustomize.py: it was not "
         "created from airas-template"
+    ]
+
+
+def test_a_result_commit_git_cannot_show_is_reported_not_passed(tmp_path: Path) -> None:
+    _template_import(tmp_path)
+    record = _record(tmp_path, "f" * 40)
+    _write(tmp_path, _observed(tmp_path))
+    problems = verify_run_observations(tmp_path, record)
+    assert problems == [
+        "run 'run-1': Makefile, .github, .airas at commit ffffffffffff could not be "
+        "compared with the repository's first commit"
     ]
 
 

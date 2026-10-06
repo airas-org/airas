@@ -8,6 +8,7 @@ from typing import Any
 from airas.core.hashing import text_sha256
 from airas.core.research_paths import (
     HOOK_PATH,
+    MAKEFILE_PATH,
     OBSERVED_FILENAME,
     PAGE_SEPARATOR,
     RESULTS_DIR,
@@ -39,10 +40,13 @@ def _first_commit(root: Path) -> tuple[str | None, list[str]]:
             "first commit (shallow clone, no git history, or several root commits) — "
             "CI must check out with fetch-depth: 0"
         ]
-    if file_bytes_at_commit(root, first, HOOK_PATH) is None:
+    # The import must carry the run path and the gate: the Makefile, the hook, the workflows.
+    required = (MAKEFILE_PATH, HOOK_PATH, ".github")
+    missing = [p for p in required if file_bytes_at_commit(root, first, p) is None]
+    if missing:
         return None, [
-            f"the repository's first commit has no {HOOK_PATH}: it was not created "
-            "from airas-template"
+            f"the repository's first commit has no {', '.join(missing)}: it was not "
+            "created from airas-template"
         ]
     return first, []
 
@@ -187,7 +191,12 @@ def _run_problems(
             changed = paths_changed_between(
                 root, first_commit, result.commit, TRUSTED_PATHS
             )
-            if changed:
+            if changed is None:
+                problems.append(
+                    f"{label}: {', '.join(TRUSTED_PATHS)} at commit {result.commit[:12]} "
+                    "could not be compared with the repository's first commit"
+                )
+            elif changed:
                 problems.append(
                     f"{label}: {', '.join(changed)} at commit {result.commit[:12]} differ "
                     "from the repository's first commit"

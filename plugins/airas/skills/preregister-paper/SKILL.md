@@ -100,7 +100,7 @@ are stated.
                          {"argument": "pkg.Runner.__init__.seed", "params_key": "seed",
                           "reason": "varied over the runs"}]},
          "runs": [{"run_id": "proposed-...", "description": "...",
-                   "params": {"mode": "full"}}]
+                   "params": {"mode": "full", "seed": 0}}]
        }]
      }],
      "tables": [...], "notes": [...]
