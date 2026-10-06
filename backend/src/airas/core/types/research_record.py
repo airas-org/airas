@@ -279,16 +279,17 @@ class ArgumentValue(BaseModel):
 
 
 class RepositoryIntegration(BaseModel):
+    """How the design runs the method a source's repository holds: the
+    upstream names it extends and the arguments it sets. The upstream files
+    themselves are not modified."""
+
     repository_id: str = Field(
         pattern=REPOSITORY_ID_PATTERN,
         description="Repository whose method_entry this design runs, e.g. 's1.r1'",
     )
-    adapter_files: list[str] = Field(
-        default_factory=list, description="Files under src/ the adapter consists of"
-    )
     extension_points: list[str] = Field(
         default_factory=list,
-        description="Upstream names the adapter may subclass, override or call",
+        description="Upstream names the adapter may subclass, override or replace",
     )
     arguments: list[ArgumentValue] = Field(default_factory=list)
 

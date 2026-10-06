@@ -86,7 +86,6 @@ def _record(
 
 INTEGRATION = RepositoryIntegration(
     repository_id="s1.r1",
-    adapter_files=["src/train.py"],
     extension_points=["scigym.api.LLM"],
     arguments=[ArgumentValue(argument=MAX_ITERATIONS, value=20)],
 )

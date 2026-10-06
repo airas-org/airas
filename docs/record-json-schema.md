@@ -147,7 +147,7 @@ classDiagram
     }
     class RepositoryIntegration {
         source: source id
-        adapter_files, extension_points: str[]
+        extension_points: str[]
         arguments: ArgumentValue[]
     }
     class ArgumentValue {
@@ -318,7 +318,6 @@ classDiagram
         - `id` / `summary` / `quoted_passage_ids[]`
         - `repository_integration` 文献のリポジトリが持つ手法をこの design がどう走らせるか（省略可）。上流のファイルは改変しない前提。run の `observed.json` との照合は後続の gate で追加予定（#1094）
           - `repository_id` 走らせるリポジトリ（`"s1.r1"`）。その `method_entry` が手法の入口
-          - `adapter_files[]` agent が書いた `src/` のファイル。上流を import して繋ぐ糊
           - `extension_points[]` adapter が継承・override・差し替えしてよい上流の名前
           - `arguments[]` 上流の引数に渡す値。`argument` は `module.Class.method.arg`、`value` は実行する値（既定のままでもその値を書く）、`reason`。フックは `method_entry` と各 `argument` の関数を観測し、gate は観測された引数と `value` を照合する
         - **runs[]** 実行単位。`.research/results/<run_id>/` を生む
