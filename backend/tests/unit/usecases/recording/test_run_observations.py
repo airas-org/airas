@@ -151,6 +151,8 @@ def _observed(root: Path) -> dict[str, Any]:
                     "module": "pkg.runner",
                     "file": "/venv/site-packages/pkg/runner.py",
                 },
+                # a stdlib name the upstream imported: frozen modules are neither src/ nor exec
+                "abstractmethod": {"module": "abc", "file": "<frozen abc>"},
             }
         },
         "upstream_extensions": {  # the hook lists every upstream ancestor, nearest first
