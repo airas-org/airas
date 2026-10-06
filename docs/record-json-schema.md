@@ -137,6 +137,20 @@ classDiagram
         summary: str
         runs: SeyvalRun[]
         cites_passages: passage id[]
+        port: Port
+    }
+    class Port {
+        source: source id
+        entry: str
+        components: str[]
+        adapter_files, patches, extension_points: str[]
+        knobs: Knob[]
+    }
+    class Knob {
+        key: str
+        upstream: passage id
+        ours: any
+        reason: str
     }
     class SeyvalRun {
         run_id: str
@@ -198,6 +212,8 @@ classDiagram
     SeyvalClaim --> Prediction
     SeyvalClaim "1" --> "*" SeyvalDesign : designs
     SeyvalDesign "1" --> "*" SeyvalRun : runs
+    SeyvalDesign --> Port : port
+    Port "1" --> "*" Knob : knobs
     SeyvalRun "1" --> "*" SeyvalResult : results
     LeanClaim "1" --> "*" LeanDesign : designs
     LeanDesign "1" --> "*" LeanRun : runs
@@ -295,6 +311,14 @@ classDiagram
       - `verdict` verified 時に criterion を runs の metrics に適用して導出。metric が解決できなければ `inconclusive`
       - **designs[]**
         - `id` / `summary` / `cites_passages[]`
+        - `port` 既存手法を repository 文献から移植して使うときの宣言。run の `observed.json` と照合される（省略可）
+          - `source` repository 文献の id
+          - `entry` adapter が呼ぶ上流の入口（`module.Class.method`）。`components` に含める
+          - `components[]` 呼び出しを観測する上流の関数（`module.Class.method`）
+          - `adapter_files[]` agent が書いた `src/` のファイル
+          - `knobs[]` 上流の設定に対する判断。`key`、既定を引いた passage `upstream`、こちらの値 `ours`（省略 = 既定のまま）、`reason`
+          - `patches[]` 上流への変更を unified diff 本文で。実行時に読み込まれたモジュールのハッシュがスナップショット + diff と一致することを gate が確かめる
+          - `extension_points[]` adapter が継承・override・呼び出しをしてよい上流の名前
         - **runs[]** 実行単位。`.research/results/<run_id>/` を生む
           - `run_id` / `description` / `cites_passages[]`
           - `params` 結果に効く全条件。dispatch 条件（`mode`）と `config/config.yaml ⊕ config/run/<run_id>.yaml` の全キー（例 `{"mode": "full", "epochs": 10}`）。run commit 時点の config と基盤の記録に照合される

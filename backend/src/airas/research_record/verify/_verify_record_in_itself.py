@@ -152,9 +152,37 @@ def _verify_passage_references(record: ResearchRecord) -> list[str]:
     return problems
 
 
+def _verify_ports(record: ResearchRecord) -> list[str]:
+    """A port names a repository source of this record, and its knobs quote it."""
+    sources = {source.id: source for source in record.literature}
+    known = set(record.passage_index())
+    problems: list[str] = []
+    for _, claim in record.active_claims():
+        if not isinstance(claim, SeyvalClaim):
+            continue
+        for design in claim.designs:
+            port = design.port
+            if port is None:
+                continue
+            source = sources.get(port.source)
+            if source is None or source.kind != "repository":
+                problems.append(
+                    f"design {design.id}: port.source '{port.source}' is not a "
+                    "repository source of this record"
+                )
+            problems += [
+                f"design {design.id}: knob '{knob.key}' quotes passage "
+                f"'{knob.upstream}', which no source declares"
+                for knob in port.knobs
+                if knob.upstream not in known
+            ]
+    return problems
+
+
 def verify_record_in_itself(record: ResearchRecord) -> list[str]:
     return (
         _verify_consistency(record)
         + _verify_pinned_once(record)
         + _verify_passage_references(record)
+        + _verify_ports(record)
     )

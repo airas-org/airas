@@ -68,6 +68,10 @@ async def preregister_record(
           "prediction": {"low": 0.02, "high": 0.04, "basis": "prior work (s1.p2)"},
           "designs": [{
             "id": "d1", "summary": "...",
+            "port": {"source": "s2", "entry": "pkg.Runner.run",
+                     "components": ["pkg.Runner.run", "pkg.search"],
+                     "adapter_files": ["src/train.py"],
+                     "knobs": [{"key": "n_basis", "upstream": "s2.p1", "ours": 20}]},
             "runs": [{"run_id": "proposed-...", "description": "...",
                       "params": {"mode": "full", "epochs": 10, "seed": 0}}]
           }]
