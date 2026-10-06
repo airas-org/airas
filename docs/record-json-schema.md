@@ -244,7 +244,7 @@ classDiagram
 | 逐語 | 全 passage の `quote` が snapshot の部分文字列（NFKC・空白正規化、合字・改行・ソフトハイフンは無視） |
 | 参照解決 | `quoted_passage_ids` の id が既知の passage |
 | 時系列 | 宣言を含む各コミットで、その宣言が名指す passage が既に record にある（後から登録した passage を根拠にできない） |
-| 観測（results 段階） | `repository_integration` を持つ design の、結果のある各 run の `.research/results/<run_id>/observed.json` について: `.airas/sitecustomize.py` の sha256 と `hook.sha256` が一致、`loaded_file_hashes` の上流モジュールがスナップショットの同じファイルの sha256 と一致（スナップショットに無いものは別に報告）、`method_entry` の呼び出しが 1 回以上、`arguments[]` の各値が観測された束縛引数と一致、定義元が `src/` か `<string>` の上流名と `src/` のクラスが override した上流メソッドが `extension_points` に含まれる |
+| 観測（results 段階） | `repository_integration` を持つ design の、結果のある各 run の `.research/results/<run_id>/observed.json` について: リポジトリの最初のコミット（template の取り込み）の `.airas/sitecustomize.py` の sha256 と `hook.sha256` が一致し、`Makefile` もその時のまま、`loaded_file_hashes` の上流モジュールがスナップショットの同じファイルの sha256 と一致（スナップショットに無いものは別に報告）、`method_entry` の呼び出しが 1 回以上、`arguments[]` の各値が観測された束縛引数と一致、定義元が `src/` か `<string>` の上流名と `src/` のクラスが override した上流メソッドが `extension_points` に含まれる |
 | 引用（verify_paper） | main.tex の `\cite` の鍵が登録済み bibkey、`\cite[s1.p2]{key}` の locator がその source の passage、references.bib が再生成と一致。引かれなかった source は `uncited_sources` として報告（失敗ではない） |
 | 文意（verify_paper） | record に judgment が一つでもあれば、今の引用文（main.tex の `\cite[s1.p2]{key}` を含む段落、claim の statement + rationale、hypothesis の statement）ごとに対応する judgment を探す。無いものは `unjudged_citations` として**失敗**、`supported: false` は `unsupported_citations` として報告（失敗ではない）。判定そのものは `verify_paper_values(model=...)`（MCP）か `airas verify-paper --model`（CI）が LLM で行い、record に書いてから同じ呼び出しで集計する |
 

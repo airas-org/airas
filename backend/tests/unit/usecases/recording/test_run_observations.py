@@ -1,6 +1,7 @@
 """A realized run's observed.json against its design's repository integration."""
 
 import json
+import subprocess
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -108,10 +109,22 @@ def _record(root: Path) -> ResearchRecord:
     )
 
 
+def _git(root: Path, *args: str) -> None:
+    subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True)
+
+
 def _observed(root: Path) -> dict[str, Any]:
+    """observed.json as the template's hook writes it; the repository's first
+    commit (the template import) holds that hook and the Makefile."""
     hook = root / ".airas/sitecustomize.py"
     hook.parent.mkdir(parents=True, exist_ok=True)
     hook.write_text("# hook\n")
+    (root / "Makefile").write_text("run:\n\tmake run-experiment\n")
+    _git(root, "init", "-q")
+    _git(root, "config", "user.email", "t@example.com")
+    _git(root, "config", "user.name", "t")
+    _git(root, "add", ".airas", "Makefile")
+    _git(root, "commit", "-q", "-m", "Initial commit")
     return {
         "version": 1,
         "run_id": "run-1",
@@ -207,7 +220,10 @@ def _undeclared_base(o: dict[str, Any]) -> None:
 @pytest.mark.parametrize(
     ("mutate", "expected"),
     [
-        (_tamper_hook, "was not written by this repository's .airas/sitecustomize.py"),
+        (
+            _tamper_hook,
+            "was not written by the .airas/sitecustomize.py the repository was created with",
+        ),
         (_drop_hashes, "no loaded module of pkg.runner.Runner.run has a file hash"),
         (_modify_upstream, "loaded module pkg.runner differs from the snapshot"),
         (
@@ -229,6 +245,31 @@ def test_each_departure_from_the_declaration_is_reported(
     _write(tmp_path, observed)
     problems = verify_run_observations(tmp_path, record)
     assert len(problems) == 1 and expected in problems[0], problems
+
+
+def test_an_edited_makefile_is_reported_even_when_the_run_agrees(
+    tmp_path: Path,
+) -> None:
+    record = _record(tmp_path)
+    _write(tmp_path, _observed(tmp_path))
+    (tmp_path / "Makefile").write_text("run:\n\techo skip\n")
+    assert verify_run_observations(tmp_path, record) == [
+        "Makefile differs from the one the repository was created with"
+    ]
+
+
+def test_a_repository_without_the_template_hook_in_its_first_commit_is_reported(
+    tmp_path: Path,
+) -> None:
+    record = _record(tmp_path)
+    observed = _observed(tmp_path)
+    _git(tmp_path, "rm", "-q", "--cached", ".airas/sitecustomize.py")
+    _git(tmp_path, "commit", "-q", "--amend", "-m", "no hook")
+    _write(tmp_path, observed)
+    assert verify_run_observations(tmp_path, record) == [
+        "the repository's first commit has no .airas/sitecustomize.py: it was not "
+        "created from airas-template"
+    ]
 
 
 def test_a_long_or_structured_value_is_compared_through_its_recording(

@@ -34,6 +34,15 @@ refine until the hypothesis rests on passages you have actually read.
    fixed away from the upstream default (with the passage stating the
    default and the reason), or kept at the default (with the reason);
    a knob you decide not to consider is an assumption, not an omission.
+   Declare all of it in the record: the repository goes under its
+   paper's `repositories` (`url`, `commit`, `files` naming the whole
+   package, `method_entry` = the `module.Class.method` whose call runs
+   the method), and the design carries `repository_integration`
+   (`repository_id`, `extension_points` = upstream names your adapter
+   subclasses, overrides or replaces, `arguments` = one entry per knob
+   you set or keep: `argument` as `module.Class.method.arg`, `value`,
+   `reason`). The run hook records what the upstream was called with,
+   and the gate compares it with these.
 4. **Author the hypothesis and the design** against the guide
    `get_prompts(step="hypothesis_and_design")` returns: it states what a hypothesis, a claim (statement, rationale,
    criterion, predicted interval, cited passages), a design and a run

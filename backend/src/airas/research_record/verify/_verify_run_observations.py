@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
 
-from airas.core.hashing import file_sha256, text_sha256
+from airas.core.hashing import text_sha256
 from airas.core.research_paths import (
     HOOK_PATH,
     OBSERVED_FILENAME,
@@ -20,6 +21,36 @@ from airas.core.types.research_record import (
     SeyvalClaim,
     SeyvalDesign,
 )
+from airas.infra.local_git import file_bytes_at_commit, is_shallow, root_commit
+
+MAKEFILE = "Makefile"
+
+
+def _trusted_layer(root: Path) -> tuple[str | None, list[str]]:
+    """The sha256 of the hook the repository was created with (its first
+    commit, the template import), and whether the Makefile that runs it is
+    still that commit's. The agent may not edit either."""
+    if is_shallow(root) or (first := root_commit(root)) is None:
+        return None, [
+            f"{HOOK_PATH} and {MAKEFILE} could not be compared with the repository's "
+            "first commit (shallow clone or no git history) — CI must check out with "
+            "fetch-depth: 0"
+        ]
+    hook = file_bytes_at_commit(root, first, HOOK_PATH)
+    if hook is None:
+        return None, [
+            f"the repository's first commit has no {HOOK_PATH}: it was not created "
+            "from airas-template"
+        ]
+    problems = []
+    makefile = root / MAKEFILE
+    if not makefile.is_file() or makefile.read_bytes() != file_bytes_at_commit(
+        root, first, MAKEFILE
+    ):
+        problems.append(
+            f"{MAKEFILE} differs from the one the repository was created with"
+        )
+    return hashlib.sha256(hook).hexdigest(), problems
 
 
 def _pages(text: str) -> dict[str, str]:
@@ -131,22 +162,20 @@ def _covered(name: str, extension_points: list[str]) -> bool:
 
 
 def _run_problems(
-    root: Path,
     run_id: str,
     observed: dict[str, Any],
     repository: Repository,
     integration: RepositoryIntegration,
     pages: dict[str, str],
+    trusted_hook: str | None,
 ) -> list[str]:
     label = f"run '{run_id}'"
     problems: list[str] = []
 
-    hook = root / HOOK_PATH
-    if not hook.is_file() or observed.get("hook", {}).get("sha256") != file_sha256(
-        hook
-    ):
+    if trusted_hook and observed.get("hook", {}).get("sha256") != trusted_hook:
         problems.append(
-            f"{label}: observed.json was not written by this repository's {HOOK_PATH}"
+            f"{label}: observed.json was not written by the {HOOK_PATH} the repository "
+            "was created with"
         )
 
     package = repository.method_entry.split(".")[0]
@@ -204,6 +233,8 @@ def _run_problems(
 def verify_run_observations(root: Path, record: ResearchRecord) -> list[str]:
     repositories = {r.id: r for s in record.active_literature() for r in s.repositories}
     problems: list[str] = []
+    trusted_hook: str | None = None
+    trusted_checked = False
 
     for _, claim, design, run in record.active_runs():
         if not (isinstance(claim, SeyvalClaim) and isinstance(design, SeyvalDesign)):
@@ -225,6 +256,11 @@ def verify_run_observations(root: Path, record: ResearchRecord) -> list[str]:
             )
             continue
 
+        if not trusted_checked:  # once per repository, only when a run needs it
+            trusted_hook, layer_problems = _trusted_layer(root)
+            problems += layer_problems
+            trusted_checked = True
+
         observed = json.loads(observed_path.read_text(encoding="utf-8"))
         snapshot = root / repository_snapshot_relpath(repository.id)
 
@@ -232,6 +268,6 @@ def verify_run_observations(root: Path, record: ResearchRecord) -> list[str]:
             _pages(snapshot.read_text(encoding="utf-8")) if snapshot.is_file() else {}
         )
         problems += _run_problems(
-            root, run.run_id, observed, repository, integration, pages
+            run.run_id, observed, repository, integration, pages, trusted_hook
         )
     return problems

@@ -41,7 +41,14 @@ the entry points you call, module constants, prompt and resource files — \
 and classify each: varied (in `params`, on the grid), fixed away from the \
 upstream default (with the passage stating the default and the reason), \
 or kept at the default (with the reason). A knob you choose not to \
-consider is an assumption, not an omission.
+consider is an assumption, not an omission. Declare it in the record: the \
+repository under its paper's `repositories` (`url`, `commit`, `files` = the \
+whole package, `method_entry` = the `module.Class.method` whose call runs \
+the method) and, on the design, `repository_integration` (`repository_id`, \
+`extension_points` = upstream names the adapter subclasses, overrides or \
+replaces, `arguments` = one per knob: `argument` as \
+`module.Class.method.arg`, `value`, `reason`). The gate compares these \
+with what the run's hook observed the upstream being called with.
 
 ## The claims
 The claims together should imply the hypothesis (c1 ∧ … ∧ cn ⇒ h1). For \

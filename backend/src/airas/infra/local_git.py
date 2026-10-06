@@ -45,6 +45,13 @@ def current_branch(repo_root: Path) -> str | None:
     return None if branch in (None, "HEAD") else branch  # HEAD = detached
 
 
+def root_commit(repo_root: Path) -> str | None:
+    """The repository's first commit: the template import, for a repository
+    prepare_repository created."""
+    text = _text(repo_root, "rev-list", "--max-parents=0", "HEAD")
+    return text.splitlines()[0] if text else None
+
+
 def is_shallow(repo_root: Path) -> bool:
     return _text(repo_root, "rev-parse", "--is-shallow-repository") == "true"
 
