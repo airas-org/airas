@@ -18,8 +18,10 @@ COMPARISON_KEY = "comparison"
 COMPARISON_METRICS_FILENAME = "aggregated_metrics.json"
 OBSERVED_FILENAME = "observed.json"
 
-# The observation hook the template ships; the Makefile puts it on
+# The trusted layer the template ships and the agent may not edit: the
+# Makefile every run goes through, and the observation hook it puts on
 # PYTHONPATH so every Python process of a run writes what it loaded and called.
+MAKEFILE_PATH = "Makefile"
 HOOK_PATH = ".airas/sitecustomize.py"
 
 # The literature the research drew on: one directory per source holding

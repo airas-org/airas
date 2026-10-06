@@ -35,7 +35,28 @@ RUNNER_PY = "class Runner:\n    def __init__(self, n=5): ...\n    def run(self):
 SNAPSHOT = f"==> pkg/runner.py <==\n{RUNNER_PY}"
 
 
-def _record(root: Path) -> ResearchRecord:
+def _git(root: Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", "-C", str(root), *args], check=True, capture_output=True, text=True
+    ).stdout.strip()
+
+
+def _template_import(root: Path) -> str:
+    """The repository's first commit, as prepare_repository leaves it: the
+    template's hook and Makefile. Returns its hash."""
+    hook = root / ".airas/sitecustomize.py"
+    hook.parent.mkdir(parents=True, exist_ok=True)
+    hook.write_text("# hook\n")
+    (root / "Makefile").write_text("run:\n\tmake run-experiment\n")
+    _git(root, "init", "-q")
+    _git(root, "config", "user.email", "t@example.com")
+    _git(root, "config", "user.name", "t")
+    _git(root, "add", ".airas", "Makefile")
+    _git(root, "commit", "-q", "-m", "Initial commit")
+    return _git(root, "rev-parse", "HEAD")
+
+
+def _record(root: Path, run_commit: str) -> ResearchRecord:
     snapshot = root / ".research/sources/s1/r1.txt"
     snapshot.parent.mkdir(parents=True, exist_ok=True)
     snapshot.write_text(SNAPSHOT)
@@ -94,7 +115,7 @@ def _record(root: Path) -> ResearchRecord:
                                             SeyvalResult(
                                                 verifier="seyval",
                                                 id="x1",
-                                                commit="c" * 40,
+                                                commit=run_commit,
                                                 metrics={"m": 1.0},
                                             )
                                         ],
@@ -109,26 +130,11 @@ def _record(root: Path) -> ResearchRecord:
     )
 
 
-def _git(root: Path, *args: str) -> None:
-    subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True)
-
-
 def _observed(root: Path) -> dict[str, Any]:
-    """observed.json as the template's hook writes it; the repository's first
-    commit (the template import) holds that hook and the Makefile."""
-    hook = root / ".airas/sitecustomize.py"
-    hook.parent.mkdir(parents=True, exist_ok=True)
-    hook.write_text("# hook\n")
-    (root / "Makefile").write_text("run:\n\tmake run-experiment\n")
-    _git(root, "init", "-q")
-    _git(root, "config", "user.email", "t@example.com")
-    _git(root, "config", "user.name", "t")
-    _git(root, "add", ".airas", "Makefile")
-    _git(root, "commit", "-q", "-m", "Initial commit")
     return {
         "version": 1,
         "run_id": "run-1",
-        "hook": {"sha256": file_sha256(hook)},
+        "hook": {"sha256": file_sha256(root / ".airas/sitecustomize.py")},
         "loaded_file_hashes": {
             "pkg.runner": {
                 "file": "/venv/site-packages/pkg/runner.py",
@@ -166,14 +172,13 @@ def _write(root: Path, observed: dict[str, Any]) -> None:
 
 
 def test_a_run_that_agrees_with_its_declaration_passes(tmp_path: Path) -> None:
-    record = _record(tmp_path)
+    record = _record(tmp_path, _template_import(tmp_path))
     _write(tmp_path, _observed(tmp_path))
     assert verify_run_observations(tmp_path, record) == []
 
 
 def test_a_realized_run_without_observed_json_fails(tmp_path: Path) -> None:
-    record = _record(tmp_path)
-    _observed(tmp_path)
+    record = _record(tmp_path, _template_import(tmp_path))
     assert verify_run_observations(tmp_path, record) == [
         "run 'run-1': no observed.json among its outputs (the Makefile writes it)"
     ]
@@ -239,7 +244,7 @@ def _undeclared_base(o: dict[str, Any]) -> None:
 def test_each_departure_from_the_declaration_is_reported(
     tmp_path: Path, mutate: Callable[[dict[str, Any]], None], expected: str
 ) -> None:
-    record = _record(tmp_path)
+    record = _record(tmp_path, _template_import(tmp_path))
     observed = _observed(tmp_path)
     mutate(observed)
     _write(tmp_path, observed)
@@ -247,24 +252,31 @@ def test_each_departure_from_the_declaration_is_reported(
     assert len(problems) == 1 and expected in problems[0], problems
 
 
-def test_an_edited_makefile_is_reported_even_when_the_run_agrees(
+def test_a_run_from_a_commit_that_edited_the_trusted_files_fails(
     tmp_path: Path,
 ) -> None:
-    record = _record(tmp_path)
-    _write(tmp_path, _observed(tmp_path))
+    """The hook hash can be copied into a forged observed.json; the Makefile
+    and hook as they were at the run's commit cannot."""
+    _template_import(tmp_path)
+    observed = _observed(tmp_path)
     (tmp_path / "Makefile").write_text("run:\n\techo skip\n")
-    assert verify_run_observations(tmp_path, record) == [
-        "Makefile differs from the one the repository was created with"
-    ]
+    _git(tmp_path, "commit", "-q", "-am", "skip the hook")
+    record = _record(tmp_path, _git(tmp_path, "rev-parse", "HEAD"))
+    _write(tmp_path, observed)
+    problems = verify_run_observations(tmp_path, record)
+    assert len(problems) == 1 and problems[0].startswith(
+        "run 'run-1': Makefile at commit "
+    ), problems
 
 
 def test_a_repository_without_the_template_hook_in_its_first_commit_is_reported(
     tmp_path: Path,
 ) -> None:
-    record = _record(tmp_path)
+    _template_import(tmp_path)
     observed = _observed(tmp_path)
     _git(tmp_path, "rm", "-q", "--cached", ".airas/sitecustomize.py")
     _git(tmp_path, "commit", "-q", "--amend", "-m", "no hook")
+    record = _record(tmp_path, _git(tmp_path, "rev-parse", "HEAD"))
     _write(tmp_path, observed)
     assert verify_run_observations(tmp_path, record) == [
         "the repository's first commit has no .airas/sitecustomize.py: it was not "
@@ -272,10 +284,28 @@ def test_a_repository_without_the_template_hook_in_its_first_commit_is_reported(
     ]
 
 
+def test_a_history_with_several_roots_cannot_serve_as_the_reference(
+    tmp_path: Path,
+) -> None:
+    first = _template_import(tmp_path)
+    branch = _git(tmp_path, "rev-parse", "--abbrev-ref", "HEAD")
+    observed = _observed(tmp_path)
+    _git(tmp_path, "checkout", "-q", "--orphan", "other")
+    (tmp_path / "other.txt").write_text("x\n")
+    _git(tmp_path, "add", "other.txt")
+    _git(tmp_path, "commit", "-q", "-m", "unrelated root")
+    _git(tmp_path, "checkout", "-q", branch)
+    _git(tmp_path, "merge", "-q", "--allow-unrelated-histories", "-m", "merge", "other")
+    record = _record(tmp_path, first)
+    _write(tmp_path, observed)
+    problems = verify_run_observations(tmp_path, record)
+    assert len(problems) == 1 and "several root commits" in problems[0], problems
+
+
 def test_a_long_or_structured_value_is_compared_through_its_recording(
     tmp_path: Path,
 ) -> None:
-    record = _record(tmp_path)
+    record = _record(tmp_path, _template_import(tmp_path))
     record.hypotheses[0].claims[0].designs[0].repository_integration.arguments = [
         ArgumentValue(argument="pkg.runner.Runner.__init__.n", value=[1, 2]),
         ArgumentValue(argument="pkg.runner.Runner.__init__.key", value="k" * 300),

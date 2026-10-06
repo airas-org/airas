@@ -46,10 +46,14 @@ def current_branch(repo_root: Path) -> str | None:
 
 
 def root_commit(repo_root: Path) -> str | None:
-    """The repository's first commit: the template import, for a repository
-    prepare_repository created."""
-    text = _text(repo_root, "rev-list", "--max-parents=0", "HEAD")
-    return text.splitlines()[0] if text else None
+    roots = (
+        text.splitlines()
+        if (text := _text(repo_root, "rev-list", "--max-parents=0", "HEAD"))
+        else []
+    )
+    return (
+        roots[0] if len(roots) == 1 else None
+    )  # several roots: merged-in history, no single origin
 
 
 def is_shallow(repo_root: Path) -> bool:

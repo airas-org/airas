@@ -8,6 +8,7 @@ from typing import Any
 from airas.core.hashing import text_sha256
 from airas.core.research_paths import (
     HOOK_PATH,
+    MAKEFILE_PATH,
     OBSERVED_FILENAME,
     PAGE_SEPARATOR,
     RESULTS_DIR,
@@ -23,34 +24,35 @@ from airas.core.types.research_record import (
 )
 from airas.infra.local_git import file_bytes_at_commit, is_shallow, root_commit
 
-MAKEFILE = "Makefile"
+TRUSTED_FILES = (MAKEFILE_PATH, HOOK_PATH)
 
 
-def _trusted_layer(root: Path) -> tuple[str | None, list[str]]:
-    """The sha256 of the hook the repository was created with (its first
-    commit, the template import), and whether the Makefile that runs it is
-    still that commit's. The agent may not edit either."""
+def _first_commit(root: Path) -> tuple[str | None, list[str]]:
+    """The commit the trusted files are compared with — the template import,
+    a repository prepare_repository created starts from — or why there is none."""
     if is_shallow(root) or (first := root_commit(root)) is None:
         return None, [
-            f"{HOOK_PATH} and {MAKEFILE} could not be compared with the repository's "
-            "first commit (shallow clone or no git history) — CI must check out with "
-            "fetch-depth: 0"
+            f"{' and '.join(TRUSTED_FILES)} could not be compared with the repository's "
+            "first commit (shallow clone, no git history, or several root commits) — "
+            "CI must check out with fetch-depth: 0"
         ]
-    hook = file_bytes_at_commit(root, first, HOOK_PATH)
-    if hook is None:
+    if file_bytes_at_commit(root, first, HOOK_PATH) is None:
         return None, [
             f"the repository's first commit has no {HOOK_PATH}: it was not created "
             "from airas-template"
         ]
-    problems = []
-    makefile = root / MAKEFILE
-    if not makefile.is_file() or makefile.read_bytes() != file_bytes_at_commit(
-        root, first, MAKEFILE
-    ):
-        problems.append(
-            f"{MAKEFILE} differs from the one the repository was created with"
-        )
-    return hashlib.sha256(hook).hexdigest(), problems
+    return first, []
+
+
+def _files_differing_between_commits(
+    root: Path, commit: str, reference: str, paths: tuple[str, ...]
+) -> list[str]:
+    return [
+        path
+        for path in paths
+        if file_bytes_at_commit(root, commit, path)
+        != file_bytes_at_commit(root, reference, path)
+    ]
 
 
 def _pages(text: str) -> dict[str, str]:
@@ -162,21 +164,42 @@ def _covered(name: str, extension_points: list[str]) -> bool:
 
 
 def _run_problems(
+    root: Path,
     run_id: str,
+    run_commits: list[str | None],
     observed: dict[str, Any],
     repository: Repository,
     integration: RepositoryIntegration,
     pages: dict[str, str],
-    trusted_hook: str | None,
+    first_commit: str | None,
 ) -> list[str]:
     label = f"run '{run_id}'"
     problems: list[str] = []
 
-    if trusted_hook and observed.get("hook", {}).get("sha256") != trusted_hook:
-        problems.append(
-            f"{label}: observed.json was not written by the {HOOK_PATH} the repository "
-            "was created with"
-        )
+    if first_commit is not None:
+        trusted_hook = file_bytes_at_commit(root, first_commit, HOOK_PATH) or b""
+        if (
+            observed.get("hook", {}).get("sha256")
+            != hashlib.sha256(trusted_hook).hexdigest()
+        ):
+            problems.append(
+                f"{label}: observed.json was not written by the {HOOK_PATH} the repository "
+                "was created with"
+            )
+        for commit in run_commits:
+            if commit is None:
+                problems.append(
+                    f"{label}: a result names no commit to check {' and '.join(TRUSTED_FILES)} at"
+                )
+                continue
+            changed = _files_differing_between_commits(
+                root, commit, first_commit, TRUSTED_FILES
+            )
+            if changed:
+                problems.append(
+                    f"{label}: {', '.join(changed)} at commit {commit[:12]} differ from the "
+                    "repository's first commit"
+                )
 
     package = repository.method_entry.split(".")[0]
     upstream = [
@@ -233,8 +256,8 @@ def _run_problems(
 def verify_run_observations(root: Path, record: ResearchRecord) -> list[str]:
     repositories = {r.id: r for s in record.active_literature() for r in s.repositories}
     problems: list[str] = []
-    trusted_hook: str | None = None
-    trusted_checked = False
+    first_commit: str | None = None
+    first_checked = False
 
     for _, claim, design, run in record.active_runs():
         if not (isinstance(claim, SeyvalClaim) and isinstance(design, SeyvalDesign)):
@@ -256,18 +279,24 @@ def verify_run_observations(root: Path, record: ResearchRecord) -> list[str]:
             )
             continue
 
-        if not trusted_checked:  # once per repository, only when a run needs it
-            trusted_hook, layer_problems = _trusted_layer(root)
-            problems += layer_problems
-            trusted_checked = True
+        if not first_checked:  # once per repository, only when a run needs it
+            first_commit, first_problems = _first_commit(root)
+            problems += first_problems
+            first_checked = True
 
         observed = json.loads(observed_path.read_text(encoding="utf-8"))
         snapshot = root / repository_snapshot_relpath(repository.id)
-
         pages = (
             _pages(snapshot.read_text(encoding="utf-8")) if snapshot.is_file() else {}
         )
         problems += _run_problems(
-            run.run_id, observed, repository, integration, pages, trusted_hook
+            root,
+            run.run_id,
+            [result.commit for result in run.results],
+            observed,
+            repository,
+            integration,
+            pages,
+            first_commit,
         )
     return problems
