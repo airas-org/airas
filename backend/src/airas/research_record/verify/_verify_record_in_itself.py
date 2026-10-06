@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from airas.core.types.research_record import ResearchRecord, SeyvalClaim
+from airas.core.types.research_record import ResearchRecord, SeyvalClaim, active
 
 
 def _verify_consistency(record: ResearchRecord) -> list[str]:
@@ -102,8 +102,9 @@ def _verify_passage_references(record: ResearchRecord) -> list[str]:
     problems: list[str] = []
     for hypothesis in record.active_hypotheses():
         problems += [
-            f"hypothesis {hypothesis.id}: grounded_on names passage" + unknown % pid
-            for pid in hypothesis.grounded_on
+            f"hypothesis {hypothesis.id}: quoted_passage_ids names passage"
+            + unknown % pid
+            for pid in hypothesis.quoted_passage_ids
             if pid not in known
         ]
     passages = record.passage_index()
@@ -111,44 +112,72 @@ def _verify_passage_references(record: ResearchRecord) -> list[str]:
         for column in spec.columns:
             if column.reference is None:
                 continue
-            if column.reference.passage not in passages:
-                problems.append(
+            missing = [
+                pid
+                for pid in column.reference.quoted_passage_ids
+                if pid not in passages
+            ]
+            if missing:
+                problems += [
                     f"table {spec.key}: column {column.header!r} reads passage"
-                    + unknown % column.reference.passage
-                )
+                    + unknown % pid
+                    for pid in missing
+                ]
                 continue
-            quote = passages[column.reference.passage][1].quote
+            quotes = [
+                passages[pid][1].quote for pid in column.reference.quoted_passage_ids
+            ]
+            cited = ", ".join(column.reference.quoted_passage_ids)
             problems += [
                 f"table {spec.key}: column {column.header!r} gives {value!r} for "
-                f"'{run_id}', which passage {column.reference.passage} does not state"
+                f"'{run_id}', which {cited} does not state"
                 for run_id, value in column.reference.values.items()
-                if str(value) not in quote and f"{value:g}" not in quote
+                if not any(str(value) in q or f"{value:g}" in q for q in quotes)
             ]
     for _, claim in record.active_claims():
         problems += [
-            f"claim {claim.id}: cites_passages names passage" + unknown % pid
-            for pid in claim.cites_passages
+            f"claim {claim.id}: quoted_passage_ids names passage" + unknown % pid
+            for pid in claim.quoted_passage_ids
             if pid not in known
         ]
-        if isinstance(claim, SeyvalClaim) and (
-            ref := claim.criterion.reference_passage
-        ):
-            if ref not in known:
+        if isinstance(claim, SeyvalClaim):
+            problems += [
+                f"claim {claim.id}: criterion names passage" + unknown % pid
+                for pid in claim.criterion.quoted_passage_ids
+                if pid not in known
+            ]
+        for design, _run in claim.runs():
+            problems += [
+                f"design {design.id}: quoted_passage_ids names passage" + unknown % pid
+                for pid in design.quoted_passage_ids
+                if pid not in known
+            ]
+    return problems
+
+
+def _verify_repository_integrations(record: ResearchRecord) -> list[str]:
+    """A design that runs a source's code names a repository of this record
+    that declares the method's entry."""
+    repositories = {
+        repository.id: repository
+        for source in record.active_literature()
+        for repository in source.repositories
+    }
+    problems: list[str] = []
+    for _, claim in record.active_claims():
+        if not isinstance(claim, SeyvalClaim):
+            continue
+        for design in active(claim.designs, "id"):
+            integration = design.repository_integration
+            if integration is None:
+                continue
+            repository = repositories.get(integration.repository_id)
+            if repository is None or not repository.method_entry:
                 problems.append(
-                    f"claim {claim.id}: criterion's reference_passage '{ref}' is "
-                    "not a passage any source declares"
+                    f"design {design.id}: repository_integration.repository_id "
+                    f"'{integration.repository_id}' is not a repository of this "
+                    "record that declares a method_entry"
                 )
-        for design, run in claim.runs():
-            problems += [
-                f"design {design.id}: cites_passages names passage" + unknown % pid
-                for pid in design.cites_passages
-                if pid not in known
-            ]
-            problems += [
-                f"run '{run.run_id}': cites_passages names passage" + unknown % pid
-                for pid in run.cites_passages
-                if pid not in known
-            ]
     return problems
 
 
@@ -157,4 +186,5 @@ def verify_record_in_itself(record: ResearchRecord) -> list[str]:
         _verify_consistency(record)
         + _verify_pinned_once(record)
         + _verify_passage_references(record)
+        + _verify_repository_integrations(record)
     )

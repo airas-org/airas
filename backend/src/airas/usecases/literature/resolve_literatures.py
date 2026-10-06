@@ -13,7 +13,10 @@ import httpx
 
 from airas.core.research_paths import PAGE_SEPARATOR, RECORD_PATH
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
-from airas.core.types.literature_material import LiteratureMaterial
+from airas.core.types.literature_material import (
+    LiteratureMaterial,
+    RepositoryMaterial,
+)
 from airas.infra.airas_records_index import AirasRecordsIndex
 from airas.infra.arxiv_client import ArxivClient
 from airas.infra.semantic_scholar_client import SemanticScholarClient
@@ -50,9 +53,13 @@ async def _fulltext_pages(
     return {"status": "not_found", "pages": [], "pdf_url": None}
 
 
-async def _repository(entry: dict[str, Any]) -> LiteratureMaterial:
-    url, commit = (entry.get("url") or "").strip(), (entry.get("commit") or "").strip()
-    if not (url and commit and entry.get("files")):
+async def _repository(
+    spec: dict[str, Any],
+) -> tuple[dict[str, Any], RepositoryMaterial]:
+    """`{"url", "commit", "files", "method_entry"?}`: the code at the commit,
+    snapshotted whole; the fetch succeeding is what confirms it exists."""
+    url, commit = (spec.get("url") or "").strip(), (spec.get("commit") or "").strip()
+    if not (url and commit and spec.get("files")):
         raise ValueError("a repository needs url, commit and files")
     if not re.fullmatch(r"[0-9a-f]{40}", commit):
         raise ValueError(
@@ -60,17 +67,31 @@ async def _repository(entry: dict[str, Any]) -> LiteratureMaterial:
             "a branch or tag moves"
         )
     metadata, pages = await asyncio.to_thread(
-        fetch_fulltext_from_repository, url, commit, list(entry["files"])
+        fetch_fulltext_from_repository, url, commit, list(spec["files"])
     )
-    return LiteratureMaterial(
-        kind="repository",
+    return metadata, RepositoryMaterial(
+        url=url,
+        commit=commit,
         pages=pages,
+        method_entry=(spec.get("method_entry") or "").strip(),
+    )
+
+
+async def _code(entry: dict[str, Any]) -> LiteratureMaterial:
+    """Repositories with no paper: the work is the code, named after the first."""
+    fetched = [await _repository(spec) for spec in entry["repositories"]]
+    metadata = fetched[0][0]
+    return LiteratureMaterial(
+        title=metadata["title"],
+        authors=metadata["authors"],
+        year=metadata["year"],
+        url=metadata["url"],
         verified_by="git",
         verified_at=_now(),
         parser="git show",
         passages=entry.get("passages") or [],
+        repositories=[repository for _, repository in fetched],
         bib_title=metadata["title"].rsplit("/", 1)[-1],
-        **metadata,
     )
 
 
@@ -100,17 +121,17 @@ async def _airas_record(
         [f".research/latex/{t}/claims.tex" for t in get_args(LATEX_TEMPLATE_NAME)],
     )
     return LiteratureMaterial(
-        kind="airas_record",
         title=found.title,
         authors=[f"{found.owner_repo} (AIRAS)"],
         year=metadata["year"],
         url=found.url,
-        commit=found.commit,
-        pages=pages,
         verified_by="airas_records",
         verified_at=_now(),
         parser="git show",
         passages=entry.get("passages") or [],
+        repositories=[
+            RepositoryMaterial(url=found.url, commit=found.commit, pages=pages)
+        ],
         bib_authors=[found.owner_repo.rsplit("/", 1)[-1]],
     )
 
@@ -164,8 +185,11 @@ async def _paper(
             f"'{label}': the PDF's first pages do not carry this title — "
             "is pdf_url the right paper?"
         )
+    # The code the paper ships, pinned with it.
+    repositories = [
+        (await _repository(spec))[1] for spec in entry.get("repositories") or []
+    ]
     return LiteratureMaterial(
-        kind="paper",
         title=title,
         authors=entry.get("authors") or [],
         year=entry.get("year"),
@@ -178,6 +202,7 @@ async def _paper(
         verified_at=verified_at,
         parser=parser_version(),
         passages=entry.get("passages") or [],
+        repositories=repositories,
     )
 
 
@@ -193,8 +218,10 @@ async def resolve_literatures(
     for entry in entries:
         if entry.get("airas_record"):
             materials.append(await _airas_record(entry, records_index))
-        elif "commit" in entry or "files" in entry:
-            materials.append(await _repository(entry))
+        elif entry.get("repositories") and not (
+            entry.get("doi") or entry.get("arxiv_id")
+        ):
+            materials.append(await _code(entry))
         else:
             materials.append(
                 await _paper(

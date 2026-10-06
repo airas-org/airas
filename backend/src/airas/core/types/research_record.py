@@ -78,10 +78,6 @@ class Run(BaseModel, Generic[ParamsT, ResultT]):
     description: str = ""
     params: ParamsT
     results: list[ResultT] = Field(default_factory=list)
-    cites_passages: list[str] = Field(
-        default_factory=list,
-        description="Passage ids this run reproduces or follows, e.g. 's1.p2'",
-    )
 
     def latest_result(self) -> ResultT | None:
         return self.results[-1] if self.results else None
@@ -94,7 +90,7 @@ class Design(BaseModel, Generic[RunT]):
     id: str = Field(pattern=DESIGN_ID_PATTERN)
     summary: str = ""
     runs: list[RunT] = Field(default_factory=list)
-    cites_passages: list[str] = Field(
+    quoted_passage_ids: list[str] = Field(
         default_factory=list, description="Passage ids the design follows"
     )
 
@@ -114,7 +110,7 @@ class ClaimBase(BaseModel, Generic[VerifierT, DesignT]):
     )
     verifier: VerifierT
     designs: list[DesignT] = Field(default_factory=list)
-    cites_passages: list[str] = Field(
+    quoted_passage_ids: list[str] = Field(
         default_factory=list, description="Passage ids the claim rests on"
     )
     verified: bool = Field(
@@ -145,10 +141,11 @@ class InputRef(BaseModel):
 
 SOURCE_ID_PATTERN = r"^s[1-9][0-9]*$"
 PASSAGE_ID_PATTERN = r"^s[1-9][0-9]*\.p[1-9][0-9]*$"
+REPOSITORY_ID_PATTERN = r"^s[1-9][0-9]*\.r[1-9][0-9]*$"
 # What the passage states — the role a graph walk filters on. Where it
 # appears (prose, a table, a figure caption) is the anchor, kept apart.
 PassageNodeType = Literal["claim", "result", "method", "setup", "gap", "definition"]
-PassageAnchor = Literal["text", "table", "figure", "code"]
+PassageAnchor = Literal["text", "table", "figure"]
 Registry = Literal["doi.org", "arxiv", "git", "airas_records"]
 
 
@@ -176,17 +173,22 @@ class QuotedPassage(BaseModel):
     judgments: list[CitationJudgment] = Field(default_factory=list)
 
 
-# What each registry confirms; the identifier registries confirm a paper.
-_KIND_OF_REGISTRY = {"git": "repository", "airas_records": "airas_record"}
+class Repository(BaseModel):
+    id: str = Field(pattern=REPOSITORY_ID_PATTERN)
+    url: str
+    commit: str = Field(pattern=r"^[0-9a-f]{40}$")
+    snapshot: Optional[InputRef] = Field(
+        default=None,
+        description=".research/sources/<source>/<r>.txt: one page per file",
+    )
+    method_entry: str = Field(
+        default="",
+        description="module.Class.method whose call runs the method this source holds",
+    )
 
 
 class LiteratureSource(BaseModel):
-    """A paper, a repository at a commit, or a research record AIRAS produced,
-    the research drew on; pinned by its fulltext snapshot (pages, or the
-    registered files)."""
-
     id: str = Field(pattern=SOURCE_ID_PATTERN)
-    kind: Literal["paper", "repository", "airas_record"] = "paper"
     title: str
     authors: list[str] = Field(default_factory=list)
     year: Optional[int] = None
@@ -194,33 +196,35 @@ class LiteratureSource(BaseModel):
     doi: Optional[str] = None
     arxiv_id: Optional[str] = None
     url: Optional[str] = None
-    commit: Optional[str] = Field(
-        default=None, description="repository, airas_record: the commit read"
-    )
     bibkey: str
     verified_by: Literal["", "doi.org", "arxiv", "git", "airas_records"] = Field(
         default="",
         description="Registry that confirmed the source exists at registration",
     )
     verified_at: str = Field(default="", description="ISO-8601 UTC")
-    fulltext: Optional[InputRef] = None
+    fulltext: Optional[InputRef] = Field(
+        default=None,
+        description="The paper's text, .research/sources/<id>/fulltext.txt",
+    )
     parser: str = Field(default="", description="e.g. 'pymupdf 1.26.0'")
+    repositories: list[Repository] = Field(default_factory=list)
     passages: list[QuotedPassage] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def _passages_belong_to_this_source(self) -> LiteratureSource:
-        foreign = [p.id for p in self.passages if not p.id.startswith(f"{self.id}.")]
+    def _parts_belong_to_this_source(self) -> LiteratureSource:
+        parts = [*self.passages, *self.repositories]
+        foreign = [p.id for p in parts if not p.id.startswith(f"{self.id}.")]
         if foreign:
             raise ValueError(
-                f"source {self.id}: passages {', '.join(foreign)} carry another "
-                "source's id"
+                f"source {self.id}: {', '.join(foreign)} carry another source's id"
             )
-        if self.verified_by and _KIND_OF_REGISTRY.get(self.verified_by, "paper") != (
-            self.kind
-        ):
+        ids = [r.id for r in self.repositories]
+        if len(set(ids)) != len(ids):
+            raise ValueError(f"source {self.id}: repository ids must be unique")
+        if self.verified_by in ("git", "airas_records") and not self.repositories:
             raise ValueError(
-                f"source {self.id}: a {self.kind} cannot be verified by "
-                f"{self.verified_by}"
+                f"source {self.id}: {self.verified_by} verifies a repository, "
+                "and this source has none"
             )
         return self
 
@@ -270,7 +274,30 @@ class SeyvalRun(Run[dict[str, Any], SeyvalResult]):
     )
 
 
-SeyvalDesign = Design[SeyvalRun]
+class ArgumentValue(BaseModel):
+    argument: str = Field(description="module.Class.method.arg of the upstream")
+    value: Any
+    reason: str = ""
+
+
+class RepositoryIntegration(BaseModel):
+    """How the design runs the method a source's repository holds: the
+    upstream names it extends and the arguments it sets. The upstream files
+    themselves are not modified."""
+
+    repository_id: str = Field(
+        pattern=REPOSITORY_ID_PATTERN,
+        description="Repository whose method_entry this design runs, e.g. 's1.r1'",
+    )
+    extension_points: list[str] = Field(
+        default_factory=list,
+        description="Upstream names the adapter may subclass, override or replace",
+    )
+    arguments: list[ArgumentValue] = Field(default_factory=list)
+
+
+class SeyvalDesign(Design[SeyvalRun]):
+    repository_integration: Optional[RepositoryIntegration] = None
 
 
 def walk_metric_path(node: Any, path: str) -> float:
@@ -306,18 +333,19 @@ class Criterion(BaseModel):
     )
     op: CriterionOp
     margin: float = 0.0
-    reference_passage: Optional[str] = Field(
-        default=None,
-        description="Passage id a constant reference was read from, e.g. 's1.p2'",
+    quoted_passage_ids: list[str] = Field(
+        default_factory=list,
+        description="Passages a constant reference was read from, e.g. ['s1.p2']",
     )
 
     @model_validator(mode="after")
     def _subject_is_not_the_reference(self) -> Criterion:
         if self.subject == self.reference:
             raise ValueError("criterion compares a run to itself")
-        if self.reference_passage and isinstance(self.reference, str):
+
+        if self.quoted_passage_ids and isinstance(self.reference, str):
             raise ValueError(
-                "reference_passage names where a constant reference was read; "
+                "quoted_passage_ids names where a constant reference was read; "
                 "this reference is a run"
             )
         return self
@@ -487,7 +515,7 @@ class Hypothesis(BaseModel):
         "claims it concerns. Every claim supported leaves exactly these "
         "unverified",
     )
-    grounded_on: list[str] = Field(
+    quoted_passage_ids: list[str] = Field(
         default_factory=list,
         description="Passage ids that motivated the hypothesis — the gap it "
         "answers, in the prior work's own words",

@@ -18,10 +18,23 @@ COMPARISON_KEY = "comparison"
 COMPARISON_METRICS_FILENAME = "aggregated_metrics.json"
 
 # The literature the research drew on: one directory per source holding
-# the fulltext snapshot its quoted passages are checked against. Pages are
-# separated by a form feed, as pdftotext does.
+# the paper's text and/or its repository's snapshot (one page per file),
+# which its quoted passages are checked against. Pages are separated by a
+# form feed, as pdftotext does.
 SOURCES_DIR = ".research/sources"
 FULLTEXT_FILENAME = "fulltext.txt"
+
+
+def fulltext_relpath(source_id: str) -> str:
+    return f"{SOURCES_DIR}/{source_id}/{FULLTEXT_FILENAME}"
+
+
+def repository_snapshot_relpath(repository_id: str) -> str:
+    """'s1.r2' -> '.research/sources/s1/r2.txt'"""
+    source_id, suffix = repository_id.split(".")
+    return f"{SOURCES_DIR}/{source_id}/{suffix}.txt"
+
+
 PAGE_SEPARATOR = "\f"
 REFERENCES_BIB_FILENAME = "references.bib"
 

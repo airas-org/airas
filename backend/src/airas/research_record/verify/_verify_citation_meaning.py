@@ -13,7 +13,10 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from airas.core.research_paths import FULLTEXT_FILENAME, SOURCES_DIR
+from airas.core.research_paths import (
+    fulltext_relpath,
+    repository_snapshot_relpath,
+)
 from airas.core.types.research_record import (
     CitationJudgment,
     QuotedPassage,
@@ -45,26 +48,31 @@ def _collect_citations(
     root: Path, record: ResearchRecord, main_tex: str
 ) -> list[_Citation]:
     """`main_tex` is comment-stripped. A passage no source declares is
-    skipped: the gate reports that on its own. A hypothesis's `grounded_on`
-    and a claim's `cites_passages` are not judged: they are conjectures that
+    skipped: the gate reports that on its own. A hypothesis's `quoted_passage_ids`
+    and a claim's `quoted_passage_ids` are not judged: they are conjectures that
     by design say more than the passages they build on, and the gate already
     checks that every passage they name exists."""
     passages = record.passage_index()
-    fulltexts: dict[str, str] = {}
+    texts: dict[str, list[str]] = {}
     citations: list[_Citation] = []
 
     def cite(where: str, text: str, passage_id: str) -> None:
         if (found := passages.get(passage_id)) is None:
             return
         source, passage = found
-        if source.id not in fulltexts:
-            # The canonical path the gate requires, not the record's own
-            # `fulltext.path`: a crafted record must not choose what is read.
-            path = root / SOURCES_DIR / source.id / FULLTEXT_FILENAME
-            fulltexts[source.id] = (
-                path.read_text(encoding="utf-8") if path.is_file() else ""
-            )
-        context = quote_context(fulltexts[source.id], passage.quote) or passage.quote
+        if source.id not in texts:
+            # The canonical paths the gate requires, not the record's own
+            # `path`s: a crafted record must not choose what is read.
+            paths = [root / fulltext_relpath(source.id)] + [
+                root / repository_snapshot_relpath(r.id) for r in source.repositories
+            ]
+            texts[source.id] = [
+                p.read_text(encoding="utf-8") for p in paths if p.is_file()
+            ]
+        context = next(
+            (c for t in texts[source.id] if (c := quote_context(t, passage.quote))),
+            passage.quote,
+        )
         citations.append(_Citation(where, text, passage, context))
 
     for paragraph in re.split(r"\n\s*\n", main_tex):

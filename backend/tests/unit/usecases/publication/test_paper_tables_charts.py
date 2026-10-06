@@ -79,7 +79,9 @@ def test_table_cells_come_from_the_row_run() -> None:
 
 
 def test_table_reference_column_shows_published_and_difference() -> None:
-    published = ReferenceValues(passage="s1.p1", values={"run_1": 0.85, "run_2": 0.9})
+    published = ReferenceValues(
+        quoted_passage_ids=["s1.p1"], values={"run_1": 0.85, "run_2": 0.9}
+    )
     spec = TABLE.model_copy(
         update={
             "columns": [
@@ -147,7 +149,9 @@ def test_table_cells_link_to_their_lines_in_the_record() -> None:
     }
     record_json = json.dumps(data, indent=2)
     text = record_json.splitlines()
-    published = ReferenceValues(passage="s1.p1", values={"run_1": 0.85, "run_2": 0.9})
+    published = ReferenceValues(
+        quoted_passage_ids=["s1.p1"], values={"run_1": 0.85, "run_2": 0.9}
+    )
     spec = TABLE.model_copy(
         update={
             "columns": [
@@ -182,7 +186,7 @@ def test_table_reference_values_must_appear_in_their_passage() -> None:
     def record(values: dict[str, float]) -> ResearchRecord:
         column = TableColumnSpec(
             header="Acc (paper)",
-            reference=ReferenceValues(passage="s1.p1", values=values),
+            reference=ReferenceValues(quoted_passage_ids=["s1.p1"], values=values),
         )
         return ResearchRecord(
             literature=[
