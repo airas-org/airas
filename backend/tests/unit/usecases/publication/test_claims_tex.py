@@ -177,11 +177,11 @@ def test_grounds_and_cited_passages_are_citations_of_their_source() -> None:
             ],
         )
     )
-    record.hypotheses[0].grounded_on = ["s1.p1"]
+    record.hypotheses[0].quoted_passage_ids = ["s1.p1"]
     claim = record.hypotheses[0].claims[0]
-    claim.cites_passages = ["s1.p1"]
-    claim.criterion.reference_passage = "s1.p1"
-    claim.designs[0].cites_passages = ["s1.p2", "s9.p1"]
+    claim.quoted_passage_ids = ["s1.p1"]
+    claim.criterion.quoted_passage_ids = ["s1.p1"]
+    claim.designs[0].quoted_passage_ids = ["s1.p2", "s9.p1"]
     tex = render_claims_tex(record, {})
     assert r"Method X improves accuracy.~\cite[s1.p1]{vaswani-2017-attention}" in tex
     assert (

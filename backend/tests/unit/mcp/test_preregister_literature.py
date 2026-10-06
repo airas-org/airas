@@ -42,12 +42,12 @@ CLAIMS_PAGE = (
 )
 
 
-def _hypotheses(grounded_on: list[str] | None = None) -> list[dict[str, Any]]:
+def _hypotheses(quoted_passage_ids: list[str] | None = None) -> list[dict[str, Any]]:
     return [
         {
             "id": "h1",
             "statement": "The proposed method beats the baseline.",
-            "grounded_on": grounded_on or [],
+            "quoted_passage_ids": quoted_passage_ids or [],
             "claims": [
                 {
                     "id": "c1",
@@ -91,9 +91,11 @@ def _repo(tmp_path: Path) -> Path:
     return tmp_path
 
 
-async def _preregister(repo: Path, literature: list[dict[str, Any]], grounded_on=None):
+async def _preregister(
+    repo: Path, literature: list[dict[str, Any]], quoted_passage_ids=None
+):
     return await record_tools.preregister_record(
-        str(repo), _hypotheses(grounded_on), "mdpi", literature=literature
+        str(repo), _hypotheses(quoted_passage_ids), "mdpi", literature=literature
     )
 
 
@@ -272,11 +274,11 @@ async def test_passages_get_ids_and_ground_the_hypothesis(tmp_path: Path) -> Non
         {**DB_PAPER, "passages": [{"node_type": "setup", "quote": "The rate is 0.1."}]}
     ]
 
-    result = await _preregister(repo, literature, grounded_on=["s1.p1"])
+    result = await _preregister(repo, literature, quoted_passage_ids=["s1.p1"])
 
     assert result["sources"]["s1"]["passages"] == ["s1.p1"]
     record = load_record(str(repo))
-    assert record.hypotheses[0].grounded_on == ["s1.p1"]
+    assert record.hypotheses[0].quoted_passage_ids == ["s1.p1"]
     claims_tex = (repo / ".research" / "latex" / "mdpi" / "claims.tex").read_text()
     assert r"\cite[s1.p1]{vaswani-2017-attention}" in claims_tex
 
@@ -296,7 +298,7 @@ async def test_a_quote_not_in_the_snapshot_is_refused_and_nothing_is_written(
 async def test_a_passage_no_source_declares_is_refused(tmp_path: Path) -> None:
     repo = _repo(tmp_path)
     with pytest.raises(ValueError, match="no source declares"):
-        await _preregister(repo, [], grounded_on=["s1.p1"])
+        await _preregister(repo, [], quoted_passage_ids=["s1.p1"])
     _untouched(repo)
 
 
@@ -330,44 +332,76 @@ async def test_a_repository_is_pinned_at_its_commit_with_its_files(
     repo = _repo(tmp_path)
     literature = [
         {
-            **REPO,
-            "passages": [
-                {"node_type": "setup", "anchor": "code", "quote": "lr = 3e-4"}
-            ],
+            "repositories": [{**REPO, "method_entry": "train.main"}],
+            "passages": [{"node_type": "setup", "quote": "lr = 3e-4"}],
         }
     ]
 
     result = await _preregister(repo, literature)
 
     source = load_record(str(repo)).literature[0]
-    assert (source.kind, source.commit, source.bibkey) == (
-        "repository",
+    assert (source.repositories[0].commit, source.bibkey, source.verified_by) == (
         "a" * 40,
         "acme-2026-trainer",
+        "git",
     )
-    assert source.verified_by == "git"
-    assert [p.anchor for p in source.passages] == ["code"]
+    assert source.repositories[0].method_entry == "train.main"
+    assert source.fulltext is None  # no paper: the work is the code
     assert result["sources"]["s1"]["passages"] == ["s1.p1"]
-    assert (repo / source.fulltext.path).read_text() == REPO_PAGE
+    assert (repo / source.repositories[0].snapshot.path).read_text() == REPO_PAGE
+
+
+async def test_a_paper_and_the_code_it_ships_are_one_source(tmp_path: Path) -> None:
+    repo = _repo(tmp_path)
+    literature = [
+        {
+            **DB_PAPER,
+            "repositories": [REPO],
+            "passages": [
+                {"node_type": "method", "quote": "We apply dropout"},
+                {"node_type": "setup", "quote": "lr = 3e-4"},
+            ],
+        }
+    ]
+
+    await _preregister(repo, literature)
+
+    record = load_record(str(repo))
+    assert [s.id for s in record.literature] == ["s1"]
+    source = record.literature[0]
+    assert (source.doi, source.repositories[0].commit, source.verified_by) == (
+        DB_PAPER["doi"],
+        "a" * 40,
+        "doi.org",
+    )
+    assert (repo / source.fulltext.path).read_text() == PAGE_SEPARATOR.join(PAGES)
+    assert (repo / source.repositories[0].snapshot.path).read_text() == REPO_PAGE
+    assert (
+        "@article{vaswani-2017-attention,"
+        in (repo / ".research" / "latex" / "mdpi" / "references.bib").read_text()
+    )
 
 
 async def test_a_repository_that_cannot_be_fetched_is_refused(tmp_path: Path) -> None:
     repo = _repo(tmp_path)
     with pytest.raises(ValueError, match="git fetch failed"):
-        await _preregister(repo, [{**REPO, "commit": "0" * 40}])
+        await _preregister(repo, [{"repositories": [{**REPO, "commit": "0" * 40}]}])
     _untouched(repo)
 
 
 async def test_a_repository_needs_url_commit_and_files(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="url, commit and files"):
         await _preregister(
-            _repo(tmp_path), [{"url": REPO["url"], "commit": REPO["commit"]}]
+            _repo(tmp_path),
+            [{"repositories": [{"url": REPO["url"], "commit": REPO["commit"]}]}],
         )
 
 
 async def test_a_repository_commit_must_be_a_full_sha(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="full 40-hex sha"):
-        await _preregister(_repo(tmp_path), [{**REPO, "commit": "main"}])
+        await _preregister(
+            _repo(tmp_path), [{"repositories": [{**REPO, "commit": "main"}]}]
+        )
 
 
 # ------------------------------------------------- a study AIRAS produced
@@ -389,8 +423,7 @@ async def test_an_airas_record_is_pinned_by_its_record_and_claims(
     result = await _preregister(repo, literature)
 
     source = load_record(str(repo)).literature[0]
-    assert (source.kind, source.verified_by, source.commit) == (
-        "airas_record",
+    assert (source.verified_by, source.repositories[0].commit) == (
         "airas_records",
         "b" * 40,
     )
@@ -400,7 +433,7 @@ async def test_an_airas_record_is_pinned_by_its_record_and_claims(
         "samcifar-2026-sam",
     )
     assert result["sources"]["s1"]["passages"] == ["s1.p1"]
-    assert CLAIMS_PAGE in (repo / source.fulltext.path).read_text()
+    assert CLAIMS_PAGE in (repo / source.repositories[0].snapshot.path).read_text()
     assert (
         "@misc{samcifar-2026-sam,"
         in (repo / ".research" / "latex" / "mdpi" / "references.bib").read_text()
@@ -423,7 +456,9 @@ async def test_literature_appended_after_the_freeze_is_committed_with_the_bib(
     repo = _repo(tmp_path)
     await _preregister(repo, [DB_PAPER])
 
-    result = await record_tools.append_to_record(str(repo), literature=[REPO])
+    result = await record_tools.append_to_record(
+        str(repo), literature=[{"repositories": [REPO]}]
+    )
 
     assert list(result["appended"]["literature"]) == ["s2"]
     assert [s.id for s in load_record(str(repo)).literature] == ["s1", "s2"]

@@ -20,8 +20,8 @@ class PaperValue(BaseModel):
 
 
 class ReferenceValues(BaseModel):
-    passage: str = Field(
-        description="Passage id the values are read from, e.g. 's1.p5'"
+    quoted_passage_ids: list[str] = Field(
+        min_length=1, description="Passages the values are read from, e.g. ['s1.p5']"
     )
     values: dict[str, float] = Field(
         description="run_id -> the published value that row is compared with"

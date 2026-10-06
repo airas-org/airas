@@ -45,8 +45,8 @@ def _collect_citations(
     root: Path, record: ResearchRecord, main_tex: str
 ) -> list[_Citation]:
     """`main_tex` is comment-stripped. A passage no source declares is
-    skipped: the gate reports that on its own. A hypothesis's `grounded_on`
-    and a claim's `cites_passages` are not judged: they are conjectures that
+    skipped: the gate reports that on its own. A hypothesis's `quoted_passage_ids`
+    and a claim's `quoted_passage_ids` are not judged: they are conjectures that
     by design say more than the passages they build on, and the gate already
     checks that every passage they name exists."""
     passages = record.passage_index()

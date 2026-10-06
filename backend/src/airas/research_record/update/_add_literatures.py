@@ -1,9 +1,18 @@
 from pathlib import Path
 
 from airas.core.hashing import file_sha256
-from airas.core.research_paths import FULLTEXT_FILENAME, PAGE_SEPARATOR, SOURCES_DIR
+from airas.core.research_paths import (
+    PAGE_SEPARATOR,
+    fulltext_relpath,
+    repository_snapshot_relpath,
+)
 from airas.core.types.literature_material import LiteratureMaterial
-from airas.core.types.research_record import InputRef, LiteratureSource, ResearchRecord
+from airas.core.types.research_record import (
+    InputRef,
+    LiteratureSource,
+    Repository,
+    ResearchRecord,
+)
 from airas.research_record.render.render_references_bib import unique_bibkey
 
 
@@ -11,8 +20,7 @@ def _next_source_id(record: ResearchRecord) -> str:
     return f"s{max((int(s.id[1:]) for s in record.literature), default=0) + 1}"
 
 
-def _write_fulltext(root: Path, source_id: str, pages: list[str]) -> InputRef:
-    relpath = f"{SOURCES_DIR}/{source_id}/{FULLTEXT_FILENAME}"
+def _write_pages(root: Path, relpath: str, pages: list[str]) -> InputRef:
     path = root / relpath
     path.parent.mkdir(parents=True, exist_ok=True)
     if any(p.is_symlink() for p in (path, *path.parents[:2])) or not (
@@ -23,18 +31,22 @@ def _write_fulltext(root: Path, source_id: str, pages: list[str]) -> InputRef:
     return InputRef(path=relpath, sha256=file_sha256(path))
 
 
+def _same(s: LiteratureSource, m: LiteratureMaterial) -> bool:
+    if m.doi or m.arxiv_id:
+        return bool(
+            (m.doi and s.doi == m.doi) or (m.arxiv_id and s.arxiv_id == m.arxiv_id)
+        )
+    if m.repositories:
+        return any(
+            (theirs.url, theirs.commit) == (ours.url, ours.commit)
+            for theirs in s.repositories
+            for ours in m.repositories
+        )
+    return bool(m.url) and s.url == m.url
+
+
 def _existing(record: ResearchRecord, m: LiteratureMaterial) -> LiteratureSource | None:
-    for s in record.active_literature():
-        if m.kind != "paper":
-            if s.kind == m.kind and s.url == m.url and s.commit == m.commit:
-                return s
-        elif (
-            (m.doi and s.doi == m.doi)
-            or (m.arxiv_id and s.arxiv_id == m.arxiv_id)
-            or (m.url and s.url == m.url)
-        ):
-            return s
-    return None
+    return next((s for s in record.active_literature() if _same(s, m)), None)
 
 
 def add_literatures(
@@ -49,11 +61,28 @@ def add_literatures(
         source = _existing(record, m)
         if source is None:
             source_id = _next_source_id(record)
-            fulltext = _write_fulltext(root, source_id, m.pages)
-            snapshots.append(fulltext.path)
+            fulltext = None
+            if m.pages:
+                fulltext = _write_pages(root, fulltext_relpath(source_id), m.pages)
+                snapshots.append(fulltext.path)
+            repositories = []
+            for n, material in enumerate(m.repositories, start=1):
+                repository_id = f"{source_id}.r{n}"
+                snapshot = _write_pages(
+                    root, repository_snapshot_relpath(repository_id), material.pages
+                )
+                snapshots.append(snapshot.path)
+                repositories.append(
+                    Repository(
+                        id=repository_id,
+                        url=material.url,
+                        commit=material.commit,
+                        snapshot=snapshot,
+                        method_entry=material.method_entry,
+                    )
+                )
             source = LiteratureSource(
                 id=source_id,
-                kind=m.kind,
                 title=m.title,
                 authors=m.authors,
                 year=m.year,
@@ -61,7 +90,6 @@ def add_literatures(
                 doi=m.doi,
                 arxiv_id=m.arxiv_id,
                 url=m.url,
-                commit=m.commit,
                 bibkey=unique_bibkey(
                     m.bib_title or m.title,
                     m.bib_authors if m.bib_authors is not None else m.authors,
@@ -72,6 +100,7 @@ def add_literatures(
                 verified_at=m.verified_at,
                 fulltext=fulltext,
                 parser=m.parser,
+                repositories=repositories,
             )
             record.literature.append(source)
         sources.append(source)

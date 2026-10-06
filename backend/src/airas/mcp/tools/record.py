@@ -68,10 +68,9 @@ async def preregister_record(
           "prediction": {"low": 0.02, "high": 0.04, "basis": "prior work (s1.p2)"},
           "designs": [{
             "id": "d1", "summary": "...",
-            "port": {"source": "s2", "entry": "pkg.Runner.run",
-                     "components": ["pkg.Runner.run", "pkg.search"],
-                     "adapter_files": ["src/train.py"],
-                     "knobs": [{"key": "n_basis", "upstream": "s2.p1", "ours": 20}]},
+            "repository_integration": {
+              "repository_id": "s2.r1", "adapter_files": ["src/train.py"],
+              "arguments": [{"argument": "pkg.Runner.__init__.n_basis", "value": 20}]},
             "runs": [{"run_id": "proposed-...", "description": "...",
                       "params": {"mode": "full", "epochs": 10, "seed": 0}}]
           }]
@@ -80,21 +79,24 @@ async def preregister_record(
       }]
 
     `literature` is what the hypothesis rests on, pinned in the same
-    commit. Each entry is a paper (`doi` / `arxiv_id` from `search_papers`,
-    with `title`, `authors`, `year`, `venue`,
-    `pdf_url`, and the `fulltext_path` `fetch_paper_fulltext` returned), a
-    repository (`url`, a full 40-hex `commit`, `files`) or a study AIRAS
-    produced (`airas_record`), each with `passages`:
+    commit. Each entry is a work: a paper (`doi` / `arxiv_id` from
+    `search_papers`, with `title`, `authors`, `year`, `venue`, `pdf_url`,
+    and the `fulltext_path` `fetch_paper_fulltext` returned), optionally
+    with the code it ships as `repositories` (each `url`, a full 40-hex
+    `commit`, `files` — a file or a directory snapshotted whole — and, for
+    a method a design's `repository_integration` runs, `method_entry`, the
+    `module.Class.method` whose call runs it); code with no paper
+    (`repositories` alone); or a
+    study AIRAS produced (`airas_record`). Each carries `passages`:
     `[{"node_type": "gap|claim|result|method|setup|definition", "quote":
-    "<copied verbatim from the full text>", "anchor"?}]`. A registry
-    (doi.org, arXiv, git) must confirm each source exists, its
-    text is snapshotted under `.research/sources/<id>/`, and every quote is
-    checked against that snapshot. Sources get ids in the order given
-    (`s1`, `s2`, …) and passages `p1`, `p2`, … within each, so a
-    hypothesis's `grounded_on`, a claim's, design's or run's
-    `cites_passages` and a criterion's `reference_passage` name them as
-    `"s1.p2"`: what the declaration rests on, in the prior work's own
-    words. The gate refuses a passage no source declares.
+    "<copied verbatim from the text or the code>", "anchor"?}]`. A registry
+    (doi.org, arXiv, git) must confirm each source exists, its text and
+    code are snapshotted under `.research/sources/<id>/`, and every quote
+    is checked against those snapshots. Sources get ids in the order given
+    (`s1`, `s2`, …) and passages `p1`, `p2`, … within each, so
+    `quoted_passage_ids` on a hypothesis, claim, design or criterion name
+    them as `"s1.p2"`: what the declaration rests on, in the prior work's
+    own words. The gate refuses a passage no source declares.
 
     `run_id` names the results directory the run will produce and must be
     unique across the whole record — a run belongs to exactly one claim,
@@ -211,8 +213,8 @@ async def append_to_record(
     `literature` appends sources the paper came to rest on after the
     freeze (same entry shape as `preregister_record`); `passages` append
     under the source named by `source_id` (`{"node_type", "quote",
-    "anchor"?}`). A quote must be copied from that source's `fulltext.txt`,
-    or the append is refused.
+    "anchor"?}`). A quote must be copied from that source's `fulltext.txt`
+    or a repository snapshot of it, or the append is refused.
     """
     refresh_environment()
     return await append_to_record_usecase(

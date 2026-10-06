@@ -16,7 +16,7 @@ One statement, the gap in the read papers it answers, and what would \
 refute it. Write the prose in the user's working language; metric names \
 stay English identifiers (they are parsed downstream). A gap the papers \
 at hand cannot confirm is a reason to search again, not to assume. \
-`grounded_on` names the passages (`s1.p2`) the gap rests on — the prior \
+`quoted_passage_ids` names the passages (`s1.p2`) the gap rests on — the prior \
 work's own words, quoted verbatim in `literature`.
 
 ## The design
@@ -58,7 +58,7 @@ each claim:
   range, never a point — with its `basis`. A range too wide to miss is a \
   criterion, not a prediction. No pilot runs before the freeze, so \
   `basis` rests on the literature; sanity runs carry no evidence.
-- `cites_passages`: the passages the claim follows.
+- `quoted_passage_ids`: the passages the claim follows.
 - `designs` → `runs`: the runs that decide it.
 List in `assumptions` what has to be granted for the claims together to \
 reach the hypothesis (the metric stands for the property, the datasets \

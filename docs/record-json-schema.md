@@ -23,20 +23,26 @@ classDiagram
     }
     class LiteratureSource {
         id: "s1"
-        kind: paper | repository | airas_record
         title, authors, year, venue
-        doi, arxiv_id, url, commit
+        doi, arxiv_id, url
         bibkey: str
         verified_by: doi.org | arxiv | git | airas_records
         verified_at: str
         fulltext: InputRef
         parser: str
+        repositories: Repository[]
         passages: QuotedPassage[]
+    }
+    class Repository {
+        id: "s1.r1"
+        url, commit
+        snapshot: InputRef
+        method_entry: str
     }
     class QuotedPassage {
         id: "s1.p1"
         node_type: claim|result|method|setup|gap|definition
-        anchor: text|table|figure|code
+        anchor: text|table|figure
         quote: str
         judgments: CitationJudgment[]
     }
@@ -51,35 +57,35 @@ classDiagram
         sha256: str
     }
     class Hypothesis {
-        grounded_on: passage id[]
+        quoted_passage_ids: passage id[]
     }
     class ClaimBase {
-        cites_passages: passage id[]
+        quoted_passage_ids: passage id[]
     }
     class Criterion {
-        reference_passage: passage id
+        quoted_passage_ids: passage id[]
     }
     class Design {
-        cites_passages: passage id[]
+        quoted_passage_ids: passage id[]
     }
     class Run {
-        cites_passages: passage id[]
     }
 
     ResearchRecord "1" --> "*" LiteratureSource : literature
     LiteratureSource "1" --> "*" QuotedPassage : passages
     QuotedPassage "1" --> "*" CitationJudgment : judgments
     LiteratureSource --> InputRef : fulltext
-    Hypothesis ..> QuotedPassage : grounded_on
-    ClaimBase ..> QuotedPassage : cites_passages
-    Criterion ..> QuotedPassage : reference_passage
-    Design ..> QuotedPassage : cites_passages
-    Run ..> QuotedPassage : cites_passages
+    LiteratureSource "1" --> "*" Repository : repositories
+    Repository --> InputRef : snapshot
+    Hypothesis ..> QuotedPassage : quoted_passage_ids
+    ClaimBase ..> QuotedPassage : quoted_passage_ids
+    Criterion ..> QuotedPassage : quoted_passage_ids
+    Design ..> QuotedPassage : quoted_passage_ids
 ```
 
 ### 図 2: 仮説と検証（hypotheses）
 
-仮説 → claim → design → run → result。claim の kind ごとに design / run / result の型が決まる。`QuotedPassage` は図 1 のもの。design / run の `cites_passages` も同じく図 1 の passage を指す。
+仮説 → claim → design → run → result。claim の kind ごとに design / run / result の型が決まる。`QuotedPassage` は図 1 のもの。design の `quoted_passage_ids` も同じく図 1 の passage を指す。
 
 
 ```mermaid
@@ -93,7 +99,7 @@ classDiagram
     class Hypothesis {
         id: "h1"
         statement: str
-        grounded_on: passage id[]
+        quoted_passage_ids: passage id[]
         assumptions: str[]
         claims: ClaimDeclaration[]
         tables, charts, notes
@@ -104,7 +110,7 @@ classDiagram
         rationale: str
         verifier: Verifier
         designs: Design[]
-        cites_passages: passage id[]
+        quoted_passage_ids: passage id[]
         verified: bool
         verdict: Verdict
     }
@@ -126,7 +132,7 @@ classDiagram
         subject: run_id
         reference: run_id | float
         op, margin
-        reference_passage: passage id
+        quoted_passage_ids: passage id[]
     }
     class Prediction {
         low, high: float
@@ -136,26 +142,22 @@ classDiagram
         id: "d1"
         summary: str
         runs: SeyvalRun[]
-        cites_passages: passage id[]
-        port: Port
+        quoted_passage_ids: passage id[]
+        repository_integration: RepositoryIntegration
     }
-    class Port {
+    class RepositoryIntegration {
         source: source id
-        entry: str
-        components: str[]
-        adapter_files, patches, extension_points: str[]
-        knobs: Knob[]
+        adapter_files, extension_points: str[]
+        arguments: ArgumentValue[]
     }
-    class Knob {
-        key: str
-        upstream: passage id
-        ours: any
+    class ArgumentValue {
+        argument: module.Class.method.arg
+        value: any
         reason: str
     }
     class SeyvalRun {
         run_id: str
         params: dict
-        cites_passages: passage id[]
         results: SeyvalResult[]
     }
     class SeyvalResult {
@@ -168,12 +170,11 @@ classDiagram
         id: "d1"
         summary: str
         runs: LeanRun[]
-        cites_passages: passage id[]
+        quoted_passage_ids: passage id[]
     }
     class LeanRun {
         run_id: str
         params: LeanParams
-        cites_passages: passage id[]
         results: LeanResult[]
     }
     class LeanResult {
@@ -185,12 +186,11 @@ classDiagram
         id: "d1"
         summary: str
         runs: LlmJudgeRun[]
-        cites_passages: passage id[]
+        quoted_passage_ids: passage id[]
     }
     class LlmJudgeRun {
         run_id: str
         params: LlmJudgeParams
-        cites_passages: passage id[]
         results: LlmJudgeResult[]
     }
     class LlmJudgeResult {
@@ -212,8 +212,8 @@ classDiagram
     SeyvalClaim --> Prediction
     SeyvalClaim "1" --> "*" SeyvalDesign : designs
     SeyvalDesign "1" --> "*" SeyvalRun : runs
-    SeyvalDesign --> Port : port
-    Port "1" --> "*" Knob : knobs
+    SeyvalDesign --> RepositoryIntegration : repository_integration
+    RepositoryIntegration "1" --> "*" ArgumentValue : arguments
     SeyvalRun "1" --> "*" SeyvalResult : results
     LeanClaim "1" --> "*" LeanDesign : designs
     LeanDesign "1" --> "*" LeanRun : runs
@@ -221,9 +221,9 @@ classDiagram
     LlmJudgeClaim "1" --> "*" LlmJudgeDesign : designs
     LlmJudgeDesign "1" --> "*" LlmJudgeRun : runs
     LlmJudgeRun "1" --> "*" LlmJudgeResult : results
-    Hypothesis ..> QuotedPassage : grounded_on
-    ClaimBase ..> QuotedPassage : cites_passages
-    Criterion ..> QuotedPassage : reference_passage
+    Hypothesis ..> QuotedPassage : quoted_passage_ids
+    ClaimBase ..> QuotedPassage : quoted_passage_ids
+    Criterion ..> QuotedPassage : quoted_passage_ids
 ```
 
 ## 論理構造
@@ -240,9 +240,9 @@ classDiagram
 | 検査 | 内容 |
 | --- | --- |
 | 実在 | `verified_by` が空でない。登録時に識別子ごとのレジストリへ問い合わせ、最初に found を返したものを記録する（下の「実在の条件」）。gate は再照会しない |
-| スナップショット | `fulltext.path` が存在し sha256 が一致 |
+| スナップショット | `fulltext.path` / `repositories[].snapshot.path` が存在し sha256 が一致 |
 | 逐語 | 全 passage の `quote` が snapshot の部分文字列（NFKC・空白正規化、合字・改行・ソフトハイフンは無視） |
-| 参照解決 | `grounded_on` / `cites_passages` / `reference_passage` の id が既知の passage |
+| 参照解決 | `quoted_passage_ids` / `quoted_passage_ids` / `quoted_passage_ids` の id が既知の passage |
 | 時系列 | 宣言を含む各コミットで、その宣言が名指す passage が既に record にある（後から登録した passage を根拠にできない） |
 | 引用（verify_paper） | main.tex の `\cite` の鍵が登録済み bibkey、`\cite[s1.p2]{key}` の locator がその source の passage、references.bib が再生成と一致。引かれなかった source は `uncited_sources` として報告（失敗ではない） |
 | 文意（verify_paper） | record に judgment が一つでもあれば、今の引用文（main.tex の `\cite[s1.p2]{key}` を含む段落、claim の statement + rationale、hypothesis の statement）ごとに対応する judgment を探す。無いものは `unjudged_citations` として**失敗**、`supported: false` は `unsupported_citations` として報告（失敗ではない）。判定そのものは `verify_paper_values(model=...)`（MCP）か `airas verify-paper --model`（CI）が LLM で行い、record に書いてから同じ呼び出しで集計する |
@@ -255,7 +255,7 @@ classDiagram
 | --- | --- |
 | `doi` | `HEAD https://doi.org/<doi>`（リダイレクトは追わない）が 2xx か 3xx。404 は not_found |
 | `arxiv_id` | arXiv API がその id で entry を 1 件以上返す |
-| repository | `git fetch --depth 1 <url> <40-hex sha>` が成功し、指定ファイルが `git show` できる |
+| `repositories[]` | `git fetch --depth 1 <url> <40-hex sha>` が成功し、`files` が `git ls-tree` にある |
 | `airas_record` | airas-records-db の manifest にその `owner/repo@sha` がある **かつ** その sha が `git fetch` できる。snapshot はその commit の `record.json` と `claims.tex` |
 
 論文はさらに PDF が本文を返し、title が分かっていれば最初の 2 ページに（大文字小文字・空白を正規化して）含まれることを要求する。これが識別子と読んだ PDF を結ぶ唯一の紐。
@@ -266,17 +266,22 @@ classDiagram
 
 - **literature[]** 依拠した文献。`preregister_record` の `literature` が書く（freeze 後の追加は `append_to_record`）
   - `id` `"s1"`, `"s2"`, …
-  - `kind` `"paper"` / `"repository"` / `"airas_record"`（AIRAS が生成した研究。`literature=[{"airas_record": "owner/repo@sha"}]`）
+  - 1 件 = 1 つの研究成果。論文だけ、コードだけ（`repositories` のみ）、論文 + 公式コード、AIRAS が生成した研究（`literature=[{"airas_record": "owner/repo@sha"}]`。その record リポジトリが `repositories` に入る）のいずれか
   - `title` / `authors[]` / `year` / `venue`
-  - `doi` / `arxiv_id` / `url`。repository と airas_record は `url` と `commit`
+  - `doi` / `arxiv_id` / `url`
   - `bibkey` `\cite` の鍵（`<surname>-<year>-<word>`）。`references.bib` はここから再生成
   - `verified_by` / `verified_at` 登録時に実在を確認したレジストリと時刻。凍結
-  - `fulltext` `{path, sha256}` `.research/sources/<id>/fulltext.txt`。論文はページを form feed 区切り、repository と airas_record は 1 ファイル 1 ページ（`==> path <==` 見出し）
+  - `fulltext` `{path, sha256}` `.research/sources/<id>/fulltext.txt`。論文本文、ページを form feed 区切り
   - `parser` 抽出器（`pymupdf 1.26` / `git show`）
+  - **repositories[]** この成果が出荷するコード（省略可）。passage と同じく文献配下の id 付き要素
+    - `id` `"s1.r1"`, `"s1.r2"`, …
+    - `url` / `commit` 40 桁の sha
+    - `snapshot` `{path, sha256}` `.research/sources/<source>/<r>.txt`（`s1.r1` なら `.research/sources/s1/r1.txt`）。`files` に挙げたファイル（ディレクトリならその下の全テキストファイル）を 1 ファイル 1 ページ（`==> path <==` 見出し）で。コードからの引用と、実行時に読み込まれたモジュールのハッシュ照合の原本
+    - `method_entry` design の `repository_integration` が走らせる手法の入口（`module.Class.method`）。これが 1 回以上呼ばれたことを gate が要求する
   - **passages[]** 引いた箇所。`append_to_record(source_id, passages)` で追記
     - `id` `"s1.p1"`, `"s1.p2"`, …
     - `node_type` `claim` / `result` / `method` / `setup` / `gap` / `definition`。何を述べる箇所か（グラフ探索はここで絞る）
-    - `anchor` `text` / `table` / `figure` / `code`。どこにあるか。既定 `text`
+    - `anchor` `text` / `table` / `figure`。論文のどこにあるか。既定 `text`
     - `quote` fulltext.txt からの逐語コピー
     - **judgments[]** モデルがこの箇所の引用を読んだ結果。`verify_paper_values` / `airas verify-paper` に model を渡すと書く（手では書かない）。append-only
       - `text_sha256` 引用側の文のハッシュ。書き直せば判定は古くなり、再判定が要る
@@ -284,7 +289,7 @@ classDiagram
 - **hypotheses[]** 仮説の一覧
   - `id` `"h1"`, `"h2"`, …
   - `statement` 仮説そのもの（散文）
-  - `grounded_on[]` 動機となった passage id（先行研究の gap）。既定は空
+  - `quoted_passage_ids[]` 動機となった passage id（先行研究の gap）。既定は空
   - `assumptions[]` `c1 ∧ … ∧ cn ⇒ H` を成り立たせる公理。各項目に関わる claim id を書く。既定は空
   - **claims[]** 仮説を検証可能な主張に分解したもの。`verifier.kind` で型が決まる
     - 共通（ClaimBase）
@@ -292,7 +297,7 @@ classDiagram
       - `statement` 一文の主張。verdict が付く対象
       - `rationale` この claim が成り立つと、なぜ・仮説のどの部分が支えられるか。必須
       - `verifier` 何が検証するか。必須。一つの claim に一つ（証明と実験の両方が要るなら claim を二つに分ける）
-      - `cites_passages[]` 依拠する passage id。既定は空
+      - `quoted_passage_ids[]` 依拠する passage id。既定は空
       - `designs[]` 実験・証明・判定の構成
       - `verified` 配下の全 run（criterion が別の主張の run を参照するときはその run も含む）に verifier のレポートがあるか。false → true のみ
       - `verdict` `"supported"` / `"refuted"` / `"inconclusive"`。未設定 → 設定の一回限り。再実行で反転した場合は gate が drift として報告
@@ -304,23 +309,20 @@ classDiagram
         - `reference` 比較対象の run_id（同じ metric）または定数。run_id は同じ記録内の別の主張の run でもよい（共通の基準 run）。`subject` は必ずこの主張の run
         - `op` `">="` / `"<="` / `">"` / `"<"`
         - `margin` 既定 0.0。意味は `(subject.metric − reference) op margin`。境界は一致扱い
-        - `reference_passage` `reference` が定数のとき、その値を読んだ passage id
+        - `quoted_passage_ids` `reference` が定数のとき、その値を読んだ passage id
       - `prediction` 予測区間。宣言時必須、凍結
         - `low` / `high` `low < high`（点は不可）
         - `basis` 根拠（prior work, pilot など）
       - `verdict` verified 時に criterion を runs の metrics に適用して導出。metric が解決できなければ `inconclusive`
       - **designs[]**
-        - `id` / `summary` / `cites_passages[]`
-        - `port` 既存手法を repository 文献から移植して使うときの宣言（省略可）。run の `observed.json` との照合は後続の gate で追加予定（#1094）
-          - `source` repository 文献の id
-          - `entry` adapter が呼ぶ上流の入口（`module.Class.method`）。`components` に含める
-          - `components[]` 呼び出しを観測する上流の関数（`module.Class.method`）
-          - `adapter_files[]` agent が書いた `src/` のファイル
-          - `knobs[]` 上流の設定に対する判断。`key`、既定を引いた `source` の passage `upstream`、実行する値 `ours`（既定のままでもその値を書く）、`reason`
-          - `patches[]` 上流への変更を unified diff 本文で。スナップショット + diff のハッシュと実行時に読み込まれたモジュールのハッシュとの照合も後続の gate で追加予定
-          - `extension_points[]` adapter が継承・override・呼び出しをしてよい上流の名前
+        - `id` / `summary` / `quoted_passage_ids[]`
+        - `repository_integration` 文献のリポジトリが持つ手法をこの design がどう走らせるか（省略可）。上流のファイルは改変しない前提。run の `observed.json` との照合は後続の gate で追加予定（#1094）
+          - `repository_id` 走らせるリポジトリ（`"s1.r1"`）。その `method_entry` が手法の入口
+          - `adapter_files[]` agent が書いた `src/` のファイル。上流を import して繋ぐ糊
+          - `extension_points[]` adapter が継承・override・差し替えしてよい上流の名前
+          - `arguments[]` 上流の引数に渡す値。`argument` は `module.Class.method.arg`、`value` は実行する値（既定のままでもその値を書く）、`reason`。フックは `method_entry` と各 `argument` の関数を観測し、gate は観測された引数と `value` を照合する
         - **runs[]** 実行単位。`.research/results/<run_id>/` を生む
-          - `run_id` / `description` / `cites_passages[]`
+          - `run_id` / `description`
           - `params` 結果に効く全条件。dispatch 条件（`mode`）と `config/config.yaml ⊕ config/run/<run_id>.yaml` の全キー（例 `{"mode": "full", "epochs": 10}`）。run commit 時点の config と基盤の記録に照合される
           - **results[]** metrics.json と provenance manifest から機械が追記
             - `id` Seyval の実行 id
@@ -367,7 +369,7 @@ classDiagram
 
 | 生成物 | 元 | 段階 |
 | --- | --- | --- |
-| `claims.tex` | claims の statement / rationale / criterion / prediction / observed / verdict と hypothesis の assumptions。`grounded_on` / `cites_passages` は main.tex と同じ `\cite[s1.p2]{key}` として statement に付く（逐語引用は record.json のみ、論文には再掲しない） | prereg から（未着は pending） |
+| `claims.tex` | claims の statement / rationale / criterion / prediction / observed / verdict と hypothesis の assumptions。`quoted_passage_ids` / `quoted_passage_ids` は main.tex と同じ `\cite[s1.p2]{key}` として statement に付く（逐語引用は record.json のみ、論文には再掲しない） | prereg から（未着は pending） |
 | `references.bib` | literature[]（bibkey ごとに 1 エントリ） | preregister_record 時 |
 | `values.tex` | `\airasval{<run_id>.<metric>}` の値。各値は record.json の該当行へのリンク付き | results 以降 |
 | `tables/<key>.tex` | tables[]。各セルは values.tex と同じく record.json の該当行（測定値と差はその指標の行、引用値はその passage の行）へのリンク付き | results 以降 |
@@ -401,7 +403,7 @@ classDiagram
   "hypotheses": [{
     "id": "h1",
     "statement": "提案する正則化項は画像分類 CNN の汎化性能を改善する。",
-    "grounded_on": ["s1.p1"],
+    "quoted_passage_ids": ["s1.p1"],
     "assumptions": [
       "test accuracy の差が汎化性能の差を表す (c1, c2)",
       "CIFAR-10 と CIFAR-100 で成り立てば画像分類 CNN 一般で成り立つ (c1, c2)",
@@ -411,7 +413,7 @@ classDiagram
       "id": "c1",
       "statement": "CIFAR-10 で提案手法の test accuracy が ResNet-18 を 1.0 pt 以上上回る。",
       "rationale": "汎化性能の代理指標として test accuracy を、代表的 CNN として ResNet-18 を用いた直接比較。",
-      "cites_passages": ["s1.p2"],
+      "quoted_passage_ids": ["s1.p2"],
       "verifier": {"kind": "seyval"},
       "criterion": {"metric": "accuracy", "subject": "proposed-resnet18-cifar10",
                     "reference": "comparative-1-resnet18-cifar10", "op": ">=", "margin": 0.01},

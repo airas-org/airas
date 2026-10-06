@@ -9,14 +9,12 @@ import httpx
 import pytest
 
 from airas.core.research_paths import PAGE_SEPARATOR
-from airas.core.types.research_record import LiteratureSource
+from airas.core.types.research_record import InputRef, LiteratureSource, Repository
 from airas.research_record.render.render_references_bib import (
     render_references_bib,
     unique_bibkey,
 )
-from airas.research_record.update._add_literatures import (
-    _write_fulltext as write_fulltext,
-)
+from airas.research_record.update._add_literatures import _write_pages
 from airas.research_record.verify._verify_quoted_passages import (
     passage_is_quoted,
     quote_context,
@@ -27,6 +25,11 @@ from airas.usecases.literature.nodes.fetch_fulltext_from_repository import (
 from airas.usecases.literature.resolve_literatures import (
     _verify_paper_existence as verify_paper_existence,
 )
+
+
+def write_fulltext(root: Path, source_id: str, pages: list[str]) -> InputRef:
+    return _write_pages(root, f".research/sources/{source_id}/fulltext.txt", pages)
+
 
 PAGES = [
     "Attention Is All You Need\nWe propose the Transformer, a model architecture.",
@@ -130,42 +133,80 @@ def test_references_bib_carries_each_source_under_its_bibkey() -> None:
     assert bib.endswith("\n")
 
 
-def test_a_repository_is_a_misc_entry_pinned_to_its_commit() -> None:
+def test_code_with_no_paper_is_a_misc_entry_pinned_to_its_commit() -> None:
     bib = render_references_bib(
         [
             LiteratureSource(
                 id="s2",
-                kind="repository",
                 title="acme/trainer",
                 authors=["acme"],
                 year=2026,
-                url="https://github.com/acme/trainer",
-                commit="0123abcd",
+                repositories=[
+                    Repository(
+                        id="s2.r1",
+                        url="https://github.com/acme/trainer",
+                        commit="0123abcd" * 5,
+                    )
+                ],
                 bibkey="acme-2026-trainer",
+                verified_by="git",
             )
         ]
     )
     assert bib.startswith("@misc{acme-2026-trainer,")
-    assert "note = {commit 0123abcd}" in bib
+    assert "url = {https://github.com/acme/trainer}" in bib
+    assert f"note = {{commit {'0123abcd' * 5}}}" in bib
 
 
-def test_an_airas_record_is_a_misc_entry_and_its_registry_binds_its_kind() -> None:
+def test_a_paper_with_code_names_the_repository_in_its_note() -> None:
+    bib = render_references_bib(
+        [
+            LiteratureSource(
+                id="s1",
+                title="Attention Is All You Need",
+                authors=["Ashish Vaswani"],
+                year=2017,
+                arxiv_id="1706.03762",
+                url="https://arxiv.org/pdf/1706.03762",
+                repositories=[
+                    Repository(
+                        id="s1.r1",
+                        url="https://github.com/acme/attention",
+                        commit="0123abcd" * 5,
+                    )
+                ],
+                bibkey="vaswani-2017-attention",
+            )
+        ]
+    )
+    assert bib.startswith("@article{vaswani-2017-attention,")
+    assert "url = {https://arxiv.org/pdf/1706.03762}" in bib
+    assert (
+        f"note = {{code: https://github.com/acme/attention at commit {'0123abcd' * 5}}}"
+        in bib
+    )
+
+
+def test_an_airas_record_is_a_misc_entry_and_needs_its_repository() -> None:
     source = LiteratureSource(
         id="s3",
-        kind="airas_record",
         title="SAM on CIFAR, revisited",
         authors=["auto-res2/sam-cifar (AIRAS)"],
         year=2026,
         url="https://github.com/auto-res2/sam-cifar",
-        commit="a" * 40,
+        repositories=[
+            Repository(
+                id="s3.r1",
+                url="https://github.com/auto-res2/sam-cifar",
+                commit="a" * 40,
+            )
+        ],
         bibkey="sam-cifar-2026-sam",
         verified_by="airas_records",
     )
     assert render_references_bib([source]).startswith("@misc{sam-cifar-2026-sam,")
-    with pytest.raises(ValueError, match="cannot be verified by git"):
-        source.model_copy(update={"verified_by": "git"}).model_validate(
-            source.model_copy(update={"verified_by": "git"}).model_dump()
-        )
+    with pytest.raises(ValueError, match="verifies a repository"):
+        LiteratureSource.model_validate({**source.model_dump(), "repositories": []})
 
 
 # ------------------------------------------------------------ a repository
@@ -186,6 +227,7 @@ def _upstream(tmp_path: Path) -> tuple[Path, str]:
     _git(repo, "config", "uploadpack.allowAnySHA1InWant", "true")
     (repo / "src").mkdir()
     (repo / "src" / "train.py").write_text("lr = 3e-4\nsteps = 1000\n")
+    (repo / "src" / "weights.bin").write_bytes(b"\xff\xfe\x00")
     (repo / "README.md").write_text("trainer\n")
     _git(repo, "add", "-A")
     _git(repo, "commit", "-q", "-m", "initial")
@@ -221,8 +263,17 @@ def test_a_repository_that_cannot_be_fetched_is_refused(tmp_path: Path) -> None:
 
 def test_a_file_missing_at_the_commit_is_refused(tmp_path: Path) -> None:
     repo, commit = _upstream(tmp_path)
-    with pytest.raises(ValueError, match="git show failed"):
+    with pytest.raises(ValueError, match="src/missing.py' is not in"):
         fetch_fulltext_from_repository(str(repo), commit, ["src/missing.py"])
+
+
+def test_a_directory_stands_for_the_text_files_under_it(tmp_path: Path) -> None:
+    repo, commit = _upstream(tmp_path)
+    _, pages = fetch_fulltext_from_repository(str(repo), commit, ["src", "README.md"])
+    assert [page.split("\n", 1)[0] for page in pages] == [
+        "==> src/train.py <==",  # weights.bin is binary and left out
+        "==> README.md <==",
+    ]
 
 
 # ----------------------------------------------------------- the registries

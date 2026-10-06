@@ -21,6 +21,7 @@ from airas.core.types.research_record import (
     ClaimDeclaration,
     Criterion,
     Hypothesis,
+    InputRef,
     LiteratureSource,
     Prediction,
     QuotedPassage,
@@ -48,9 +49,7 @@ from airas.research_record.render.render_paper_values import (
     resolve_paper_values,
 )
 from airas.research_record.render.render_references_bib import render_references_bib
-from airas.research_record.update._add_literatures import (
-    _write_fulltext as write_fulltext,
-)
+from airas.research_record.update._add_literatures import _write_pages
 from airas.research_record.update.append_to_record import (
     _append_run_results as update_record_with_results,
 )
@@ -59,6 +58,11 @@ from airas.research_record.verify._verify_citation_meaning import (
 )
 from airas.research_record.verify.verify_paper import verify_paper
 from airas.research_record.verify.verify_record import RecordVerification, verify_record
+
+
+def write_fulltext(root: Path, source_id: str, pages: list[str]) -> InputRef:
+    return _write_pages(root, f".research/sources/{source_id}/fulltext.txt", pages)
+
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 
@@ -841,13 +845,15 @@ def _grounded_repo(tmp_path: Path, **source_kw: Any) -> tuple[Path, ResearchReco
     _init(tmp_path)
     record = _record()
     record.literature.append(find_source(tmp_path, **source_kw))
-    record.hypotheses[0].grounded_on = ["s1.p1"]
-    _c1(record).cites_passages = ["s1.p1"]
+    record.hypotheses[0].quoted_passage_ids = ["s1.p1"]
+    _c1(record).quoted_passage_ids = ["s1.p1"]
     record.save(str(tmp_path))
     return tmp_path, record
 
 
-def test_a_hypothesis_grounded_on_a_registered_passage_passes(tmp_path: Path) -> None:
+def test_a_hypothesis_quoted_passage_ids_a_registered_passage_passes(
+    tmp_path: Path,
+) -> None:
     repo, _ = _grounded_repo(tmp_path)
     _commit(repo, "prereg")
     result = _verify(str(repo))
@@ -856,7 +862,7 @@ def test_a_hypothesis_grounded_on_a_registered_passage_passes(tmp_path: Path) ->
 
 def test_grounds_naming_a_passage_no_source_declares_fail(tmp_path: Path) -> None:
     repo, record = _grounded_repo(tmp_path)
-    record.hypotheses[0].grounded_on.append("s1.p9")
+    record.hypotheses[0].quoted_passage_ids.append("s1.p9")
     record.save(str(repo))
     result = _verify(str(repo))
     assert any("hypothesis h1" in p and "'s1.p9'" in p for p in result.problems)
@@ -894,7 +900,7 @@ def test_a_passage_registered_after_the_hypothesis_that_names_it_fails(
     _commit(tmp_path, "register the source")
 
     record.hypotheses = _record().hypotheses
-    record.hypotheses[0].grounded_on = ["s1.p1"]
+    record.hypotheses[0].quoted_passage_ids = ["s1.p1"]
     record.save(str(tmp_path))
     grounded = _commit(tmp_path, "prereg naming a passage that is not there yet")
 
@@ -1121,8 +1127,8 @@ def test_a_source_without_a_snapshot_fails(tmp_path: Path) -> None:
     repo, record = _grounded_repo(tmp_path)
     record.literature[0].fulltext = None
     record.literature[0].passages.clear()
-    record.hypotheses[0].grounded_on.clear()
-    _c1(record).cites_passages.clear()
+    record.hypotheses[0].quoted_passage_ids.clear()
+    _c1(record).quoted_passage_ids.clear()
     record.save(str(repo))
     result = _verify(str(repo))
     assert any("fulltext snapshot must be" in p for p in result.problems)

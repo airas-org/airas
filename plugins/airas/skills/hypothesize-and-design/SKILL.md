@@ -17,7 +17,7 @@ refine until the hypothesis rests on passages you have actually read.
    quote): `preregister_record` takes exactly these, and assigns ids in
    the order given (`s1`, `s2`, …; `p1`, `p2`, … within a source), so
    note which passages the hypothesis answers (its gap) and which the
-   design follows for `grounded_on` and `cites_passages`. A quote is
+   design follows for `quoted_passage_ids` and `quoted_passage_ids`. A quote is
    matched against the snapshot ignoring line breaks, end-of-line
    hyphenation and ligatures, so copy it as the extracted text has it;
    keep it to one passage on one page (pages are separated by form

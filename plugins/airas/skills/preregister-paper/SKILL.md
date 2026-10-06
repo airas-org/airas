@@ -59,8 +59,12 @@ are stated.
    copied to `.research/sources/<id>/fulltext.txt`, and every quote is
    checked against that snapshot. `literature` entries are papers
    (`doi` / `arxiv_id` with `title`, `authors`, `year`,
-   `venue`, `pdf_url`, `fulltext_path`), repositories (`url`, a full
-   40-hex `commit`, `files`) or studies AIRAS produced (`airas_record`),
+   `venue`, `pdf_url`, `fulltext_path`), optionally with the code they
+   ship as `repositories` (each `url`, a full 40-hex `commit`, `files` — a
+   directory snapshots every text file under it, so give the whole
+   package a design's `repository_integration` runs — and `method_entry`, the
+   `module.Class.method` whose call runs the method), code with no paper
+   (`repositories` alone), or studies AIRAS produced (`airas_record`),
    each with `passages: [{"node_type": ..., "quote": "<verbatim>"}]`.
    A quote that the snapshot does not contain (line breaks, hyphenation
    and ligatures are normalised away; a paraphrase or a quote spanning
@@ -75,13 +79,13 @@ are stated.
    ```
    hypotheses: [{
      "id": "h1", "statement": "the hypothesis, in prose",
-     "grounded_on": ["s1.p2", ...],
+     "quoted_passage_ids": ["s1.p2", ...],
      "assumptions": ["what must be granted for the claims together to
                       imply h1, naming the claims concerned", ...],
      "claims": [{
        "id": "c1", "statement": "one assertive sentence",
        "rationale": "why c1 holding is evidence for h1, and for which part",
-       "cites_passages": ["s1.p2", ...],
+       "quoted_passage_ids": ["s1.p2", ...],
        "verifier": {"kind": "seyval"},
        "criterion": {"metric": "accuracy", "subject": "proposed-...",
                      "reference": "comparative-1-...", "op": ">=",
@@ -104,8 +108,8 @@ are stated.
    the record and is where a fresh session reads the design rationale
    from.
 
-   `grounded_on` and `cites_passages` (also on designs and runs, and
-   `reference_passage` on a criterion whose `reference` is a constant
+   `quoted_passage_ids` (on hypotheses, claims and designs, and on
+   a criterion whose `reference` is a constant
    read from a paper) name those passages as `s1.p2` — the prior work's
    own words the declaration rests on. The gate refuses a passage no
    source declares.

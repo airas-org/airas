@@ -54,7 +54,7 @@ def render_table_tex(
                 published = column.reference.values[row.run_id]
                 value = value - published if column.ref_path is not None else published
                 if column.ref_path is None and data:
-                    line = passage_line(data, column.reference.passage)
+                    line = passage_line(data, column.reference.quoted_passage_ids[0])
             text = (
                 f"{value:.{column.round}f}"
                 if column.round is not None

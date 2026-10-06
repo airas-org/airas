@@ -64,13 +64,11 @@ def _cite(record: ResearchRecord, passage_ids: list[str]) -> str:
 
 
 def _claim_passages(claim: Any) -> list[str]:
-    ids = list(claim.cites_passages)
-    if isinstance(claim, SeyvalClaim) and claim.criterion.reference_passage:
-        ids.append(claim.criterion.reference_passage)
+    ids = list(claim.quoted_passage_ids)
+    if isinstance(claim, SeyvalClaim):
+        ids += claim.criterion.quoted_passage_ids
     for design in active(claim.designs, "id"):
-        ids += design.cites_passages
-        for run in active(design.runs, "run_id"):
-            ids += run.cites_passages
+        ids += design.quoted_passage_ids
     return list(dict.fromkeys(ids))
 
 
@@ -83,7 +81,7 @@ def render_claims_tex(record: ResearchRecord, metrics_data: dict[str, Any]) -> s
         lines.append(
             rf"\noindent\textbf{{Hypothesis {_number(hypothesis.id)}.}} "
             + latex_text(hypothesis.statement)
-            + _cite(record, hypothesis.grounded_on)
+            + _cite(record, hypothesis.quoted_passage_ids)
         )
         lines.append(r"\begin{enumerate}")
         for claim in active(hypothesis.claims, "id"):
