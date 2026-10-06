@@ -1,0 +1,43 @@
+name: Pin airas in airas-template
+
+# airas-template の workflow が引く airas を main 先頭の commit SHA に書き換える。
+on:
+  push:
+    branches: [main]
+    paths: ["backend/**"]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: pin-airas-template
+  cancel-in-progress: true
+
+env:
+  # airas を引いているテンプレートの workflow
+  AIRAS_WORKFLOWS: verify_record.yml verify_paper.yml publish_paper.yml
+
+jobs:
+  pin:
+    # workflow_dispatch は任意の ref で起動できるので、main 以外の SHA をテンプレートに書かせない
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      # Workflows write の PAT を渡すので可変タグではなく commit に固定する
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: airas-org/airas-template
+          token: ${{ secrets.AIRAS_ORG_TOKEN }}
+
+      - name: Replace the airas ref with this commit and push
+        working-directory: .github/workflows
+        run: |
+          sed -i -E "s|(airas\.git@)[^#\"[:space:]]+(#subdirectory=backend)|\1${GITHUB_SHA}\2|" $AIRAS_WORKFLOWS
+          for f in $AIRAS_WORKFLOWS; do
+            grep -Fq "airas.git@${GITHUB_SHA}#subdirectory=backend" "$f" || { echo "::error::$f is not pinned to ${GITHUB_SHA}"; exit 1; }
+          done
+          git diff --quiet && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "CI: pin airas to airas-org/airas@${GITHUB_SHA}"
+          git push
