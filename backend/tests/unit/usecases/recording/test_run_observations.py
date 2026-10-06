@@ -153,8 +153,11 @@ def _observed(root: Path) -> dict[str, Any]:
                 },
             }
         },
-        "upstream_extensions": {
-            "adapter.MyModel": {"bases": ["pkg.model.Model"], "overrides": ["predict"]}
+        "upstream_extensions": {  # the hook lists every upstream ancestor, nearest first
+            "adapter.MyModel": {
+                "bases": ["pkg.model.Model", "pkg.model.Provider"],
+                "overrides": ["predict"],
+            }
         },
         "processes": [
             {

@@ -98,11 +98,13 @@ def _definition_origins(observed: dict[str, Any]) -> list[tuple[str, str]]:
 
 
 def _overrides(observed: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
+    """(src class, its nearest upstream base, methods it overrides). The hook
+    lists every upstream ancestor; declaring the class one subclasses is enough."""
     return [
-        (cls, base, ext.get("overrides", []))
+        (cls, ext["bases"][0], ext.get("overrides", []))
         for extensions in _sections(observed, "upstream_extensions")
         for cls, ext in extensions.items()
-        for base in ext.get("bases", [])
+        if ext.get("bases")
     ]
 
 

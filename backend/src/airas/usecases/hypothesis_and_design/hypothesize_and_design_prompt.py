@@ -46,7 +46,8 @@ repository under its paper's `repositories` (`url`, `commit`, `files` = the \
 whole package, `method_entry` = the `module.Class.method` whose call runs \
 the method) and, on the design, `repository_integration` (`repository_id`, \
 `extension_points` = upstream names the adapter subclasses, overrides or \
-replaces, `arguments` = one per knob: `argument` as \
+replaces, as the defining module's `module.Class` (`scigym.api.api.LLM`, \
+not the re-export `scigym.api.LLM`), `arguments` = one per knob: `argument` as \
 `module.Class.method.arg`, then `value` for a fixed or kept knob or \
 `params_key` — the `params` key holding its value in each run — for a knob \
 on the grid, and `reason`). The gate compares these with what the run's \

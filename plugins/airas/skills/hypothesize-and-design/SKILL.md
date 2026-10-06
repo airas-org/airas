@@ -39,7 +39,9 @@ refine until the hypothesis rests on passages you have actually read.
    package, `method_entry` = the `module.Class.method` whose call runs
    the method), and the design carries `repository_integration`
    (`repository_id`, `extension_points` = upstream names your adapter
-   subclasses, overrides or replaces, `arguments` = one entry per knob:
+   subclasses, overrides or replaces, written as the defining module's
+   `module.Class` — `scigym.api.api.LLM`, not the re-export
+   `scigym.api.LLM` — `arguments` = one entry per knob:
    `argument` as `module.Class.method.arg`, then `value` for a knob you
    fix or keep, or `params_key` — the `params` key holding its value in
    each run — for a knob on the grid, and `reason`). The run hook
