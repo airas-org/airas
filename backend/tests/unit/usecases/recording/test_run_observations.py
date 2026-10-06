@@ -1,6 +1,5 @@
 """A realized run's observed.json against its design's repository integration."""
 
-import hashlib
 import json
 from collections.abc import Callable
 from pathlib import Path
@@ -8,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from airas.core.hashing import file_sha256
+from airas.core.hashing import file_sha256, text_sha256
 from airas.core.types.research_record import (
     ArgumentValue,
     Criterion,
@@ -33,10 +32,6 @@ from airas.research_record.verify._verify_run_observations import (
 ENTRY = "pkg.runner.Runner.run"
 RUNNER_PY = "class Runner:\n    def __init__(self, n=5): ...\n    def run(self): ...\n"
 SNAPSHOT = f"==> pkg/runner.py <==\n{RUNNER_PY}"
-
-
-def _sha(text: str) -> str:
-    return hashlib.sha256(text.encode()).hexdigest()
 
 
 def _record(root: Path) -> ResearchRecord:
@@ -124,7 +119,7 @@ def _observed(root: Path) -> dict[str, Any]:
         "loaded_file_hashes": {
             "pkg.runner": {
                 "file": "/venv/site-packages/pkg/runner.py",
-                "sha256": _sha(RUNNER_PY),
+                "sha256": text_sha256(RUNNER_PY),
             }
         },
         "loaded_definitions": {
@@ -242,7 +237,7 @@ def test_a_long_or_structured_value_is_compared_through_its_recording(
     observed = _observed(tmp_path)
     observed["processes"][0]["calls"][0]["args"] = {
         "n": {"type": "list", "repr": "[1, 2]"},
-        "key": {"type": "str", "len": 300, "sha256": _sha("k" * 300)},
+        "key": {"type": "str", "len": 300, "sha256": text_sha256("k" * 300)},
     }
     _write(tmp_path, observed)
     assert verify_run_observations(tmp_path, record) == []
