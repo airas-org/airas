@@ -153,6 +153,7 @@ classDiagram
     class ArgumentValue {
         argument: module.Class.method.arg
         value: any
+        params_key: str
         reason: str
     }
     class SeyvalRun {
@@ -244,7 +245,7 @@ classDiagram
 | 逐語 | 全 passage の `quote` が snapshot の部分文字列（NFKC・空白正規化、合字・改行・ソフトハイフンは無視） |
 | 参照解決 | `quoted_passage_ids` の id が既知の passage |
 | 時系列 | 宣言を含む各コミットで、その宣言が名指す passage が既に record にある（後から登録した passage を根拠にできない） |
-| 観測（results 段階） | `repository_integration` を持つ design の、結果のある各 run の `.research/results/<run_id>/observed.json` について: `hook.sha256` がリポジトリの最初のコミット（template の取り込み。root が 1 つでなければ検証不能）の `.airas/sitecustomize.py` の sha256 と一致し、各結果の実行コミットの `Makefile` と `.airas/sitecustomize.py` が最初のコミットと同一、`loaded_file_hashes` の上流モジュールがスナップショットの同じファイルの sha256 と一致（スナップショットに無いものは別に報告）、`method_entry` の呼び出しが 1 回以上、`arguments[]` の各値が観測された束縛引数と一致、定義元が `src/` か `<string>` の上流名と `src/` のクラスが override した上流メソッドが `extension_points` に含まれる |
+| 観測（results 段階） | `repository_integration` を持つ design の、結果のある各 run の `.research/results/<run_id>/observed.json` について: `hook.sha256` がリポジトリの最初のコミット（template の取り込み。root が 1 つでなければ検証不能）の `.airas/sitecustomize.py` の sha256 と一致し、各結果の実行コミットの `Makefile` / `.github/` / `.airas/` が最初のコミットと同一、`loaded_file_hashes` の上流モジュールがスナップショットの同じファイルの sha256 と一致（スナップショットに無いものは別に報告）、`method_entry` の呼び出しが 1 回以上、`arguments[]` の各値が観測された束縛引数と一致、定義元が `src/` か `<string>` の上流名と `src/` のクラスが override した上流メソッドが `extension_points` に含まれる |
 | 引用（verify_paper） | main.tex の `\cite` の鍵が登録済み bibkey、`\cite[s1.p2]{key}` の locator がその source の passage、references.bib が再生成と一致。引かれなかった source は `uncited_sources` として報告（失敗ではない） |
 | 文意（verify_paper） | record に judgment が一つでもあれば、今の引用文（main.tex の `\cite[s1.p2]{key}` を含む段落、claim の statement + rationale、hypothesis の statement）ごとに対応する judgment を探す。無いものは `unjudged_citations` として**失敗**、`supported: false` は `unsupported_citations` として報告（失敗ではない）。判定そのものは `verify_paper_values(model=...)`（MCP）か `airas verify-paper --model`（CI）が LLM で行い、record に書いてから同じ呼び出しで集計する |
 
@@ -320,7 +321,7 @@ classDiagram
         - `repository_integration` 文献のリポジトリが持つ手法をこの design がどう走らせるか（省略可）。上流のファイルは改変しない前提。結果のある run の `observed.json` と照合される（上の「観測」）
           - `repository_id` 走らせるリポジトリ（`"s1.r1"`）。その `method_entry` が手法の入口
           - `extension_points[]` adapter が継承・override・差し替えしてよい上流の名前
-          - `arguments[]` 上流の引数に渡す値。`argument` は `module.Class.method.arg`、`value` は実行する値（既定のままでもその値を書く）、`reason`。フックは `method_entry` と各 `argument` の関数を観測し、gate は観測された束縛引数と `value` を照合する
+          - `arguments[]` こちらが値を決めて渡す上流の引数。`argument` は `module.Class.method.arg`、固定なら `value`（既定のままでもその値を書く）、run ごとに振るなら `params_key`（値を持つ run の `params` のキー）、`reason`。フックは `method_entry` と各 `argument` の関数を観測し、gate は観測された束縛引数を `value` か各 run の `params[params_key]` と照合する
         - **runs[]** 実行単位。`.research/results/<run_id>/` を生む
           - `run_id` / `description`
           - `params` 結果に効く全条件。dispatch 条件（`mode`）と `config/config.yaml ⊕ config/run/<run_id>.yaml` の全キー（例 `{"mode": "full", "epochs": 10}`）。run commit 時点の config と基盤の記録に照合される

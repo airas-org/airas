@@ -269,6 +269,42 @@ def test_a_run_from_a_commit_that_edited_the_trusted_files_fails(
     ), problems
 
 
+def test_a_workflow_edited_after_the_import_is_reported(tmp_path: Path) -> None:
+    _template_import(tmp_path)
+    observed = _observed(tmp_path)
+    workflow = tmp_path / ".github/workflows/verify_record.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text("on: push\n")
+    _git(tmp_path, "add", ".github")
+    _git(tmp_path, "commit", "-q", "-m", "own gate")
+    record = _record(tmp_path, _git(tmp_path, "rev-parse", "HEAD"))
+    _write(tmp_path, observed)
+    problems = verify_run_observations(tmp_path, record)
+    assert len(problems) == 1 and problems[0].startswith(
+        "run 'run-1': .github/workflows/verify_record.yml at commit "
+    ), problems
+
+
+def test_a_knob_varied_over_runs_is_read_from_each_runs_params(tmp_path: Path) -> None:
+    record = _record(tmp_path, _template_import(tmp_path))
+    design = record.hypotheses[0].claims[0].designs[0]
+    design.repository_integration.arguments = [
+        ArgumentValue(argument="pkg.runner.Runner.__init__.n", params_key="n")
+    ]
+    design.runs[0].params = {"n": 20}
+    _write(tmp_path, _observed(tmp_path))
+    assert verify_run_observations(tmp_path, record) == []
+    design.runs[0].params = {"n": 7}
+    assert verify_run_observations(tmp_path, record) == [
+        "run 'run-1': pkg.runner.Runner.__init__.n was 20, not the declared 7"
+    ]
+    design.runs[0].params = {}
+    assert verify_run_observations(tmp_path, record) == [
+        "run 'run-1': pkg.runner.Runner.__init__.n reads params['n'], which the run "
+        "does not declare"
+    ]
+
+
 def test_a_repository_without_the_template_hook_in_its_first_commit_is_reported(
     tmp_path: Path,
 ) -> None:

@@ -23,6 +23,7 @@ OBSERVED_FILENAME = "observed.json"
 # PYTHONPATH so every Python process of a run writes what it loaded and called.
 MAKEFILE_PATH = "Makefile"
 HOOK_PATH = ".airas/sitecustomize.py"
+TRUSTED_PATHS = (MAKEFILE_PATH, ".github", ".airas")
 
 # The literature the research drew on: one directory per source holding
 # the paper's text and/or its repository's snapshot (one page per file),

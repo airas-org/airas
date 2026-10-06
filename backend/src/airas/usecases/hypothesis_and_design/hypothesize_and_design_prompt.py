@@ -47,8 +47,10 @@ whole package, `method_entry` = the `module.Class.method` whose call runs \
 the method) and, on the design, `repository_integration` (`repository_id`, \
 `extension_points` = upstream names the adapter subclasses, overrides or \
 replaces, `arguments` = one per knob: `argument` as \
-`module.Class.method.arg`, `value`, `reason`). The gate compares these \
-with what the run's hook observed the upstream being called with.
+`module.Class.method.arg`, then `value` for a fixed or kept knob or \
+`params_key` — the `params` key holding its value in each run — for a knob \
+on the grid, and `reason`). The gate compares these with what the run's \
+hook observed the upstream being called with.
 
 ## The claims
 The claims together should imply the hypothesis (c1 ∧ … ∧ cn ⇒ h1). For \

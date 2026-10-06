@@ -8,23 +8,26 @@ from typing import Any
 from airas.core.hashing import text_sha256
 from airas.core.research_paths import (
     HOOK_PATH,
-    MAKEFILE_PATH,
     OBSERVED_FILENAME,
     PAGE_SEPARATOR,
     RESULTS_DIR,
+    TRUSTED_PATHS,
     repository_snapshot_relpath,
 )
 from airas.core.types.research_record import (
-    ArgumentValue,
     Repository,
     RepositoryIntegration,
     ResearchRecord,
     SeyvalClaim,
     SeyvalDesign,
+    SeyvalRun,
 )
-from airas.infra.local_git import file_bytes_at_commit, is_shallow, root_commit
-
-TRUSTED_FILES = (MAKEFILE_PATH, HOOK_PATH)
+from airas.infra.local_git import (
+    file_bytes_at_commit,
+    is_shallow,
+    paths_changed_between,
+    root_commit,
+)
 
 
 def _first_commit(root: Path) -> tuple[str | None, list[str]]:
@@ -32,7 +35,7 @@ def _first_commit(root: Path) -> tuple[str | None, list[str]]:
     a repository prepare_repository created starts from — or why there is none."""
     if is_shallow(root) or (first := root_commit(root)) is None:
         return None, [
-            f"{' and '.join(TRUSTED_FILES)} could not be compared with the repository's "
+            f"{', '.join(TRUSTED_PATHS)} could not be compared with the repository's "
             "first commit (shallow clone, no git history, or several root commits) — "
             "CI must check out with fetch-depth: 0"
         ]
@@ -42,17 +45,6 @@ def _first_commit(root: Path) -> tuple[str | None, list[str]]:
             "from airas-template"
         ]
     return first, []
-
-
-def _files_differing_between_commits(
-    root: Path, commit: str, reference: str, paths: tuple[str, ...]
-) -> list[str]:
-    return [
-        path
-        for path in paths
-        if file_bytes_at_commit(root, commit, path)
-        != file_bytes_at_commit(root, reference, path)
-    ]
 
 
 def _pages(text: str) -> dict[str, str]:
@@ -140,9 +132,9 @@ def _same_value(declared: Any, observed: Any) -> bool | None:
 
 
 def _argument_problem(
-    label: str, setting: ArgumentValue, calls: list[dict[str, Any]]
+    label: str, argument: str, value: Any, calls: list[dict[str, Any]]
 ) -> str | None:
-    fn, _, arg = setting.argument.rpartition(".")
+    fn, _, arg = argument.rpartition(".")
     bound = [c.get("args", {}) for c in calls if c.get("fn") == fn]
     if not bound:
         return f"{label}: {fn} (argument {arg}) was never called"
@@ -151,11 +143,11 @@ def _argument_problem(
         return f"{label}: {fn} was called without an argument {arg}"
 
     other = next(
-        (args[arg] for args in bound if _same_value(setting.value, args[arg]) is False),
+        (args[arg] for args in bound if _same_value(value, args[arg]) is False),
         None,
     )
     if other is not None:
-        return f"{label}: {setting.argument} was {other!r}, not the declared {setting.value!r}"
+        return f"{label}: {argument} was {other!r}, not the declared {value!r}"
     return None
 
 
@@ -165,15 +157,14 @@ def _covered(name: str, extension_points: list[str]) -> bool:
 
 def _run_problems(
     root: Path,
-    run_id: str,
-    run_commits: list[str | None],
+    run: SeyvalRun,
     observed: dict[str, Any],
     repository: Repository,
     integration: RepositoryIntegration,
     pages: dict[str, str],
     first_commit: str | None,
 ) -> list[str]:
-    label = f"run '{run_id}'"
+    label = f"run '{run.run_id}'"
     problems: list[str] = []
 
     if first_commit is not None:
@@ -186,19 +177,20 @@ def _run_problems(
                 f"{label}: observed.json was not written by the {HOOK_PATH} the repository "
                 "was created with"
             )
-        for commit in run_commits:
-            if commit is None:
+        for result in run.results:
+            if result.commit is None:
                 problems.append(
-                    f"{label}: a result names no commit to check {' and '.join(TRUSTED_FILES)} at"
+                    f"{label}: result {result.id} names no commit to check "
+                    f"{', '.join(TRUSTED_PATHS)} at"
                 )
                 continue
-            changed = _files_differing_between_commits(
-                root, commit, first_commit, TRUSTED_FILES
+            changed = paths_changed_between(
+                root, first_commit, result.commit, TRUSTED_PATHS
             )
             if changed:
                 problems.append(
-                    f"{label}: {', '.join(changed)} at commit {commit[:12]} differ from the "
-                    "repository's first commit"
+                    f"{label}: {', '.join(changed)} at commit {result.commit[:12]} differ "
+                    "from the repository's first commit"
                 )
 
     package = repository.method_entry.split(".")[0]
@@ -229,10 +221,22 @@ def _run_problems(
         problems.append(
             f"{label}: method_entry {repository.method_entry} was never called"
         )
+    # A fixed value is declared; a varied one is this run's params entry.
+    expected: list[tuple[str, Any]] = []
+    for setting in integration.arguments:
+        if not setting.params_key:
+            expected.append((setting.argument, setting.value))
+        elif setting.params_key in run.params:
+            expected.append((setting.argument, run.params[setting.params_key]))
+        else:
+            problems.append(
+                f"{label}: {setting.argument} reads params[{setting.params_key!r}], "
+                "which the run does not declare"
+            )
     problems += [
         problem
-        for setting in integration.arguments
-        if (problem := _argument_problem(label, setting, calls)) is not None
+        for argument, value in expected
+        if (problem := _argument_problem(label, argument, value, calls)) is not None
     ]
 
     # Changes to the upstream: a name defined in src/ or by exec, or a src
@@ -260,7 +264,11 @@ def verify_run_observations(root: Path, record: ResearchRecord) -> list[str]:
     first_checked = False
 
     for _, claim, design, run in record.active_runs():
-        if not (isinstance(claim, SeyvalClaim) and isinstance(design, SeyvalDesign)):
+        if not (
+            isinstance(claim, SeyvalClaim)
+            and isinstance(design, SeyvalDesign)
+            and isinstance(run, SeyvalRun)
+        ):
             continue
 
         integration = design.repository_integration
@@ -290,13 +298,6 @@ def verify_run_observations(root: Path, record: ResearchRecord) -> list[str]:
             _pages(snapshot.read_text(encoding="utf-8")) if snapshot.is_file() else {}
         )
         problems += _run_problems(
-            root,
-            run.run_id,
-            [result.commit for result in run.results],
-            observed,
-            repository,
-            integration,
-            pages,
-            first_commit,
+            root, run, observed, repository, integration, pages, first_commit
         )
     return problems

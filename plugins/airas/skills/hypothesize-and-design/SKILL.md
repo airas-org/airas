@@ -39,10 +39,12 @@ refine until the hypothesis rests on passages you have actually read.
    package, `method_entry` = the `module.Class.method` whose call runs
    the method), and the design carries `repository_integration`
    (`repository_id`, `extension_points` = upstream names your adapter
-   subclasses, overrides or replaces, `arguments` = one entry per knob
-   you set or keep: `argument` as `module.Class.method.arg`, `value`,
-   `reason`). The run hook records what the upstream was called with,
-   and the gate compares it with these.
+   subclasses, overrides or replaces, `arguments` = one entry per knob:
+   `argument` as `module.Class.method.arg`, then `value` for a knob you
+   fix or keep, or `params_key` — the `params` key holding its value in
+   each run — for a knob on the grid, and `reason`). The run hook
+   records what the upstream was called with, and the gate compares it
+   with these.
 4. **Author the hypothesis and the design** against the guide
    `get_prompts(step="hypothesis_and_design")` returns: it states what a hypothesis, a claim (statement, rationale,
    criterion, predicted interval, cited passages), a design and a run
