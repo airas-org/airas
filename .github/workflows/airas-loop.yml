@@ -23,17 +23,14 @@ jobs:
     runs-on: ${{ vars.AIRAS_LOOP_RUNNER || 'ubicloud-standard-2' }}
     timeout-minutes: 7000  # 5 日ちょうどにしない: self-hosted の job 上限(7200 分)に当たると最終 step が走らない
     env:
-      # 秘密を agent に見せない設計にしない: agent 自身が gh と airas MCP でこれらを使う。
-      # 代わりに最小権限で持つ(auto-res2 限定の fine-grained PAT、workspace 限定の SEYVAL key、予算上限付きの gateway key)
+      # agent に渡す秘密は、agent 自身が gh と airas MCP で使う 2 つだけ(最小権限: auto-res2 限定の PAT、workspace 限定の key)。
+      # 実験が使う鍵(VERCEL、RIKYU)は agent に渡さない: 実験リポの workflow と Seyval が org secrets / user env var から直接読む
       GH_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+      GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+      SEYVAL_API_KEY: ${{ secrets.SEYVAL_API_KEY }}
       # ANTHROPIC_API_KEY ではなく OAuth token: agent はサブスク枠で動かす(claude setup-token の値)
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
       BASH_MAX_TIMEOUT_MS: "21600000"  # 既定の 10 分では、agent が実験を待つ数時間の sleep が切れる
-      # 実験リポに写す秘密を env に置く: runner に credentials.json は無く、置くと env より優先されて更新が効かない
-      GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
-      SEYVAL_API_KEY: ${{ secrets.SEYVAL_API_KEY }}
-      VERCEL_AI_GATEWAY_API_KEY: ${{ secrets.VERCEL_AI_GATEWAY_API_KEY }}
-      RIKYU_API_KEY: ${{ secrets.RIKYU_API_KEY }}
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
