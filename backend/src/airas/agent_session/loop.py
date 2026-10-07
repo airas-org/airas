@@ -1,5 +1,4 @@
-"""`airas loop`: 研究 1 本ぶんの agent セッションを起こす。resume 先の URL が
-あれば前回の会話を復元して続きを、なければ新しい研究を始める。"""
+"""`airas loop`: 研究 1 本ぶんの agent セッションを起こす。"""
 
 from __future__ import annotations
 
@@ -34,7 +33,7 @@ def loop(
     if "<fill in>" in policy:
         raise SystemExit(f"{policy_file} still has '<fill in>' placeholders")
     work = Path(workdir).expanduser().resolve()
-    # 新規でも agent にここへ clone させる。job が殺されても最終 step が URL を拾えるように場所を固定する
+    # clone 先を agent に任せない: job が殺されたあと最終 step が URL を拾えるよう場所を固定する
     clone = work / "repo"
     work.mkdir(parents=True, exist_ok=True)
 
@@ -43,7 +42,7 @@ def loop(
         cmd += ["--plugin-dir", plugin_dir]
     if resume_repo:
         subprocess.run(["git", "clone", resume_repo, str(clone)], check=True)
-        # 最新の fork point は staging ref(verify)にいることがある
+        # default branch だけでは足りない: 最新の fork point は staging ref(verify)にあることがある
         subprocess.run(
             ["git", "-C", str(clone), "fetch", "origin", "verify"], check=False
         )
@@ -57,10 +56,9 @@ def loop(
     else:
         cmd.append(START_PROMPT.format(owner=owner, clone=clone, policy=policy))
         result = subprocess.run(cmd, cwd=work, check=False)
-    # 人待ちで archive されたリポは失敗として返し、workflow が次の研究を即座に始めないようにする
+    # archive(人待ち)で正常終了した研究を成功扱いにしない: workflow が次の研究を即座に始めてしまう
     if result.returncode == 0 and clone.exists() and _archived(clone):
         raise SystemExit(1)
-    # claude の終了コードをそのまま返し、workflow が失敗を見分けられるようにする
     raise SystemExit(result.returncode)
 
 
@@ -68,10 +66,15 @@ def _archived(clone: Path) -> bool:
     url = remote_origin_url(clone)
     if not url:
         return False
-    out = subprocess.run(
+    result = subprocess.run(
         ["gh", "repo", "view", url, "--json", "isArchived", "-q", ".isArchived"],
         capture_output=True,
         text=True,
         check=False,
-    ).stdout.strip()
-    return out == "true"
+    )
+    # 失敗を False にしない: 判定できないまま次の研究を起こすことになる
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"could not determine the archive status of {url}: {result.stderr.strip()}"
+        )
+    return result.stdout.strip() == "true"

@@ -1,6 +1,3 @@
-# 1 run = 1 研究。終わったら次の run を自分で起こす。5 日の timeout で殺されたら
-# 次の run に実験リポの URL を渡し、同じ研究を fork point から resume する。
-# schedule は連鎖が切れたときの保険で、run が生きている間は concurrency で待つだけ。
 name: airas-loop
 
 on:
@@ -21,31 +18,20 @@ concurrency:
 
 jobs:
   research:
-    # self-hosted に切り替えるときは git / gh / curl を入れておく
+    # cron を常時にせず変数で gating: 人が止めた連鎖を翌日の cron が勝手に再開しないため
+    if: github.event_name == 'workflow_dispatch' || vars.AIRAS_LOOP_ACTIVE == 'true'
     runs-on: ${{ vars.AIRAS_LOOP_RUNNER || 'ubicloud-standard-2' }}
-    # self-hosted の job 上限 5 日(7200 分)の手前で切る
-    timeout-minutes: 7000
+    timeout-minutes: 7000  # 5 日ちょうどにしない: self-hosted の job 上限(7200 分)に当たると最終 step が走らない
     env:
-      GH_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}  # gh CLI 用(push 認証、次 run の起動)
-      # agent が実験ランを待つ sleep を 1 回のツール呼び出しで済ませられるようにする(6 時間)
-      BASH_MAX_TIMEOUT_MS: "21600000"
-      # 以下は GITHUB_ACTIONS_SECRET_NAMES(core/credentials.py)の全名。set_github_actions_secrets が実験リポの secrets に写す
+      GH_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+      # ANTHROPIC_API_KEY ではなく OAuth token: agent はサブスク枠で動かす(claude setup-token の値)
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      BASH_MAX_TIMEOUT_MS: "21600000"  # 既定の 10 分では、agent が実験を待つ数時間の sleep が切れる
+      # 実験リポに写す秘密を env に置く: runner に credentials.json は無く、置くと env より優先されて更新が効かない
       GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       SEYVAL_API_KEY: ${{ secrets.SEYVAL_API_KEY }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       VERCEL_AI_GATEWAY_API_KEY: ${{ secrets.VERCEL_AI_GATEWAY_API_KEY }}
       RIKYU_API_KEY: ${{ secrets.RIKYU_API_KEY }}
-      AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
-      LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
-      LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
-      LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }}
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
@@ -53,40 +39,56 @@ jobs:
         run: |
           command -v claude || curl -fsSL https://claude.ai/install.sh | bash
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Arm the daily safety net
+        if: github.event_name == 'workflow_dispatch'
+        run: gh variable set AIRAS_LOOP_ACTIVE --body true --repo "${{ github.repository }}"
+
       - name: Refuse a runner with its own credentials
-        # ~/.airas/credentials.json は環境変数より優先されるので、常駐 runner に残っていると上の secrets が効かない
         run: test ! -e ~/.airas/credentials.json || { echo "remove ~/.airas/credentials.json on this runner"; exit 1; }
+
       - name: Git identity and credentials
-        # 実験リポへの push は GITHUB_TOKEN では届かないので PAT。identity は hooks のコミット用
+        # GITHUB_TOKEN ではなく PAT: 別リポ(実験リポ)への push は GITHUB_TOKEN では届かない
         run: |
           gh auth setup-git
           git config --global user.name "airas-loop"
           git config --global user.email "airas-loop@users.noreply.github.com"
+
       - name: Research
         id: research
         working-directory: backend
+        env:
+          RESUME_REPO: ${{ inputs.resume_repo }}  # ${{ }} をシェルに直接書かない: 入力のメタ文字でコマンドが実行される
         run: |
           uv run airas loop \
-            --resume-repo "${{ inputs.resume_repo }}" \
+            --resume-repo "$RESUME_REPO" \
             --workdir "$RUNNER_TEMP/research" \
             --owner "${{ vars.AIRAS_LOOP_OWNER || 'auto-res2' }}" \
             --plugin-dir "$GITHUB_WORKSPACE/plugins/airas" \
             --policy "$GITHUB_WORKSPACE/.github/airas-loop-policy.md"
+
       - name: Stop after three failures in a row
-        # 翌日の cron の再試行も止め、人が原因を直して enable し直すまで待つ
+        # workflow disable ではなく変数を下ろす: disable だと dispatch もできず、再開に enable が要る
+        id: guard
         if: always() && steps.research.outcome == 'failure'
         run: |
-          prev=$(gh run list --workflow airas-loop.yml --repo "${{ github.repository }}" --limit 3 --json status,conclusion \
-                 -q '[.[] | select(.status=="completed" and .conclusion=="failure")] | length')
-          [ "$prev" -ge 2 ] && gh workflow disable airas-loop.yml --repo "${{ github.repository }}" || true
+          failures=$(gh run list --workflow airas-loop.yml --repo "${{ github.repository }}" --limit 3 --json status,conclusion \
+                     -q '[.[] | select(.status=="completed" and .conclusion=="failure")] | length')
+          if [ "$failures" -ge 2 ]; then
+            gh variable set AIRAS_LOOP_ACTIVE --body false --repo "${{ github.repository }}"
+            echo stopped=true >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Start the next run
-        # exit 0 なら次の研究、timeout の cancel なら同じリポを resume。
-        # exit 1(agent の異常終了、または人待ちで archive)では起こさない。同じ失敗で数分周期に回り続けるのを防ぎ、翌日の cron が 1 回だけ再試行する
-        if: always() && steps.research.outcome != 'failure'
+        # 失敗でも同じリポを resume する: サブスクのレート上限で agent が落ちた研究を捨てない。
+        # archive 済み(人待ち)だけは起こさない: 人が解除するまで同じ失敗を繰り返す
+        if: always() && steps.guard.outputs.stopped != 'true'
         run: |
           repo=""
-          if [ "${{ steps.research.outcome }}" = "cancelled" ]; then
-            repo=$(git -C "$RUNNER_TEMP/research/repo" remote get-url origin 2>/dev/null || true)
-            git -C "$RUNNER_TEMP/research/repo" push origin main:verify 2>/dev/null || true
+          if [ "${{ steps.research.outcome }}" != "success" ]; then
+            clone="$RUNNER_TEMP/research/repo"
+            repo=$(git -C "$clone" remote get-url origin 2>/dev/null || true)
+            git -C "$clone" push origin main:verify 2>/dev/null || true
+            if [ -n "$repo" ] && [ "$(gh repo view "$repo" --json isArchived -q .isArchived)" = "true" ]; then exit 0; fi
           fi
-          gh workflow run airas-loop.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}" -f resume_repo="$repo"
+          gh workflow run airas-loop.yml --repo "${{ github.repository }}" --ref "$GITHUB_REF_NAME" -f resume_repo="$repo"
