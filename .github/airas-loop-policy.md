@@ -6,8 +6,8 @@ questions "Settle once, up front" would otherwise ask.
 
 - repository visibility: public (`is_private=False`)
 - execution platform: seyval, BYO compute
-  - workspace_id: <fill in>
-  - compute_id: <fill in, resolve with list_computes each time>
+  - workspace_id: 03917ddb-2e3b-4927-b265-59f1f8891c20 (AIRAS)
+  - compute_id: byo:4f616e40-bb56-45aa-95b5-38fa4d2d0b8b (RIKYU, Slurm partition gpu)
 - compute target: GB200 (aarch64), 1 GPU, time_limit 24h
 - when a step has failed the same way twice: archive the repository and stop
 
