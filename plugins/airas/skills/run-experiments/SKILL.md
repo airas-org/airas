@@ -50,7 +50,10 @@ from a post-hoc one. Declare late additions with `append_to_record`
      the end — `src.main`, `make evaluate`, `src.evaluate` — and a
      `command_args` of your own must too. Keep `eval_inputs/` in the
      results: it is what the metrics can be re-derived from, and the
-     record anchors it by hash.
+     record anchors it by hash. `make evaluate` scores the task types
+     named by `tasks:` in the run config, else every task type in
+     `.research/evaluation.json`; a run that writes inputs for only some
+     of them (a small and a large split, say) must name its own.
    - **A proof** (`kind: lean`): `lake build` of the named module, then
      `lake exe airas-report` writes `lean.json` — the file the record is
      checked against. Stages are `sanity` (the statement type-checks,

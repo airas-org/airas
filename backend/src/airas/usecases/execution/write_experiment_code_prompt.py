@@ -26,7 +26,7 @@ AIRAS, and everything must run on a Linux runner):
 | --- | --- |
 | `Dockerfile` | Reproducible environment (Python 3.11 + uv) |
 | `config/config.yaml` | Shared Hydra defaults |
-| `config/run/*.yaml` | One run config per declared run_id |
+| `config/run/*.yaml` | One run config per declared run_id; `tasks:` names the plan's task types this run writes inputs for, when not all of them (e.g. a small and a large split) |
 | `src/main.py` | Orchestrator for a single `run_id` (Hydra entrypoint) |
 | `src/preprocess.py` | Dataset loading / preprocessing |
 | `src/train.py` / `src/inference.py` | Single-run executor |
