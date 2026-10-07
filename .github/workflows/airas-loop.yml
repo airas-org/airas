@@ -23,8 +23,8 @@ jobs:
     runs-on: ${{ vars.AIRAS_LOOP_RUNNER || 'ubicloud-standard-2' }}
     timeout-minutes: 7000  # 5 日ちょうどにしない: self-hosted の job 上限(7200 分)に当たると最終 step が走らない
     env:
-      # agent に渡す秘密は、agent 自身が gh と airas MCP で使う 2 つだけ(最小権限: auto-res2 限定の PAT、workspace 限定の key)。
-      # 実験が使う鍵(VERCEL、RIKYU)は agent に渡さない: 実験リポの workflow と Seyval が org secrets / user env var から直接読む
+      # ここの値は airas-org/airas の repository secrets。agent は PAT と SEYVAL を set_github_actions_secrets で実験リポに写す(verify_record と publish_paper が読む)。
+      # 実験が使う鍵(VERCEL、RIKYU)は agent に渡さない: 実験リポの workflow は auto-res2 の org secrets を継承し(コピー無し)、Seyval の run は user env var から読む
       GH_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
       GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
       SEYVAL_API_KEY: ${{ secrets.SEYVAL_API_KEY }}
