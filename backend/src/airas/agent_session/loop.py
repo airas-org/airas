@@ -42,13 +42,23 @@ def loop(
         cmd += ["--plugin-dir", plugin_dir]
     if resume_repo:
         subprocess.run(["git", "clone", resume_repo, str(clone)], check=True)
-        # default branch だけでは足りない: 最新の fork point は staging ref(verify)にあることがある
-        subprocess.run(
-            ["git", "-C", str(clone), "fetch", "origin", "verify"], check=False
+        # default branch だけでは足りない: 最新の fork point は staging ref(verify)にあることがある。
+        # fetch を無条件に check しない: 最初の push 前は verify が無く、それは失敗ではない(通信や認証の失敗とは分ける)
+        verify = subprocess.run(
+            ["git", "-C", str(clone), "ls-remote", "--exit-code", "origin", "verify"],
+            capture_output=True,
+            check=False,
         )
-        subprocess.run(
-            ["git", "-C", str(clone), "merge", "--ff-only", "FETCH_HEAD"], check=False
-        )
+        if verify.returncode == 0:
+            subprocess.run(
+                ["git", "-C", str(clone), "fetch", "origin", "verify"], check=True
+            )
+            subprocess.run(
+                ["git", "-C", str(clone), "merge", "--ff-only", "FETCH_HEAD"],
+                check=True,
+            )
+        elif verify.returncode != 2:
+            verify.check_returncode()
         state, _ = load_agent_state(str(clone))
         session_id, _ = restore_claude_session(str(clone), state)
         cmd += ["--resume", session_id, CONTINUE_PROMPT.format(policy=policy)]
