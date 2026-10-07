@@ -23,6 +23,8 @@ jobs:
     runs-on: ${{ vars.AIRAS_LOOP_RUNNER || 'ubicloud-standard-2' }}
     timeout-minutes: 7000  # 5 日ちょうどにしない: self-hosted の job 上限(7200 分)に当たると最終 step が走らない
     env:
+      # 秘密を agent に見せない設計にしない: agent 自身が gh と airas MCP でこれらを使う。
+      # 代わりに最小権限で持つ(auto-res2 限定の fine-grained PAT、workspace 限定の SEYVAL key、予算上限付きの gateway key)
       GH_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
       # ANTHROPIC_API_KEY ではなく OAuth token: agent はサブスク枠で動かす(claude setup-token の値)
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
