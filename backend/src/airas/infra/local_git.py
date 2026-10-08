@@ -77,6 +77,15 @@ def file_bytes_at_commit(
     return bytes(result.stdout)
 
 
+def files_at_commit(
+    repo_root: Path, commit_hash: str, repo_paths: list[str]
+) -> list[str] | None:
+    text = _text(
+        repo_root, "ls-tree", "-r", "--name-only", commit_hash, "--", *repo_paths
+    )
+    return None if text is None else [line for line in text.splitlines() if line]
+
+
 def commits_touching(repo_root: Path, repo_path: str) -> list[str] | None:
     log = _text(repo_root, "log", "--format=%H", "--", repo_path)
     if log is None:

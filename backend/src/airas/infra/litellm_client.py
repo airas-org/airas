@@ -221,6 +221,7 @@ class LiteLLMClient:
         data_model,
         params: dict[str, Any] | None = None,
         web_search: bool = False,
+        system: str | None = None,
     ) -> Any:
         # Fail fast (before any API call) when the selected model cannot
         # produce structured output, which this path requires. ValueError is
@@ -240,6 +241,8 @@ class LiteLLMClient:
         # setdefault so an explicit per-call timeout in `params` still wins.
         litellm_kwargs.setdefault("timeout", resolve_llm_timeout())
         messages = [{"role": "user", "content": message}]
+        if system is not None:
+            messages.insert(0, {"role": "system", "content": system})
 
         if web_search:
             litellm_kwargs["tools"] = [{"type": "web_search"}]

@@ -119,7 +119,8 @@ async def _verify_paper(
     latex_template_name: LATEX_TEMPLATE_NAME,
     pdf_path: str | None,
     check_provenance: bool,
-    model: str | None = None,
+    citation_verifier_model: str | None = None,
+    implementation_verifier_model: str | None = None,
 ) -> PaperVerification:
     # The same verification CI runs, with this server's clients.
     # Unavailable provenance or history is surfaced here, not failed: only
@@ -133,8 +134,11 @@ async def _verify_paper(
         require_provenance=False,
         require_history=False,
         store_factory=_output_store,
-        model=model,
-        litellm_client=_litellm_client() if model else None,
+        citation_verifier_model=citation_verifier_model,
+        implementation_verifier_model=implementation_verifier_model,
+        litellm_client=_litellm_client()
+        if citation_verifier_model or implementation_verifier_model
+        else None,
     )
 
 
@@ -143,7 +147,8 @@ async def verify_paper_values(
     local_path: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
     check_provenance: bool = True,
-    model: str | None = None,
+    citation_verifier_model: str | None = None,
+    implementation_verifier_model: str | None = None,
 ) -> dict[str, Any]:
     """Check that everything the paper states is what was declared and measured.
 
@@ -184,16 +189,27 @@ async def verify_paper_values(
     review items before publishing. `unsupported_citations` is the same
     kind of item: what the judge did not find borne out by the passage.
     `unjudged_citations` — citations no judgment covers as the text now
-    stands — fail the check. Pass `model` to have that model read each
-    unjudged citation against its passage first; the judgments are written
-    into the record and committed, so the same call then reports only what
-    the model found unsupported. Re-run with `model` after rewriting a
-    sentence that cites a passage. Requires an LLM provider key when `model`
-    is given.
+    stands — fail the check. Pass `citation_verifier_model` to have that
+    model read each unjudged citation against its passage first; the
+    judgments are written into the record and committed, so the same call
+    then reports only what the model found unsupported. Re-run with it
+    after rewriting a sentence that cites a passage.
+    `implementation_verifier_model` likewise reads each design's code and
+    runs against the design (once per state of declaration, code and runs;
+    the review is written into the record): contradictions and declared
+    steps the code lacks fail, choices the record does not declare are
+    listed in `record.reports` for review. Both names are written into the
+    record, so keep them the same across a user's studies. Requires an LLM
+    provider key when either is given.
     """
     refresh_environment()
     verification = await _verify_paper(
-        local_path, latex_template_name, None, check_provenance, model
+        local_path,
+        latex_template_name,
+        None,
+        check_provenance,
+        citation_verifier_model,
+        implementation_verifier_model,
     )
     return verification.model_dump()
 

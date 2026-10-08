@@ -1021,7 +1021,7 @@ CITED = "Dropout is applied everywhere \\cite[s1.p1]{vaswani-2017-attention}."
 def _judge(repo: Path, judge: _Judge) -> int:
     """verify_paper with a model judges what is unjudged; returns how many."""
     before = len(judge.prompts)
-    _verify_paper(str(repo), model="judge-1", litellm_client=judge)
+    _verify_paper(str(repo), citation_verifier_model="judge-1", litellm_client=judge)
     return len(judge.prompts) - before
 
 

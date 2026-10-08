@@ -90,8 +90,11 @@ def _run_verify_paper(args: argparse.Namespace) -> None:
                     args.no_provenance or args.allow_unavailable_provenance
                 ),
                 require_history=not args.allow_unavailable_history,
-                model=args.model,
-                litellm_client=LiteLLMClient() if args.model else None,
+                citation_verifier_model=args.citation_verifier_model,
+                implementation_verifier_model=args.implementation_verifier_model,
+                litellm_client=LiteLLMClient()
+                if args.citation_verifier_model or args.implementation_verifier_model
+                else None,
             )
         )
         for template in templates
@@ -313,10 +316,17 @@ def main() -> None:
         ),
     )
     verify.add_argument(
-        "--model",
+        "--citation-verifier-model",
         help=(
             "Have this model judge every citation no judgment covers before the "
             "check, and write the judgments into record.json"
+        ),
+    )
+    verify.add_argument(
+        "--implementation-verifier-model",
+        help=(
+            "Have this model read each design's code and runs against the design "
+            "before the check, and write the review into record.json"
         ),
     )
     verify.add_argument(
