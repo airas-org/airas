@@ -164,10 +164,18 @@ def _observed_path(root: Path, run_id: str) -> Path:
 
 
 def _current_review(
-    design: SeyvalDesign, inputs_sha256: str
+    design: SeyvalDesign, commit: str, observed: dict[str, str], inputs_sha256: str
 ) -> ImplementationReview | None:
+    # inputs_sha256 だけでは足りない: モデルに見せない部分（env、11 件目以降の値）だけが
+    # 変わった再実行を、observed の sha が違うのに同じ判定で通してしまう
     return next(
-        (r for r in reversed(design.reviews) if r.inputs_sha256 == inputs_sha256),
+        (
+            r
+            for r in reversed(design.reviews)
+            if r.commit == commit
+            and r.observed == observed
+            and r.inputs_sha256 == inputs_sha256
+        ),
         None,
     )
 
@@ -277,7 +285,7 @@ async def verify_implementation(
             ),
         )
         inputs_sha256 = hashlib.sha256(inputs.encode()).hexdigest()
-        review = _current_review(design, inputs_sha256)
+        review = _current_review(design, commit, observed, inputs_sha256)
         if review is None and model is not None:
             if litellm_client is None:
                 raise ValueError("a model needs a litellm_client")

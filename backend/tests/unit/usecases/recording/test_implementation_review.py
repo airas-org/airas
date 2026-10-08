@@ -225,6 +225,12 @@ async def test_a_rerun_or_a_changed_declaration_needs_a_new_review(
     record.hypotheses[0].notes.append("速度則に Hill も含める")
     await _verify(root, record, judge)
     assert len(judge.prompts) == 3  # once per state of the runs and of the declaration
+    # a rerun that differs only in what the model is not shown still needs a review
+    _observed(
+        root, "run-1", '{"version": 3, "calls": {"src.adapter.f": {}}, "env": [1]}'
+    )
+    await _verify(root, record, judge)
+    assert len(judge.prompts) == 4
 
 
 async def test_code_git_cannot_show_is_not_reviewed(tmp_path: Path) -> None:
