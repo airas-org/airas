@@ -188,7 +188,10 @@ async def verify_paper_values(
     unjudged citation against its passage first; the judgments are written
     into the record and committed, so the same call then reports only what
     the model found unsupported. Re-run with `model` after rewriting a
-    sentence that cites a passage. Requires an LLM provider key when `model`
+    sentence that cites a passage. The same `model` also reads each design's
+    code and runs against the design: contradictions and declared steps the
+    code lacks fail, choices the record does not declare are listed in
+    `record.reports` for review. Requires an LLM provider key when `model`
     is given.
     """
     refresh_environment()

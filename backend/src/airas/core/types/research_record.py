@@ -301,8 +301,32 @@ class RepositoryIntegration(BaseModel):
     arguments: list[ArgumentValue] = Field(default_factory=list)
 
 
+class ReviewFinding(BaseModel):
+    kind: Literal["undeclared", "unverified", "contradiction"] = Field(
+        description="undeclared: in the code or the observation only; "
+        "unverified: in the declaration only; contradiction: they disagree"
+    )
+    where: str = Field(description="src/file.py:line Symbol, or the observed function")
+    statement: str
+    evidence: str = Field(
+        default="", description="A short quote from the code or the observation"
+    )
+
+
+class ImplementationReview(BaseModel):
+    """A model's reading of the design's code and runs against the design."""
+
+    commit: str = Field(pattern=r"^[0-9a-f]{40}$")
+    observed: dict[str, str] = Field(
+        description="run_id -> sha256 of its observed.json, so a rerun needs a new review"
+    )
+    model: str
+    findings: list[ReviewFinding] = Field(default_factory=list)
+
+
 class SeyvalDesign(Design[SeyvalRun]):
     repository_integration: Optional[RepositoryIntegration] = None
+    reviews: list[ImplementationReview] = Field(default_factory=list)
 
 
 def walk_metric_path(node: Any, path: str) -> float:

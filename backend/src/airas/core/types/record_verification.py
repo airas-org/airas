@@ -9,6 +9,11 @@ class RecordVerification(BaseModel):
     ok: bool
     stage: Literal["prereg", "results"]
     problems: list[str] = Field(default_factory=list)
+    reports: list[str] = Field(
+        default_factory=list,
+        description="For the reviewer, not failures: choices the code or the "
+        "runs make that the record does not declare",
+    )
     provenance: dict[str, Any] | None = Field(
         default=None,
         description=(

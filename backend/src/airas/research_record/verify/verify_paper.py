@@ -52,6 +52,8 @@ async def verify_paper(
             require_provenance=require_provenance,
             require_history=require_history,
             store_factory=store_factory,
+            model=model,
+            litellm_client=litellm_client,
         )
     root = repo_root(local_path)
     latex_dir = root / ".research" / "latex" / template
