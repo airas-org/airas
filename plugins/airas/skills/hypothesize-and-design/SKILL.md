@@ -25,8 +25,17 @@ refine until the hypothesis rests on passages you have actually read.
 2. **Fix the compute target**: ask the user if it is not known, and
    record GPU and `arch` (`x86_64`/`aarch64`) — the design and later
    the dependency lockfile depend on it.
-3. **Enumerate the knobs** when the design reuses an existing
-   implementation: from its repository at the commit you will pin, list
+3. **Map the method onto the upstream code, then enumerate the knobs**
+   when the design reuses an existing implementation. The map: for each
+   step of the method as the paper states it, the upstream
+   `module.Class.method` that carries it. A step the upstream cannot
+   carry unmodified is yours to write, and the map says so with the
+   reason — a deviation from the method, declared in the design's
+   `summary` and the hypothesis's `notes`. Use the upstream for every
+   step it can carry; a map that leaves most steps to you goes to the
+   user before any code is written. Then the knobs: from the repository
+   at the
+   commit you will pin, list
    the keys of its config files, the keyword defaults of the entry
    points you will call, its module constants, and the prompt or
    resource files it reads (by reading the code until the inventory
