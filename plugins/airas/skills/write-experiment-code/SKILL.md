@@ -51,17 +51,16 @@ contract in `_shared/references/lean.md`; both kinds start through the same
    talk to. Read what the run read and called: every value it took and
    every upstream function it reached must be covered by the design's
    `params`, and a model server started outside the platform must be
-   committed and referenced from the run yaml. Fix the code or the
-   design and repeat until the sanity run touches nothing undeclared.
+   committed and referenced from the run yaml. `observed.json` in the
+   run's outputs holds, per function, every `src/` function and directly
+   called upstream function with the values its arguments took, the
+   files opened, the hosts reached and the child processes. Fix the code
+   or the design and repeat until the sanity run touches nothing
+   undeclared.
    Then put the upstream / own-code boundary in the hypothesis's
    `notes` in numbers: the upstream calls and loaded files from
    `observed.json`, the `src/` lines that implement method steps, and
    the deviations the map listed.
-   Until the runtime observation lands (`observed.json`, airas #1092),
-   this is a static audit: read the run yaml, `config/config.yaml`, the
-   Dockerfile and the code the run executed, and compare them with
-   `params` yourself — `get_experiment_run_status` returns only the log
-   tail.
 
 **Output**: committed, pushed experiment code that passes local sanity,
 input validation and one platform sanity run, with `uv.lock` and a

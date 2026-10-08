@@ -89,12 +89,14 @@ def _loaded_files(observed: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
 
 
 def _definition_origins(observed: dict[str, Any]) -> list[tuple[str, str]]:
+    """(name, defining file) of upstream names, plus (v2) any dependency's name
+    the experiment code redefined."""
     return [
         (f"{module}.{name}", origin.get("file") or "")
         for tables in _sections(observed, "loaded_definitions")
         for module, table in tables.items()
         for name, origin in table.items()
-    ]
+    ] + list(observed.get("foreign_definitions", {}).items())
 
 
 def _overrides(observed: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
@@ -108,16 +110,29 @@ def _overrides(observed: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
     ]
 
 
-def _calls(observed: dict[str, Any]) -> list[dict[str, Any]]:
-    return [c for p in observed.get("processes", []) for c in p.get("calls", [])]
+def _bound(observed: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """fn -> {calls, args: {arg: {calls, values}}}: what each function was
+    called with. v1 lists every call per process; v2 holds this shape already."""
+    if observed.get("version", 1) >= 2:
+        return observed.get("calls", {})
+    bound: dict[str, dict[str, Any]] = {}
+    for p in observed.get("processes", []):
+        for c in p.get("calls", []):
+            fn = bound.setdefault(c.get("fn", ""), {"calls": 0, "args": {}})
+            fn["calls"] += 1
+            for arg, value in c.get("args", {}).items():
+                entry = fn["args"].setdefault(arg, {"calls": 0, "values": []})
+                entry["calls"] += 1
+                entry["values"].append({"value": value})
+    return bound
 
 
 def _cwd(observed: dict[str, Any]) -> str:
     return next(
         (
-            p["process"]["cwd"]
+            p.get("cwd") or p.get("process", {}).get("cwd")
             for p in observed.get("processes", [])
-            if p.get("process", {}).get("cwd")
+            if p.get("cwd") or p.get("process", {}).get("cwd")
         ),
         "",
     )
@@ -138,18 +153,23 @@ def _same_value(declared: Any, observed: Any) -> bool | None:
 
 
 def _argument_problem(
-    label: str, argument: str, value: Any, calls: list[dict[str, Any]]
+    label: str, argument: str, value: Any, bound: dict[str, dict[str, Any]]
 ) -> str | None:
     fn, _, arg = argument.rpartition(".")
-    bound = [c.get("args", {}) for c in calls if c.get("fn") == fn]
-    if not bound:
+    called = bound.get(fn)
+    if called is None:
         return f"{label}: {fn} (argument {arg}) was never called"
 
-    if any(arg not in args for args in bound):
+    entry = called["args"].get(arg)
+    if entry is None or entry["calls"] < called["calls"]:
         return f"{label}: {fn} was called without an argument {arg}"
 
     other = next(
-        (args[arg] for args in bound if _same_value(value, args[arg]) is False),
+        (
+            e["value"]
+            for e in entry["values"]
+            if _same_value(value, e["value"]) is False
+        ),
         None,
     )
     if other is not None:
@@ -227,8 +247,8 @@ def _run_problems(
         and text_sha256(body) != entry.get("sha256")
     ]
 
-    calls = _calls(observed)
-    if not any(c.get("fn") == repository.method_entry for c in calls):
+    bound = _bound(observed)
+    if repository.method_entry not in bound:
         problems.append(
             f"{label}: method_entry {repository.method_entry} was never called"
         )
@@ -247,8 +267,23 @@ def _run_problems(
     problems += [
         problem
         for argument, value in expected
-        if (problem := _argument_problem(label, argument, value, calls)) is not None
+        if (problem := _argument_problem(label, argument, value, bound)) is not None
     ]
+
+    # The experiment code that ran is the code at the result's commit (v2).
+    for result in run.results:
+        if result.commit is None:
+            continue
+        for path, sha in observed.get("src_modules", {}).items():
+            data = file_bytes_at_commit(root, result.commit, path)
+            if data is None:
+                problems.append(
+                    f"{label}: {path} ran but commit {result.commit[:12]} has no such file"
+                )
+            elif hashlib.sha256(data).hexdigest() != sha:
+                problems.append(
+                    f"{label}: {path} that ran differs from commit {result.commit[:12]}"
+                )
 
     # Changes to the upstream: a name defined in src/ or by exec, or a src
     # class overriding the upstream's methods, each needs an extension point.
@@ -257,7 +292,11 @@ def _run_problems(
     problems += [
         f"{label}: upstream {name} is defined in {file}, which no extension_point declares"
         for name, file in _definition_origins(observed)
-        if (file.startswith(src) or file.startswith("<string>"))
+        if (
+            file.startswith(src)
+            or file.startswith("src/")
+            or file.startswith("<string>")
+        )
         and not _covered(name, points)
     ]
     problems += [

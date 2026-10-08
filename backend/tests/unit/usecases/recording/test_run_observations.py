@@ -33,6 +33,7 @@ from airas.research_record.verify._verify_run_observations import (
 ENTRY = "pkg.runner.Runner.run"
 RUNNER_PY = "class Runner:\n    def __init__(self, n=5): ...\n    def run(self): ...\n"
 SNAPSHOT = f"==> pkg/runner.py <==\n{RUNNER_PY}"
+ADAPTER_PY = "import pkg\nclass MyModel(pkg.model.Model):\n    def predict(self): ...\n"
 
 
 def _git(root: Path, *args: str) -> str:
@@ -51,10 +52,13 @@ def _template_import(root: Path) -> str:
     workflow = root / ".github/workflows/verify_record.yml"
     workflow.parent.mkdir(parents=True, exist_ok=True)
     workflow.write_text("on: push\n")
+    adapter = root / "src/adapter.py"
+    adapter.parent.mkdir(parents=True, exist_ok=True)
+    adapter.write_text(ADAPTER_PY)
     _git(root, "init", "-q")
     _git(root, "config", "user.email", "t@example.com")
     _git(root, "config", "user.name", "t")
-    _git(root, "add", ".airas", ".github", "Makefile")
+    _git(root, "add", ".airas", ".github", "Makefile", "src")
     _git(root, "commit", "-q", "-m", "Initial commit")
     return _git(root, "rev-parse", "HEAD")
 
@@ -171,6 +175,33 @@ def _observed(root: Path) -> dict[str, Any]:
             }
         ],
     }
+
+
+def _observed_v2(root: Path) -> dict[str, Any]:
+    """The hook's version 2: one entry per function with the values each
+    argument took, the experiment code's file hashes, and redefinitions of
+    any dependency."""
+    o = _observed(root)
+    o["version"] = 2
+    o["processes"] = [{"pid": 1, "cwd": "/repo"}]
+    o["src_modules"] = {"src/adapter.py": text_sha256(ADAPTER_PY)}
+    o["foreign_definitions"] = {}
+    o["calls"] = {
+        "pkg.runner.Runner.__init__": {
+            "calls": 3,
+            "args": {
+                "n": {
+                    "type": "int",
+                    "calls": 3,
+                    "distinct": 1,
+                    "values": [{"value": 20, "calls": 3}],
+                }
+            },
+            "samples": [],
+        },
+        ENTRY: {"calls": 3, "args": {}, "samples": []},
+    }
+    return o
 
 
 def _write(root: Path, observed: dict[str, Any]) -> None:
@@ -369,3 +400,64 @@ def test_a_long_or_structured_value_is_compared_through_its_recording(
     }
     _write(tmp_path, observed)
     assert verify_run_observations(tmp_path, record) == []
+
+
+def test_a_v2_run_that_agrees_with_its_declaration_passes(tmp_path: Path) -> None:
+    record = _record(tmp_path, _template_import(tmp_path))
+    _write(tmp_path, _observed_v2(tmp_path))
+    assert verify_run_observations(tmp_path, record) == []
+
+
+def _v2_other_value(o: dict[str, Any]) -> None:
+    o["calls"]["pkg.runner.Runner.__init__"]["args"]["n"]["values"].append(
+        {"value": 21, "calls": 1}
+    )
+
+
+def _v2_sometimes_without_the_argument(o: dict[str, Any]) -> None:
+    o["calls"]["pkg.runner.Runner.__init__"]["args"]["n"]["calls"] = 2
+
+
+def _v2_skip_entry(o: dict[str, Any]) -> None:
+    del o["calls"][ENTRY]
+
+
+def _v2_other_src(o: dict[str, Any]) -> None:
+    o["src_modules"]["src/adapter.py"] = "0" * 64
+
+
+def _v2_src_not_in_commit(o: dict[str, Any]) -> None:
+    o["src_modules"]["src/extra.py"] = "0" * 64
+
+
+def _v2_redefines_a_dependency(o: dict[str, Any]) -> None:
+    o["foreign_definitions"]["scipy.optimize.least_squares"] = "src/adapter.py"
+
+
+@pytest.mark.parametrize(
+    ("mutate", "expected"),
+    [
+        (_v2_other_value, "pkg.runner.Runner.__init__.n was 21, not the declared 20"),
+        (
+            _v2_sometimes_without_the_argument,
+            "pkg.runner.Runner.__init__ was called without an argument n",
+        ),
+        (_v2_skip_entry, "method_entry pkg.runner.Runner.run was never called"),
+        (_v2_other_src, "src/adapter.py that ran differs from commit"),
+        (_v2_src_not_in_commit, "src/extra.py ran but commit"),
+        (
+            _v2_redefines_a_dependency,
+            "scipy.optimize.least_squares is defined in src/adapter.py, which no "
+            "extension_point declares",
+        ),
+    ],
+)
+def test_each_v2_departure_from_the_declaration_is_reported(
+    tmp_path: Path, mutate: Callable[[dict[str, Any]], None], expected: str
+) -> None:
+    record = _record(tmp_path, _template_import(tmp_path))
+    observed = _observed_v2(tmp_path)
+    mutate(observed)
+    _write(tmp_path, observed)
+    problems = verify_run_observations(tmp_path, record)
+    assert len(problems) == 1 and expected in problems[0], problems
