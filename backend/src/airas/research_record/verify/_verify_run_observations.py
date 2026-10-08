@@ -74,24 +74,18 @@ def _page_for(pages: dict[str, str], module: str) -> str | None:
     )
 
 
-def _definition_origins(observed: dict[str, Any]) -> list[tuple[str, str]]:
-    """(name, defining file) of upstream names and of any dependency's name
-    the experiment code redefined."""
-    return [
-        (f"{module}.{name}", origin.get("file") or "")
-        for module, table in observed.get("loaded_definitions", {}).items()
-        for name, origin in table.items()
-    ] + list(observed.get("foreign_definitions", {}).items())
-
-
-def _overrides(observed: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
+def _overrides(
+    observed: dict[str, Any], package: str
+) -> list[tuple[str, str, list[str]]]:
     """(src class, its nearest upstream base, methods it overrides). The hook
-    lists every upstream ancestor; declaring the class one subclasses is enough."""
-    return [
-        (cls, ext["bases"][0], ext.get("overrides", []))
-        for cls, ext in observed.get("upstream_extensions", {}).items()
-        if ext.get("bases")
-    ]
+    lists every non-stdlib ancestor; only the upstream's count here, and
+    declaring the class one subclasses is enough."""
+    found = []
+    for cls, ext in observed.get("extensions", {}).items():
+        bases = [b for b in ext.get("bases", []) if b.split(".")[0] == package]
+        if bases:
+            found.append((cls, bases[0], ext.get("overrides", [])))
+    return found
 
 
 def _same_value(declared: Any, observed: Any) -> bool | None:
@@ -244,18 +238,18 @@ def _run_problems(
                     f"{label}: {path} that ran differs from commit {commit[:12]}"
                 )
 
-    # Changes to the upstream: a name defined in src/ or by exec, or a src
-    # class overriding the upstream's methods, each needs an extension point.
+    # Changes to the upstream or any dependency: a name redefined from src/ or
+    # by exec, or a src class overriding the upstream's methods, each needs an
+    # extension point.
     points = integration.extension_points
     problems += [
-        f"{label}: upstream {name} is defined in {file}, which no extension_point declares"
-        for name, file in _definition_origins(observed)
-        if (file.startswith("src/") or file.startswith("<string>"))
-        and not _covered(name, points)
+        f"{label}: {name} is defined in {file}, which no extension_point declares"
+        for name, file in observed.get("redefinitions", {}).items()
+        if not _covered(name, points)
     ]
     problems += [
         f"{label}: {cls} overrides {base}.{', '.join(uncovered)}, which no extension_point declares"
-        for cls, base, overrides in _overrides(observed)
+        for cls, base, overrides in _overrides(observed, package)
         if base not in points
         and (uncovered := [m for m in overrides if not _covered(f"{base}.{m}", points)])
     ]

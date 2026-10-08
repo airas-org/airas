@@ -157,23 +157,17 @@ def _observed(root: Path) -> dict[str, Any]:
                 "sha256": text_sha256(RUNNER_PY),
             }
         },
-        "loaded_definitions": {
-            "pkg.runner": {
-                "Runner": {"module": "pkg.runner"},
-                "Runner.run": {
-                    "module": "pkg.runner",
-                    "file": "/venv/site-packages/pkg/runner.py",
-                },
-                # a stdlib name the upstream imported: frozen modules are neither src/ nor exec
-                "abstractmethod": {"module": "abc", "file": "<frozen abc>"},
-            }
-        },
-        "foreign_definitions": {},
-        "upstream_extensions": {  # the hook lists every upstream ancestor, nearest first
+        "redefinitions": {},
+        "extensions": {  # every non-stdlib ancestor, nearest first
             "adapter.MyModel": {
                 "bases": ["pkg.model.Model", "pkg.model.Provider"],
                 "overrides": ["predict"],
-            }
+            },
+            # a base outside the upstream needs no extension point
+            "adapter.Schema": {
+                "bases": ["pydantic.main.BaseModel"],
+                "overrides": ["model_post_init"],
+            },
         },
         "calls": {
             "pkg.runner.Runner.__init__": {
@@ -249,18 +243,15 @@ def _sometimes_without_the_argument(o: dict[str, Any]) -> None:
 
 
 def _monkeypatch(o: dict[str, Any]) -> None:
-    o["loaded_definitions"]["pkg.runner"]["Runner.run"] = {
-        "module": "adapter",
-        "file": "src/adapter.py",
-    }
+    o["redefinitions"]["pkg.runner.Runner.run"] = "src/adapter.py"
 
 
 def _redefines_a_dependency(o: dict[str, Any]) -> None:
-    o["foreign_definitions"]["scipy.optimize.least_squares"] = "src/adapter.py"
+    o["redefinitions"]["scipy.optimize.least_squares"] = "src/adapter.py"
 
 
 def _undeclared_base(o: dict[str, Any]) -> None:
-    o["upstream_extensions"]["adapter.MyModel"]["bases"] = ["pkg.model.Other"]
+    o["extensions"]["adapter.MyModel"]["bases"] = ["pkg.model.Other"]
 
 
 def _other_src(o: dict[str, Any]) -> None:
