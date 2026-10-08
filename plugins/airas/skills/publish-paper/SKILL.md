@@ -61,9 +61,15 @@ local stage.
    unjudged passage citation against the passage in its snapshot, writes
    the judgments into the record, and then reports what the model found
    overstated, clipped or reversed in `unsupported_citations` — review
-   those like `unverified`. Without a `model` (as CI runs it) a citation
+   those like `unverified`. An unsupported citation is fixed by
+   rewriting the sentence, never by judging the same sentence again
+   until it passes: the gate reads the latest judgment of the text as it
+   stands, so a re-judgment of unchanged text would launder a false into
+   a true. Without a `model` (as CI runs it) a citation
    no judgment covers as the text now stands fails the check
-   (`unjudged_citations`), so re-run with `model` after a rewrite.
+   (`unjudged_citations`), so re-run with `model` after a rewrite — with
+   the judge model settled up front (`auto-research`), not a different
+   one per run.
    Bibliography: `preregister_record` wrote
    `.research/latex/{template}/references.bib` from the record and the
    gate regenerates it — never edit it.

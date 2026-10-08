@@ -58,6 +58,11 @@ carry the answers through the session:
   several exist, which workspace
 - compute target (GPU and architecture) — the experimental design and
   the dependency lockfile depend on it
+- the citation judge: the `model` `verify_paper_values` reads each
+  passage citation with. Its name is written into the record with every
+  judgment, so keep it the same across the user's studies (`gpt-4.1`
+  unless the user names another) rather than falling back to whatever
+  key happens to work
 
 ## Invariants across steps
 
