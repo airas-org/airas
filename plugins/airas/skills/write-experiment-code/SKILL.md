@@ -35,7 +35,14 @@ contract in `_shared/references/lean.md`; both kinds start through the same
    read it and say what the prediction files must contain.
 3. **Write the code and fix the environment**: the files the contract
    names, `pyproject.toml` pinned, `uv.lock` committed, a Dockerfile that
-   builds from the lock alone for the platform reference's target.
+   builds from the lock alone for the platform reference's target. When
+   the design reuses an upstream implementation, write only what its
+   method map assigns to you: the glue between the environment and the
+   upstream entry points, and the steps the map says the upstream cannot
+   carry. Do not re-implement a step the upstream provides, however
+   small, and do not modify the upstream (an upstream file that has to
+   change is out of scope — airas #1098 — and a reason to go back to the
+   design).
 4. **Prove it runs before handing it over**: `mode=sanity` locally until
    it prints `SANITY_VALIDATION: PASS`, then
    `make validate-inputs RUN_ID=<sanity run id>` to check the
@@ -49,6 +56,15 @@ contract in `_shared/references/lean.md`; both kinds start through the same
    `params`, and a model server started outside the platform must be
    committed and referenced from the run yaml. Fix the code or the
    design and repeat until the sanity run touches nothing undeclared.
+   Then state the boundary between upstream and your code in numbers,
+   for the hypothesis's `notes` and the paper's method section: the
+   upstream functions the sanity run called and the files it loaded
+   (`observed.json`: `calls`, `loaded_file_hashes`,
+   `upstream_extensions`), the lines under `src/` that implement steps
+   of the method rather than I/O, and each deviation from the paper's
+   setting the design map listed. A method that turned out to be mostly
+   adapter is reported as such before the freeze, so the user can decide
+   whether the study still tests the method.
    Until the runtime observation lands (`observed.json`, airas #1092),
    this is a static audit: read the run yaml, `config/config.yaml`, the
    Dockerfile and the code the run executed, and compare them with

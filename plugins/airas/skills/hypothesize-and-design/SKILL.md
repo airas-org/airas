@@ -25,8 +25,24 @@ refine until the hypothesis rests on passages you have actually read.
 2. **Fix the compute target**: ask the user if it is not known, and
    record GPU and `arch` (`x86_64`/`aarch64`) — the design and later
    the dependency lockfile depend on it.
-3. **Enumerate the knobs** when the design reuses an existing
-   implementation: from its repository at the commit you will pin, list
+3. **Map the method onto the upstream code, then enumerate the knobs**
+   when the design reuses an existing implementation. First the map:
+   for each step of the method as the paper states it (the lines of its
+   algorithm, or its sections), name the upstream `module.Class.method`
+   that will carry it. A step the upstream cannot carry without being
+   modified — its code assumes another hypothesis representation,
+   another oracle, another output — is one you will write, and the map
+   says so, with the reason and with what your version changes relative
+   to the paper's own setting. That is a deviation from the method,
+   declared in the design's `summary` and the hypothesis's `notes`, not
+   an implementation detail. Prefer the upstream for everything it can
+   carry: an adapter that re-implements a step the upstream already
+   provides is a second implementation the gate cannot tell from the
+   first, and a claim about the method stops being about the method. A
+   map in which most steps fall to you is a finding to put to the user
+   before any code is written — the study may be testing your port
+   rather than the paper. Then the knobs: from the repository at the
+   commit you will pin, list
    the keys of its config files, the keyword defaults of the entry
    points you will call, its module constants, and the prompt or
    resource files it reads (by reading the code until the inventory
