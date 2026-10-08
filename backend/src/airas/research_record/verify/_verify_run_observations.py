@@ -110,7 +110,7 @@ def _argument_problem(
     if called is None:
         return f"{label}: {fn} (argument {arg}) was never called"
 
-    entry = called["args"].get(arg)
+    entry = next((a for a in called.get("args", []) if a.get("name") == arg), None)
     if entry is None or entry["calls"] < called["calls"]:
         return f"{label}: {fn} was called without an argument {arg}"
 
