@@ -149,6 +149,7 @@ classDiagram
     class ImplementationReview {
         commit: str
         observed: run_id → observed.json sha256
+        inputs_sha256: str
         model: str
         findings: ReviewFinding[]
     }
@@ -259,7 +260,7 @@ classDiagram
 | 参照解決 | `quoted_passage_ids` の id が既知の passage |
 | 時系列 | 宣言を含む各コミットで、その宣言が名指す passage が既に record にある（後から登録した passage を根拠にできない） |
 | 観測（results 段階） | `repository_integration` を持つ design の、結果のある各 run の `.research/results/<run_id>/observed.json` について: `hook.sha256` がリポジトリの最初のコミット（template の取り込み。root が 1 つでなければ検証不能）の `.airas/sitecustomize.py` の sha256 と一致し、各結果の実行コミットの `Makefile` / `.github/` / `.airas/` が最初のコミットと同一、`loaded_file_hashes` の上流モジュールがスナップショットの同じファイルの sha256 と一致（スナップショットに無いものは別に報告）、`method_entry` の呼び出しが 1 回以上、`arguments[]` の各値が観測された束縛引数と一致（hook v3 は関数ごと・引数ごとに「取った値 → 回数」を持つ。値は `{value}`＝そのままの値、`{sha256}`＝長い文字列や小さいコンテナの hash（宣言値を同じ正規形 JSON で hash して比べる）、`{redacted}`＝秘密で比べない、の 3 形。宣言と違う値が 1 回でもあれば報告）、`src_modules` の実験コードの各ファイルが実行コミットの同じファイルと sha256 で一致、`redefinitions`（上流と依存の名前のうち定義元が `src/` か `<string>` のもの）と、`src/` のクラスが override した上流メソッドが `extension_points` に含まれる。hook は record を読まず、観測の範囲は宣言に依存しない。|
-| 実装（results 段階） | `repository_integration` を持つ design ごとに、宣言（仮説・claim・design・params）、引用 passage の本文、結果のコミットの `src/` `config/` `Dockerfile`、各 run の observed.json を 1 つのモデルに読ませ、所見を design の `reviews[]` に記録する（`commit` と run ごとの observed.json の sha256 付き。どちらかが変われば再判定）。モデル無しの CI は記録済みの判定を読み、無ければ**失敗**。所見の `kind`: `undeclared`（コード・観測のみにある選択。`reports` に一覧、失敗ではない）、`unverified`（宣言のみ。失敗）、`contradiction`（宣言とコード・観測・passage の食い違い。失敗） |
+| 実装（results 段階） | `repository_integration` を持つ design ごとに、宣言（仮説・claim・design・params）、引用 passage の本文、結果のコミットの `src/` `config/` `Dockerfile`、各 run の observed.json を 1 つのモデルに読ませ、所見を design の `reviews[]` に記録する（読ませた入力全体の sha256 付き。宣言・passage・コード・observed のどれかが変われば再判定）。コードが読めないコミットは判定せず失敗。モデル無しの CI は記録済みの判定を読み、無ければ**失敗**。所見の `kind`: `undeclared`（コード・観測のみにある選択。`reports` に一覧、失敗ではない）、`unverified`（宣言のみ。失敗）、`contradiction`（宣言とコード・観測・passage の食い違い。失敗） |
 | 引用（verify_paper） | main.tex の `\cite` の鍵が登録済み bibkey、`\cite[s1.p2]{key}` の locator がその source の passage、references.bib が再生成と一致。引かれなかった source は `uncited_sources` として報告（失敗ではない） |
 | 文意（verify_paper） | record に judgment が一つでもあれば、今の引用文（main.tex の `\cite[s1.p2]{key}` を含む段落、claim の statement + rationale、hypothesis の statement）ごとに対応する judgment を探す。無いものは `unjudged_citations` として**失敗**、`supported: false` は `unsupported_citations` として報告（失敗ではない）。判定そのものは `verify_paper_values(model=...)`（MCP）か `airas verify-paper --model`（CI）が LLM で行い、record に書いてから同じ呼び出しで集計する |
 

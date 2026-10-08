@@ -57,7 +57,8 @@ local stage.
    not failed. Need an undeclared value? Append the declaration with
    `append_to_record` and re-run — never type the number.
    Once the text is settled, run
-   `verify_paper_values` with a `model`: it has that model read every
+   `verify_paper_values` with `citation_verifier_model` and
+   `implementation_verifier_model`: the first reads every
    unjudged passage citation against the passage in its snapshot, writes
    the judgments into the record, and then reports what the model found
    overstated, clipped or reversed in `unsupported_citations` — review
@@ -65,11 +66,15 @@ local stage.
    rewriting the sentence, never by judging the same sentence again
    until it passes: the gate reads the latest judgment of the text as it
    stands, so a re-judgment of unchanged text would launder a false into
-   a true. Without a `model` (as CI runs it) a citation
+   a true. Without the models (as CI runs it) a citation
    no judgment covers as the text now stands fails the check
-   (`unjudged_citations`), so re-run with `model` after a rewrite — with
-   the judge model settled up front (`auto-research`), not a different
-   one per run.
+   (`unjudged_citations`), so re-run with them after a rewrite — with
+   both models settled up front (`auto-research`), not a different
+   one per run. The second model reads each design's code and runs
+   against its declaration once per state of the three: `contradiction`
+   and `unverified` findings fail, `undeclared` ones are listed in
+   `record.reports` — read them, and declare in the record (or change in
+   the code) what should not have been a silent choice.
    Bibliography: `preregister_record` wrote
    `.research/latex/{template}/references.bib` from the record and the
    gate regenerates it — never edit it.

@@ -8,7 +8,6 @@ from typing import Any
 from airas.core.types.research_record import (
     Criterion,
     Hypothesis,
-    ImplementationReview,
     LiteratureSource,
     Prediction,
     QuotedPassage,
@@ -23,7 +22,9 @@ from airas.core.types.research_record import (
     SeyvalVerifier,
     VerifierKind,
 )
+from airas.research_record.read.load_record import load_record
 from airas.research_record.verify._verify_implementation import verify_implementation
+from airas.research_record.verify.verify_record import verify_record
 
 ADAPTER_PY = "KINDS = ['mass_action', 'michaelis_menten', 'hill']\n"
 
@@ -127,16 +128,18 @@ def _record(commit: str) -> ResearchRecord:
 
 
 class _Judge:
-    """Stands in for the model: returns `findings`, keeps the prompts it saw."""
+    """Stands in for the model: returns `findings`, keeps what it was sent."""
 
     def __init__(self, findings: list[ReviewFinding]) -> None:
         self.findings = findings
         self.prompts: list[str] = []
+        self.system = ""
 
     async def structured_output(
-        self, llm_name: str, message: str, data_model: Any, **_: Any
+        self, llm_name: str, message: str, data_model: Any, system: str = "", **_: Any
     ) -> Any:
         self.prompts.append(message)
+        self.system = system
         return data_model(findings=self.findings)
 
 
@@ -167,8 +170,8 @@ async def test_without_a_model_an_unreviewed_design_fails(tmp_path: Path) -> Non
     problems, reports, reviewed = await _verify(root, _record(commit))
     assert reviewed == 0 and reports == []
     assert problems == [
-        f"design d1: no implementation review covers commit {commit[:12]} and its runs' "
-        "observed.json (verify with a model to write one)"
+        "design d1: no implementation review covers its declaration, the code at commit "
+        f"{commit[:12]} and its runs as they stand (verify with a model to write one)"
     ]
 
 
@@ -186,13 +189,17 @@ async def test_a_model_reads_the_design_once_and_its_findings_are_kept(
     assert "[s1.p1] the LLM writes free-form rate laws" in prompt  # the cited passages
     assert (
         "速度則は質量作用か MM" in prompt and '"version": 3' in prompt
-    )  # the declaration and the run
+    )  # declaration, run
+    assert (
+        "undeclared" in judge.system and "undeclared" not in prompt
+    )  # rules apart from data
     review = record.hypotheses[0].claims[0].designs[0].reviews[0]
-    assert review == ImplementationReview(
-        commit=commit, observed={"run-1": sha}, model="judge-1", findings=FINDINGS
-    )
+    assert review.commit == commit and review.observed == {"run-1": sha}
+    assert review.model == "judge-1" and review.findings == FINDINGS
+    assert review.inputs_sha256 == hashlib.sha256(prompt.encode()).hexdigest()
     assert problems == [
-        "design d1: contradiction: 宣言は 2 型、コードは Hill を含む 3 型 (src/adapter.py:1 KINDS) [judge-1]"
+        "design d1: contradiction: 宣言は 2 型、コードは Hill を含む 3 型 (src/adapter.py:1 KINDS) "
+        "[judge-1]"
     ]
     assert reports == [
         "design d1: undeclared: budget が 20 に固定 (config/config.yaml:1)"
@@ -203,14 +210,33 @@ async def test_a_model_reads_the_design_once_and_its_findings_are_kept(
     assert len(judge.prompts) == 1
 
 
-async def test_a_rerun_or_a_code_change_needs_a_new_review(tmp_path: Path) -> None:
+async def test_a_rerun_or_a_changed_declaration_needs_a_new_review(
+    tmp_path: Path,
+) -> None:
     root, commit = _repo(tmp_path)
     _observed(root, "run-1")
     record = _record(commit)
-    await _verify(root, record, _Judge([]))
+    judge = _Judge([])
+    await _verify(root, record, judge)
     _observed(root, "run-1", '{"version": 3, "calls": {"src.adapter.f": {}}}')
     problems, _, _ = await _verify(root, record)
     assert problems and "no implementation review covers" in problems[0]
+    await _verify(root, record, judge)
+    record.hypotheses[0].notes.append("速度則に Hill も含める")
+    await _verify(root, record, judge)
+    assert len(judge.prompts) == 3  # once per state of the runs and of the declaration
+
+
+async def test_code_git_cannot_show_is_not_reviewed(tmp_path: Path) -> None:
+    root, _ = _repo(tmp_path)
+    _observed(root, "run-1")
+    judge = _Judge([])
+    problems, _, reviewed = await _verify(root, _record("f" * 40), judge)
+    assert reviewed == 0 and judge.prompts == []
+    assert problems == [
+        "design d1: the code at commit ffffffffffff (src, config, Dockerfile) could not "
+        "be read; not reviewed"
+    ]
 
 
 async def test_runs_produced_by_different_code_cannot_be_reviewed_together(
@@ -221,8 +247,7 @@ async def test_runs_produced_by_different_code_cannot_be_reviewed_together(
     _git(root, "commit", "-q", "-am", "edit")
     other = _git(root, "rev-parse", "HEAD")
     record = _record(commit)
-    design = record.hypotheses[0].claims[0].designs[0]
-    design.runs.append(
+    record.hypotheses[0].claims[0].designs[0].runs.append(
         SeyvalRun(
             run_id="run-2",
             results=[
@@ -239,3 +264,26 @@ async def test_runs_produced_by_different_code_cannot_be_reviewed_together(
     assert problems[0].startswith(
         "design d1: its runs' latest results are at different commits"
     )
+
+
+async def test_the_record_gate_writes_the_review_and_lists_undeclared_choices(
+    tmp_path: Path,
+) -> None:
+    root, commit = _repo(tmp_path)
+    _observed(root, "run-1")
+    (root / ".research/results/run-1/metrics.json").write_text('{"m": 1.0}')
+    _record(commit).save(str(root))
+    result = await verify_record(
+        str(root),
+        check_provenance=False,
+        require_history=False,
+        implementation_verifier_model="judge-1",
+        litellm_client=_Judge(FINDINGS),
+    )
+    assert result.reports == [
+        "design d1: undeclared: budget が 20 に固定 (config/config.yaml:1)"
+    ]
+    assert any(p.startswith("design d1: contradiction:") for p in result.problems)
+    saved = load_record(str(root)).hypotheses[0].claims[0].designs[0].reviews
+    assert len(saved) == 1 and saved[0].findings == FINDINGS
+    assert _git(root, "log", "-1", "--format=%s") == "record: review implementation"

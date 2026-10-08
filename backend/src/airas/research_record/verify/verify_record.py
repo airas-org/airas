@@ -56,11 +56,11 @@ async def verify_record(
     require_provenance: bool = True,
     require_history: bool = True,
     store_factory: StoreFactory = default_store,
-    model: str | None = None,
+    implementation_verifier_model: str | None = None,
     litellm_client: LiteLLMClient | None = None,
 ) -> RecordVerification:
-    """With `model`, each design's code and runs are also read against the
-    design and the review written into the record."""
+    """With `implementation_verifier_model`, each design's code and runs are
+    also read against the design and the review written into the record."""
     root = repo_root(local_path)
     try:
         record = load_record(str(root))
@@ -102,7 +102,10 @@ async def verify_record(
     if stage == "results":
         problems += await asyncio.to_thread(verify_run_observations, root, record)
         review_problems, reports, reviewed = await verify_implementation(
-            root, record, model=model, litellm_client=litellm_client
+            root,
+            record,
+            model=implementation_verifier_model,
+            litellm_client=litellm_client,
         )
         problems += review_problems
         if reviewed:

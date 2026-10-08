@@ -318,7 +318,11 @@ class ImplementationReview(BaseModel):
 
     commit: str = Field(pattern=r"^[0-9a-f]{40}$")
     observed: dict[str, str] = Field(
-        description="run_id -> sha256 of its observed.json, so a rerun needs a new review"
+        description="run_id -> sha256 of its observed.json"
+    )
+    inputs_sha256: str = Field(
+        description="Of everything the model read: declaration, passages, code, runs. "
+        "A change to any of them needs a new review"
     )
     model: str
     findings: list[ReviewFinding] = Field(default_factory=list)
