@@ -228,19 +228,20 @@ def _run_problems(
         if (problem := _argument_problem(label, argument, value, bound)) is not None
     ]
 
-    # The experiment code that ran is the code at the result's commit (v2).
-    for result in run.results:
-        if result.commit is None:
-            continue
+    # The experiment code that ran is the code at the latest result's commit:
+    # observed.json is the latest run's, earlier results keep their own commits.
+    latest = run.latest_result()
+    commit = latest.commit if latest is not None else None
+    if commit is not None:
         for path, sha in observed.get("src_modules", {}).items():
-            data = file_bytes_at_commit(root, result.commit, path)
+            data = file_bytes_at_commit(root, commit, path)
             if data is None:
                 problems.append(
-                    f"{label}: {path} ran but commit {result.commit[:12]} has no such file"
+                    f"{label}: {path} ran but commit {commit[:12]} has no such file"
                 )
             elif hashlib.sha256(data).hexdigest() != sha:
                 problems.append(
-                    f"{label}: {path} that ran differs from commit {result.commit[:12]}"
+                    f"{label}: {path} that ran differs from commit {commit[:12]}"
                 )
 
     # Changes to the upstream: a name defined in src/ or by exec, or a src

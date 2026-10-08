@@ -422,3 +422,25 @@ def test_a_long_or_structured_value_is_compared_through_its_recording(
     }
     _write(tmp_path, observed)
     assert verify_run_observations(tmp_path, record) == []
+
+
+def test_a_rerun_is_checked_against_its_own_commit_not_earlier_results(
+    tmp_path: Path,
+) -> None:
+    first = _template_import(tmp_path)
+    (tmp_path / "src/adapter.py").write_text(ADAPTER_PY + "# v2\n")
+    _git(tmp_path, "commit", "-q", "-am", "edit the adapter")
+    record = _record(tmp_path, first)
+    run = record.hypotheses[0].claims[0].designs[0].runs[0]
+    run.results.append(
+        SeyvalResult(
+            verifier="seyval",
+            id="x2",
+            commit=_git(tmp_path, "rev-parse", "HEAD"),
+            metrics={"m": 1.0},
+        )
+    )
+    observed = _observed(tmp_path)
+    observed["src_modules"]["src/adapter.py"] = text_sha256(ADAPTER_PY + "# v2\n")
+    _write(tmp_path, observed)
+    assert verify_run_observations(tmp_path, record) == []
