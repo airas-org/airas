@@ -35,14 +35,11 @@ contract in `_shared/references/lean.md`; both kinds start through the same
    read it and say what the prediction files must contain.
 3. **Write the code and fix the environment**: the files the contract
    names, `pyproject.toml` pinned, `uv.lock` committed, a Dockerfile that
-   builds from the lock alone for the platform reference's target. When
-   the design reuses an upstream implementation, write only what its
-   method map assigns to you: the glue between the environment and the
-   upstream entry points, and the steps the map says the upstream cannot
-   carry. Do not re-implement a step the upstream provides, however
-   small, and do not modify the upstream (an upstream file that has to
-   change is out of scope — airas #1098 — and a reason to go back to the
-   design).
+   builds from the lock alone for the platform reference's target. With
+   an upstream implementation, write only what the design's method map
+   assigns to you: the glue to the upstream entry points and the steps
+   the upstream cannot carry. Never re-implement a step it provides, and
+   never modify it (airas #1098).
 4. **Prove it runs before handing it over**: `mode=sanity` locally until
    it prints `SANITY_VALIDATION: PASS`, then
    `make validate-inputs RUN_ID=<sanity run id>` to check the
@@ -56,15 +53,10 @@ contract in `_shared/references/lean.md`; both kinds start through the same
    `params`, and a model server started outside the platform must be
    committed and referenced from the run yaml. Fix the code or the
    design and repeat until the sanity run touches nothing undeclared.
-   Then state the boundary between upstream and your code in numbers,
-   for the hypothesis's `notes` and the paper's method section: the
-   upstream functions the sanity run called and the files it loaded
-   (`observed.json`: `calls`, `loaded_file_hashes`,
-   `upstream_extensions`), the lines under `src/` that implement steps
-   of the method rather than I/O, and each deviation from the paper's
-   setting the design map listed. A method that turned out to be mostly
-   adapter is reported as such before the freeze, so the user can decide
-   whether the study still tests the method.
+   Then put the upstream / own-code boundary in the hypothesis's
+   `notes` in numbers: the upstream calls and loaded files from
+   `observed.json`, the `src/` lines that implement method steps, and
+   the deviations the map listed.
    Until the runtime observation lands (`observed.json`, airas #1092),
    this is a static audit: read the run yaml, `config/config.yaml`, the
    Dockerfile and the code the run executed, and compare them with
