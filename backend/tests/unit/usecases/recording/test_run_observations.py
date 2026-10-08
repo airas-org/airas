@@ -137,9 +137,10 @@ def _record(root: Path, run_commit: str) -> ResearchRecord:
     )
 
 
-def _values(*values: Any) -> dict[str, Any]:
-    """An argument as the hook aggregates it: each value with its count."""
+def _arg(name: str, *values: Any) -> dict[str, Any]:
+    """An argument as the hook aggregates it: its name, each value with its count."""
     return {
+        "name": name,
         "calls": len(values),
         "values": [{"value": v, "calls": 1} for v in values],
     }
@@ -172,10 +173,10 @@ def _observed(root: Path) -> dict[str, Any]:
         "calls": {
             "pkg.runner.Runner.__init__": {
                 "calls": 1,
-                "args": {"n": _values(20)},
+                "args": [_arg("n", 20)],
                 "samples": [],
             },
-            ENTRY: {"calls": 1, "args": {}, "samples": []},
+            ENTRY: {"calls": 1, "args": [], "samples": []},
         },
         "processes": [{"pid": 1}],
     }
@@ -234,7 +235,7 @@ def _skip_entry(o: dict[str, Any]) -> None:
 
 
 def _other_value(o: dict[str, Any]) -> None:
-    o["calls"]["pkg.runner.Runner.__init__"]["args"]["n"] = _values(20, 21)
+    o["calls"]["pkg.runner.Runner.__init__"]["args"] = [_arg("n", 20, 21)]
     o["calls"]["pkg.runner.Runner.__init__"]["calls"] = 2
 
 
@@ -407,10 +408,10 @@ def test_a_long_or_structured_value_is_compared_through_its_recording(
         ArgumentValue(argument="pkg.runner.Runner.__init__.key", value="k" * 300),
     ]
     observed = _observed(tmp_path)
-    observed["calls"]["pkg.runner.Runner.__init__"]["args"] = {
-        "n": _values({"type": "list", "repr": "[1, 2]"}),
-        "key": _values({"type": "str", "len": 300, "sha256": text_sha256("k" * 300)}),
-    }
+    observed["calls"]["pkg.runner.Runner.__init__"]["args"] = [
+        _arg("n", {"type": "list", "repr": "[1, 2]"}),
+        _arg("key", {"type": "str", "len": 300, "sha256": text_sha256("k" * 300)}),
+    ]
     _write(tmp_path, observed)
     assert verify_run_observations(tmp_path, record) == []
 
