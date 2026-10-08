@@ -89,16 +89,13 @@ def _overrides(
 
 
 def _same_value(declared: Any, item: dict[str, Any]) -> bool | None:
-    """The hook writes a value it kept as {value}, a string or small container
-    it only hashed as {sha256, …}, a secret as {redacted}. None: nothing to
-    compare with."""
     if "value" in item:
         return bool(item["value"] == declared)
     if "sha256" in item:
         text = (
             declared
             if isinstance(declared, str)
-            else json.dumps(declared, ensure_ascii=False)
+            else json.dumps(declared, ensure_ascii=False, sort_keys=True)
         )
         return bool(item["sha256"] == text_sha256(text))
     return None
@@ -290,10 +287,10 @@ def verify_run_observations(root: Path, record: ResearchRecord) -> list[str]:
             first_checked = True
 
         observed = json.loads(observed_path.read_text(encoding="utf-8"))
-        if observed.get("version") != 2:
+        if observed.get("version") != 3:
             problems.append(
                 f"run '{run.run_id}': {OBSERVED_FILENAME} is version "
-                f"{observed.get('version')}, written by an older hook; the gate reads version 2"
+                f"{observed.get('version')}, written by an older hook; the gate reads version 3"
             )
             continue
         snapshot = root / repository_snapshot_relpath(repository.id)

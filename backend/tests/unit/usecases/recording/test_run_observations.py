@@ -148,7 +148,7 @@ def _arg(name: str, *values: Any) -> dict[str, Any]:
 
 def _observed(root: Path) -> dict[str, Any]:
     return {
-        "version": 2,
+        "version": 3,
         "run_id": "run-1",
         "hook": {"sha256": file_sha256(root / ".airas/sitecustomize.py")},
         "src_modules": {"src/adapter.py": text_sha256(ADAPTER_PY)},
@@ -207,7 +207,7 @@ def test_an_older_hooks_observed_json_is_reported_not_read(tmp_path: Path) -> No
     problems = verify_run_observations(tmp_path, record)
     assert problems == [
         "run 'run-1': observed.json is version 1, written by an older hook; the "
-        "gate reads version 2"
+        "gate reads version 3"
     ]
 
 
@@ -447,3 +447,57 @@ def test_a_rerun_is_checked_against_its_own_commit_not_earlier_results(
     observed["src_modules"]["src/adapter.py"] = text_sha256(ADAPTER_PY + "# v2\n")
     _write(tmp_path, observed)
     assert verify_run_observations(tmp_path, record) == []
+
+
+def _redacted(o: dict[str, Any]) -> None:
+    o["calls"]["pkg.runner.Runner.__init__"]["args"] = [
+        {"name": "n", "calls": 1, "values": [{"redacted": "N", "len": 2, "calls": 1}]}
+    ]
+
+
+def _hashed(text: str) -> dict[str, Any]:
+    return {
+        "truncated": True,
+        "len": len(text),
+        "sha256": text_sha256(text),
+        "calls": 1,
+    }
+
+
+def _other_hash(o: dict[str, Any]) -> None:
+    o["calls"]["pkg.runner.Runner.__init__"]["args"] = [
+        {"name": "n", "calls": 1, "values": [_hashed("x" * 300)]}
+    ]
+
+
+def _same_json_hash(o: dict[str, Any]) -> None:
+    o["calls"]["pkg.runner.Runner.__init__"]["args"] = [
+        {"name": "n", "calls": 1, "values": [_hashed('{"a": 2, "b": 1}')]}
+    ]
+
+
+@pytest.mark.parametrize(
+    ("declared", "mutate", "expected"),
+    [
+        (20, _redacted, []),  # a secret cannot be compared, and is not a mismatch
+        ("k" * 300, _other_hash, ["was {'truncated': True, 'len': 300"]),
+        ({"b": 1, "a": 2}, _same_json_hash, []),  # keys sorted on both sides
+    ],
+)
+def test_a_hashed_or_redacted_value_is_compared_through_its_recording(
+    tmp_path: Path,
+    declared: Any,
+    mutate: Callable[[dict[str, Any]], None],
+    expected: list[str],
+) -> None:
+    record = _record(tmp_path, _template_import(tmp_path))
+    record.hypotheses[0].claims[0].designs[0].repository_integration.arguments = [
+        ArgumentValue(argument="pkg.runner.Runner.__init__.n", value=declared)
+    ]
+    observed = _observed(tmp_path)
+    mutate(observed)
+    _write(tmp_path, observed)
+    problems = verify_run_observations(tmp_path, record)
+    assert len(problems) == len(expected) and all(
+        e in p for e, p in zip(expected, problems, strict=True)
+    ), problems
