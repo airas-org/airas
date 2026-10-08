@@ -29,9 +29,10 @@ refine until the hypothesis rests on passages you have actually read.
    when the design reuses an existing implementation. The map: for each
    step of the method as the paper states it, the upstream
    `module.Class.method` that carries it. A step the upstream cannot
-   carry unmodified is yours to write, and the map says so with the
-   reason — a deviation from the method, declared in the design's
-   `summary` and the hypothesis's `notes`. Use the upstream for every
+   carry unmodified is yours to write, and the map says so: which
+   upstream function was considered and why it cannot be used — a
+   deviation from the method, declared in the design's `summary` and
+   the hypothesis's `notes`. Use the upstream for every
    step it can carry; a map that leaves most steps to you goes to the
    user before any code is written. Then the knobs: from the repository
    at the
