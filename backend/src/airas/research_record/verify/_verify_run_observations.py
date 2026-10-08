@@ -74,53 +74,18 @@ def _page_for(pages: dict[str, str], module: str) -> str | None:
     )
 
 
-def _sections(observed: dict[str, Any], key: str) -> list[dict[str, Any]]:
-    if key in observed:
-        return [observed[key]]
-    return [p[key] for p in observed.get("processes", []) if key in p]
-
-
-def _loaded_files(observed: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
-    return [
-        (module, entry)
-        for files in _sections(observed, "loaded_file_hashes")
-        for module, entry in files.items()
-    ]
-
-
-def _definition_origins(observed: dict[str, Any]) -> list[tuple[str, str]]:
-    return [
-        (f"{module}.{name}", origin.get("file") or "")
-        for tables in _sections(observed, "loaded_definitions")
-        for module, table in tables.items()
-        for name, origin in table.items()
-    ]
-
-
-def _overrides(observed: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
+def _overrides(
+    observed: dict[str, Any], package: str
+) -> list[tuple[str, str, list[str]]]:
     """(src class, its nearest upstream base, methods it overrides). The hook
-    lists every upstream ancestor; declaring the class one subclasses is enough."""
-    return [
-        (cls, ext["bases"][0], ext.get("overrides", []))
-        for extensions in _sections(observed, "upstream_extensions")
-        for cls, ext in extensions.items()
-        if ext.get("bases")
-    ]
-
-
-def _calls(observed: dict[str, Any]) -> list[dict[str, Any]]:
-    return [c for p in observed.get("processes", []) for c in p.get("calls", [])]
-
-
-def _cwd(observed: dict[str, Any]) -> str:
-    return next(
-        (
-            p["process"]["cwd"]
-            for p in observed.get("processes", [])
-            if p.get("process", {}).get("cwd")
-        ),
-        "",
-    )
+    lists every non-stdlib ancestor; only the upstream's count here, and
+    declaring the class one subclasses is enough."""
+    found = []
+    for cls, ext in observed.get("extensions", {}).items():
+        bases = [b for b in ext.get("bases", []) if b.split(".")[0] == package]
+        if bases:
+            found.append((cls, bases[0], ext.get("overrides", [])))
+    return found
 
 
 def _same_value(declared: Any, observed: Any) -> bool | None:
@@ -138,18 +103,23 @@ def _same_value(declared: Any, observed: Any) -> bool | None:
 
 
 def _argument_problem(
-    label: str, argument: str, value: Any, calls: list[dict[str, Any]]
+    label: str, argument: str, value: Any, bound: dict[str, dict[str, Any]]
 ) -> str | None:
     fn, _, arg = argument.rpartition(".")
-    bound = [c.get("args", {}) for c in calls if c.get("fn") == fn]
-    if not bound:
+    called = bound.get(fn)
+    if called is None:
         return f"{label}: {fn} (argument {arg}) was never called"
 
-    if any(arg not in args for args in bound):
+    entry = called["args"].get(arg)
+    if entry is None or entry["calls"] < called["calls"]:
         return f"{label}: {fn} was called without an argument {arg}"
 
     other = next(
-        (args[arg] for args in bound if _same_value(value, args[arg]) is False),
+        (
+            e["value"]
+            for e in entry["values"]
+            if _same_value(value, e["value"]) is False
+        ),
         None,
     )
     if other is not None:
@@ -206,7 +176,9 @@ def _run_problems(
 
     package = repository.method_entry.split(".")[0]
     upstream = [
-        (m, e) for m, e in _loaded_files(observed) if m.split(".")[0] == package
+        (m, e)
+        for m, e in observed.get("loaded_file_hashes", {}).items()
+        if m.split(".")[0] == package
     ]
     # Without the entry's own module among the hashes, the checks below pass on nothing.
     if not any(repository.method_entry.startswith(m + ".") for m, _ in upstream):
@@ -227,8 +199,8 @@ def _run_problems(
         and text_sha256(body) != entry.get("sha256")
     ]
 
-    calls = _calls(observed)
-    if not any(c.get("fn") == repository.method_entry for c in calls):
+    bound = observed.get("calls", {})
+    if repository.method_entry not in bound:
         problems.append(
             f"{label}: method_entry {repository.method_entry} was never called"
         )
@@ -247,22 +219,37 @@ def _run_problems(
     problems += [
         problem
         for argument, value in expected
-        if (problem := _argument_problem(label, argument, value, calls)) is not None
+        if (problem := _argument_problem(label, argument, value, bound)) is not None
     ]
 
-    # Changes to the upstream: a name defined in src/ or by exec, or a src
-    # class overriding the upstream's methods, each needs an extension point.
+    # The experiment code that ran is the code at the latest result's commit:
+    # observed.json is the latest run's, earlier results keep their own commits.
+    latest = run.latest_result()
+    commit = latest.commit if latest is not None else None
+    if commit is not None:
+        for path, sha in observed.get("src_modules", {}).items():
+            data = file_bytes_at_commit(root, commit, path)
+            if data is None:
+                problems.append(
+                    f"{label}: {path} ran but commit {commit[:12]} has no such file"
+                )
+            elif hashlib.sha256(data).hexdigest() != sha:
+                problems.append(
+                    f"{label}: {path} that ran differs from commit {commit[:12]}"
+                )
+
+    # Changes to the upstream or any dependency: a name redefined from src/ or
+    # by exec, or a src class overriding the upstream's methods, each needs an
+    # extension point.
     points = integration.extension_points
-    src = _cwd(observed).rstrip("/") + "/src/"
     problems += [
-        f"{label}: upstream {name} is defined in {file}, which no extension_point declares"
-        for name, file in _definition_origins(observed)
-        if (file.startswith(src) or file.startswith("<string>"))
-        and not _covered(name, points)
+        f"{label}: {name} is defined in {file}, which no extension_point declares"
+        for name, file in observed.get("redefinitions", {}).items()
+        if not _covered(name, points)
     ]
     problems += [
         f"{label}: {cls} overrides {base}.{', '.join(uncovered)}, which no extension_point declares"
-        for cls, base, overrides in _overrides(observed)
+        for cls, base, overrides in _overrides(observed, package)
         if base not in points
         and (uncovered := [m for m in overrides if not _covered(f"{base}.{m}", points)])
     ]
@@ -305,6 +292,12 @@ def verify_run_observations(root: Path, record: ResearchRecord) -> list[str]:
             first_checked = True
 
         observed = json.loads(observed_path.read_text(encoding="utf-8"))
+        if observed.get("version") != 2:
+            problems.append(
+                f"run '{run.run_id}': {OBSERVED_FILENAME} is version "
+                f"{observed.get('version')}, written by an older hook; the gate reads version 2"
+            )
+            continue
         snapshot = root / repository_snapshot_relpath(repository.id)
         pages = (
             _pages(snapshot.read_text(encoding="utf-8")) if snapshot.is_file() else {}
