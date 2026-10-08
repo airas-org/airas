@@ -409,8 +409,19 @@ def test_a_long_or_structured_value_is_compared_through_its_recording(
     ]
     observed = _observed(tmp_path)
     observed["calls"]["pkg.runner.Runner.__init__"]["args"] = [
-        _arg("n", {"type": "list", "repr": "[1, 2]"}),
-        _arg("key", {"type": "str", "len": 300, "sha256": text_sha256("k" * 300)}),
+        _arg("n", [1, 2]),  # a small container is kept as a value
+        {  # a long string is kept only as its hash
+            "name": "key",
+            "calls": 1,
+            "values": [
+                {
+                    "truncated": True,
+                    "len": 300,
+                    "sha256": text_sha256("k" * 300),
+                    "calls": 1,
+                }
+            ],
+        },
     ]
     _write(tmp_path, observed)
     assert verify_run_observations(tmp_path, record) == []

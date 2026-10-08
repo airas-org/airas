@@ -88,18 +88,20 @@ def _overrides(
     return found
 
 
-def _same_value(declared: Any, observed: Any) -> bool | None:
-    if not isinstance(observed, dict):
-        return bool(observed == declared)
-
-    if "redacted" in observed:
-        return None
-
-    text = declared if isinstance(declared, str) else repr(declared)
-    if "repr" in observed:
-        return bool(observed["repr"] == text)
-
-    return bool(observed.get("sha256") == text_sha256(text))
+def _same_value(declared: Any, item: dict[str, Any]) -> bool | None:
+    """The hook writes a value it kept as {value}, a string or small container
+    it only hashed as {sha256, …}, a secret as {redacted}. None: nothing to
+    compare with."""
+    if "value" in item:
+        return bool(item["value"] == declared)
+    if "sha256" in item:
+        text = (
+            declared
+            if isinstance(declared, str)
+            else json.dumps(declared, ensure_ascii=False)
+        )
+        return bool(item["sha256"] == text_sha256(text))
+    return None
 
 
 def _argument_problem(
@@ -115,15 +117,11 @@ def _argument_problem(
         return f"{label}: {fn} was called without an argument {arg}"
 
     other = next(
-        (
-            e["value"]
-            for e in entry["values"]
-            if _same_value(value, e["value"]) is False
-        ),
-        None,
+        (e for e in entry.get("values", []) if _same_value(value, e) is False), None
     )
     if other is not None:
-        return f"{label}: {argument} was {other!r}, not the declared {value!r}"
+        seen = other.get("value", other)
+        return f"{label}: {argument} was {seen!r}, not the declared {value!r}"
     return None
 
 
