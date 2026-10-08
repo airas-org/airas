@@ -44,7 +44,7 @@ def _git(root: Path, *args: str) -> str:
 
 def _template_import(root: Path) -> str:
     """The repository's first commit, as prepare_repository leaves it: the
-    template's hook and Makefile. Returns its hash."""
+    template's hook and Makefile, plus the experiment code. Returns its hash."""
     hook = root / ".airas/sitecustomize.py"
     hook.parent.mkdir(parents=True, exist_ok=True)
     hook.write_text("# hook\n")
@@ -137,11 +137,20 @@ def _record(root: Path, run_commit: str) -> ResearchRecord:
     )
 
 
+def _values(*values: Any) -> dict[str, Any]:
+    """An argument as the hook aggregates it: each value with its count."""
+    return {
+        "calls": len(values),
+        "values": [{"value": v, "calls": 1} for v in values],
+    }
+
+
 def _observed(root: Path) -> dict[str, Any]:
     return {
-        "version": 1,
+        "version": 2,
         "run_id": "run-1",
         "hook": {"sha256": file_sha256(root / ".airas/sitecustomize.py")},
+        "src_modules": {"src/adapter.py": text_sha256(ADAPTER_PY)},
         "loaded_file_hashes": {
             "pkg.runner": {
                 "file": "/venv/site-packages/pkg/runner.py",
@@ -159,49 +168,23 @@ def _observed(root: Path) -> dict[str, Any]:
                 "abstractmethod": {"module": "abc", "file": "<frozen abc>"},
             }
         },
+        "foreign_definitions": {},
         "upstream_extensions": {  # the hook lists every upstream ancestor, nearest first
             "adapter.MyModel": {
                 "bases": ["pkg.model.Model", "pkg.model.Provider"],
                 "overrides": ["predict"],
             }
         },
-        "processes": [
-            {
-                "process": {"pid": 1, "cwd": "/repo"},
-                "calls": [
-                    {"seq": 0, "fn": "pkg.runner.Runner.__init__", "args": {"n": 20}},
-                    {"seq": 1, "fn": ENTRY, "args": {}},
-                ],
-            }
-        ],
-    }
-
-
-def _observed_v2(root: Path) -> dict[str, Any]:
-    """The hook's version 2: one entry per function with the values each
-    argument took, the experiment code's file hashes, and redefinitions of
-    any dependency."""
-    o = _observed(root)
-    o["version"] = 2
-    o["processes"] = [{"pid": 1, "cwd": "/repo"}]
-    o["src_modules"] = {"src/adapter.py": text_sha256(ADAPTER_PY)}
-    o["foreign_definitions"] = {}
-    o["calls"] = {
-        "pkg.runner.Runner.__init__": {
-            "calls": 3,
-            "args": {
-                "n": {
-                    "type": "int",
-                    "calls": 3,
-                    "distinct": 1,
-                    "values": [{"value": 20, "calls": 3}],
-                }
+        "calls": {
+            "pkg.runner.Runner.__init__": {
+                "calls": 1,
+                "args": {"n": _values(20)},
+                "samples": [],
             },
-            "samples": [],
+            ENTRY: {"calls": 1, "args": {}, "samples": []},
         },
-        ENTRY: {"calls": 3, "args": {}, "samples": []},
+        "processes": [{"pid": 1}],
     }
-    return o
 
 
 def _write(root: Path, observed: dict[str, Any]) -> None:
@@ -220,6 +203,16 @@ def test_a_realized_run_without_observed_json_fails(tmp_path: Path) -> None:
     record = _record(tmp_path, _template_import(tmp_path))
     assert verify_run_observations(tmp_path, record) == [
         "run 'run-1': no observed.json among its outputs (the Makefile writes it)"
+    ]
+
+
+def test_an_older_hooks_observed_json_is_reported_not_read(tmp_path: Path) -> None:
+    record = _record(tmp_path, _template_import(tmp_path))
+    _write(tmp_path, {"version": 1, "processes": []})
+    problems = verify_run_observations(tmp_path, record)
+    assert problems == [
+        "run 'run-1': observed.json is version 1, written by an older hook; the "
+        "gate reads version 2"
     ]
 
 
@@ -243,22 +236,39 @@ def _load_unknown_module(o: dict[str, Any]) -> None:
 
 
 def _skip_entry(o: dict[str, Any]) -> None:
-    o["processes"][0]["calls"].pop()
+    del o["calls"][ENTRY]
 
 
 def _other_value(o: dict[str, Any]) -> None:
-    o["processes"][0]["calls"][0]["args"]["n"] = 21
+    o["calls"]["pkg.runner.Runner.__init__"]["args"]["n"] = _values(20, 21)
+    o["calls"]["pkg.runner.Runner.__init__"]["calls"] = 2
+
+
+def _sometimes_without_the_argument(o: dict[str, Any]) -> None:
+    o["calls"]["pkg.runner.Runner.__init__"]["calls"] = 2
 
 
 def _monkeypatch(o: dict[str, Any]) -> None:
     o["loaded_definitions"]["pkg.runner"]["Runner.run"] = {
         "module": "adapter",
-        "file": "/repo/src/adapter.py",
+        "file": "src/adapter.py",
     }
+
+
+def _redefines_a_dependency(o: dict[str, Any]) -> None:
+    o["foreign_definitions"]["scipy.optimize.least_squares"] = "src/adapter.py"
 
 
 def _undeclared_base(o: dict[str, Any]) -> None:
     o["upstream_extensions"]["adapter.MyModel"]["bases"] = ["pkg.model.Other"]
+
+
+def _other_src(o: dict[str, Any]) -> None:
+    o["src_modules"]["src/adapter.py"] = "0" * 64
+
+
+def _src_not_in_commit(o: dict[str, Any]) -> None:
+    o["src_modules"]["src/extra.py"] = "0" * 64
 
 
 @pytest.mark.parametrize(
@@ -276,8 +286,19 @@ def _undeclared_base(o: dict[str, Any]) -> None:
         ),
         (_skip_entry, "method_entry pkg.runner.Runner.run was never called"),
         (_other_value, "pkg.runner.Runner.__init__.n was 21, not the declared 20"),
-        (_monkeypatch, "pkg.runner.Runner.run is defined in /repo/src/adapter.py"),
+        (
+            _sometimes_without_the_argument,
+            "pkg.runner.Runner.__init__ was called without an argument n",
+        ),
+        (_monkeypatch, "pkg.runner.Runner.run is defined in src/adapter.py"),
+        (
+            _redefines_a_dependency,
+            "scipy.optimize.least_squares is defined in src/adapter.py, which no "
+            "extension_point declares",
+        ),
         (_undeclared_base, "adapter.MyModel overrides pkg.model.Other.predict"),
+        (_other_src, "src/adapter.py that ran differs from commit"),
+        (_src_not_in_commit, "src/extra.py ran but commit"),
     ],
 )
 def test_each_departure_from_the_declaration_is_reported(
@@ -363,7 +384,8 @@ def test_a_result_commit_git_cannot_show_is_reported_not_passed(tmp_path: Path) 
     problems = verify_run_observations(tmp_path, record)
     assert problems == [
         "run 'run-1': Makefile, .github, .airas at commit ffffffffffff could not be "
-        "compared with the repository's first commit"
+        "compared with the repository's first commit",
+        "run 'run-1': src/adapter.py ran but commit ffffffffffff has no such file",
     ]
 
 
@@ -394,70 +416,9 @@ def test_a_long_or_structured_value_is_compared_through_its_recording(
         ArgumentValue(argument="pkg.runner.Runner.__init__.key", value="k" * 300),
     ]
     observed = _observed(tmp_path)
-    observed["processes"][0]["calls"][0]["args"] = {
-        "n": {"type": "list", "repr": "[1, 2]"},
-        "key": {"type": "str", "len": 300, "sha256": text_sha256("k" * 300)},
+    observed["calls"]["pkg.runner.Runner.__init__"]["args"] = {
+        "n": _values({"type": "list", "repr": "[1, 2]"}),
+        "key": _values({"type": "str", "len": 300, "sha256": text_sha256("k" * 300)}),
     }
     _write(tmp_path, observed)
     assert verify_run_observations(tmp_path, record) == []
-
-
-def test_a_v2_run_that_agrees_with_its_declaration_passes(tmp_path: Path) -> None:
-    record = _record(tmp_path, _template_import(tmp_path))
-    _write(tmp_path, _observed_v2(tmp_path))
-    assert verify_run_observations(tmp_path, record) == []
-
-
-def _v2_other_value(o: dict[str, Any]) -> None:
-    o["calls"]["pkg.runner.Runner.__init__"]["args"]["n"]["values"].append(
-        {"value": 21, "calls": 1}
-    )
-
-
-def _v2_sometimes_without_the_argument(o: dict[str, Any]) -> None:
-    o["calls"]["pkg.runner.Runner.__init__"]["args"]["n"]["calls"] = 2
-
-
-def _v2_skip_entry(o: dict[str, Any]) -> None:
-    del o["calls"][ENTRY]
-
-
-def _v2_other_src(o: dict[str, Any]) -> None:
-    o["src_modules"]["src/adapter.py"] = "0" * 64
-
-
-def _v2_src_not_in_commit(o: dict[str, Any]) -> None:
-    o["src_modules"]["src/extra.py"] = "0" * 64
-
-
-def _v2_redefines_a_dependency(o: dict[str, Any]) -> None:
-    o["foreign_definitions"]["scipy.optimize.least_squares"] = "src/adapter.py"
-
-
-@pytest.mark.parametrize(
-    ("mutate", "expected"),
-    [
-        (_v2_other_value, "pkg.runner.Runner.__init__.n was 21, not the declared 20"),
-        (
-            _v2_sometimes_without_the_argument,
-            "pkg.runner.Runner.__init__ was called without an argument n",
-        ),
-        (_v2_skip_entry, "method_entry pkg.runner.Runner.run was never called"),
-        (_v2_other_src, "src/adapter.py that ran differs from commit"),
-        (_v2_src_not_in_commit, "src/extra.py ran but commit"),
-        (
-            _v2_redefines_a_dependency,
-            "scipy.optimize.least_squares is defined in src/adapter.py, which no "
-            "extension_point declares",
-        ),
-    ],
-)
-def test_each_v2_departure_from_the_declaration_is_reported(
-    tmp_path: Path, mutate: Callable[[dict[str, Any]], None], expected: str
-) -> None:
-    record = _record(tmp_path, _template_import(tmp_path))
-    observed = _observed_v2(tmp_path)
-    mutate(observed)
-    _write(tmp_path, observed)
-    problems = verify_run_observations(tmp_path, record)
-    assert len(problems) == 1 and expected in problems[0], problems

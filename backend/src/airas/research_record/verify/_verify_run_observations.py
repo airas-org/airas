@@ -74,27 +74,12 @@ def _page_for(pages: dict[str, str], module: str) -> str | None:
     )
 
 
-def _sections(observed: dict[str, Any], key: str) -> list[dict[str, Any]]:
-    if key in observed:
-        return [observed[key]]
-    return [p[key] for p in observed.get("processes", []) if key in p]
-
-
-def _loaded_files(observed: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
-    return [
-        (module, entry)
-        for files in _sections(observed, "loaded_file_hashes")
-        for module, entry in files.items()
-    ]
-
-
 def _definition_origins(observed: dict[str, Any]) -> list[tuple[str, str]]:
-    """(name, defining file) of upstream names, plus (v2) any dependency's name
+    """(name, defining file) of upstream names and of any dependency's name
     the experiment code redefined."""
     return [
         (f"{module}.{name}", origin.get("file") or "")
-        for tables in _sections(observed, "loaded_definitions")
-        for module, table in tables.items()
+        for module, table in observed.get("loaded_definitions", {}).items()
         for name, origin in table.items()
     ] + list(observed.get("foreign_definitions", {}).items())
 
@@ -104,38 +89,9 @@ def _overrides(observed: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
     lists every upstream ancestor; declaring the class one subclasses is enough."""
     return [
         (cls, ext["bases"][0], ext.get("overrides", []))
-        for extensions in _sections(observed, "upstream_extensions")
-        for cls, ext in extensions.items()
+        for cls, ext in observed.get("upstream_extensions", {}).items()
         if ext.get("bases")
     ]
-
-
-def _bound(observed: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    """fn -> {calls, args: {arg: {calls, values}}}: what each function was
-    called with. v1 lists every call per process; v2 holds this shape already."""
-    if observed.get("version", 1) >= 2:
-        return observed.get("calls", {})
-    bound: dict[str, dict[str, Any]] = {}
-    for p in observed.get("processes", []):
-        for c in p.get("calls", []):
-            fn = bound.setdefault(c.get("fn", ""), {"calls": 0, "args": {}})
-            fn["calls"] += 1
-            for arg, value in c.get("args", {}).items():
-                entry = fn["args"].setdefault(arg, {"calls": 0, "values": []})
-                entry["calls"] += 1
-                entry["values"].append({"value": value})
-    return bound
-
-
-def _cwd(observed: dict[str, Any]) -> str:
-    return next(
-        (
-            p.get("cwd") or p.get("process", {}).get("cwd")
-            for p in observed.get("processes", [])
-            if p.get("cwd") or p.get("process", {}).get("cwd")
-        ),
-        "",
-    )
 
 
 def _same_value(declared: Any, observed: Any) -> bool | None:
@@ -226,7 +182,9 @@ def _run_problems(
 
     package = repository.method_entry.split(".")[0]
     upstream = [
-        (m, e) for m, e in _loaded_files(observed) if m.split(".")[0] == package
+        (m, e)
+        for m, e in observed.get("loaded_file_hashes", {}).items()
+        if m.split(".")[0] == package
     ]
     # Without the entry's own module among the hashes, the checks below pass on nothing.
     if not any(repository.method_entry.startswith(m + ".") for m, _ in upstream):
@@ -247,7 +205,7 @@ def _run_problems(
         and text_sha256(body) != entry.get("sha256")
     ]
 
-    bound = _bound(observed)
+    bound = observed.get("calls", {})
     if repository.method_entry not in bound:
         problems.append(
             f"{label}: method_entry {repository.method_entry} was never called"
@@ -288,15 +246,10 @@ def _run_problems(
     # Changes to the upstream: a name defined in src/ or by exec, or a src
     # class overriding the upstream's methods, each needs an extension point.
     points = integration.extension_points
-    src = _cwd(observed).rstrip("/") + "/src/"
     problems += [
         f"{label}: upstream {name} is defined in {file}, which no extension_point declares"
         for name, file in _definition_origins(observed)
-        if (
-            file.startswith(src)
-            or file.startswith("src/")
-            or file.startswith("<string>")
-        )
+        if (file.startswith("src/") or file.startswith("<string>"))
         and not _covered(name, points)
     ]
     problems += [
@@ -344,6 +297,12 @@ def verify_run_observations(root: Path, record: ResearchRecord) -> list[str]:
             first_checked = True
 
         observed = json.loads(observed_path.read_text(encoding="utf-8"))
+        if observed.get("version") != 2:
+            problems.append(
+                f"run '{run.run_id}': {OBSERVED_FILENAME} is version "
+                f"{observed.get('version')}, written by an older hook; the gate reads version 2"
+            )
+            continue
         snapshot = root / repository_snapshot_relpath(repository.id)
         pages = (
             _pages(snapshot.read_text(encoding="utf-8")) if snapshot.is_file() else {}
