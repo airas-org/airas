@@ -10,6 +10,9 @@ RESULTS_DIR = ".research/results"
 # LaTeX template.
 RECORD_FILENAME = "record.json"
 RECORD_PATH = f".research/{RECORD_FILENAME}"
+# The design before the freeze: the `preregister_record` arguments as the agent
+# agreed them, which a sanity run is reviewed against.
+DESIGN_PATH = ".research/design.json"
 
 # What a run writes into its .research/results/<run_id>/ directory, and the
 # reserved directory name for cross-run aggregates.
@@ -17,6 +20,9 @@ METRICS_FILENAME = "metrics.json"
 COMPARISON_KEY = "comparison"
 COMPARISON_METRICS_FILENAME = "aggregated_metrics.json"
 OBSERVED_FILENAME = "observed.json"
+# A model's reading of the run's code and observation against its declaration,
+# written by the run workflow after the run and imported with the run.
+IMPLEMENTATION_REVIEW_FILENAME = "implementation_review.json"
 
 # The trusted layer the template ships and the agent may not edit: the
 # Makefile every run goes through, and the observation hook it puts on

@@ -46,17 +46,24 @@ contract in `_shared/references/lean.md`; both kinds start through the same
    prediction files against the eval contract without scoring.
    Commit and push.
 5. **One sanity run on the platform** (`run-experiments`, steps 2–3; a
-   sanity run needs no declaration in the record). A local run proves
-   nothing about the target architecture or the model the run will
-   talk to. Read what the run read and called: every value it took and
-   every upstream function it reached must be covered by the design's
-   `params`, and a model server started outside the platform must be
-   committed and referenced from the run yaml. `observed.json` in the
-   run's outputs holds, per function, every `src/` function and directly
-   called upstream function with the values its arguments took, the
-   files opened, the hosts reached and the child processes. Fix the code
-   or the design and repeat until the sanity run touches nothing
-   undeclared.
+   sanity run needs no declaration in the record, but `.research/design.json`
+   must be committed: it is what the run is reviewed against). A local run
+   proves nothing about the target architecture or the model the run will
+   talk to. After the run the workflow has a model read the code at the
+   commit and the run's `observed.json` (every `src/` function and directly
+   called upstream function with the values its arguments took, the files
+   opened, the hosts reached) against the design, and writes its findings
+   to `implementation_review.json` in the run's results — read them on the
+   run page's step summary or via `download_workflow_artifacts`.
+   `contradiction` (design and code disagree) and `unverified` (declared,
+   not in the code): fix the code or the design. `undeclared` (a choice the
+   design does not state): declare it in the design, or change the code.
+   A model server started outside the platform must be committed and
+   referenced from the run yaml. Commit, run sanity again, and repeat until
+   no `contradiction` or `unverified` remains and every `undeclared`
+   finding is one you have read and accepted — the full run is reviewed
+   the same way and its review gates the record, so settle the design here,
+   where a round costs minutes.
    Then put the upstream / own-code boundary in the hypothesis's
    `notes` in numbers: the upstream calls and loaded files from
    `observed.json`, the `src/` lines that implement method steps, and

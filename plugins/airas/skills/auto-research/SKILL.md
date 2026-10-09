@@ -58,13 +58,14 @@ carry the answers through the session:
   several exist, which workspace
 - compute target (GPU and architecture) — the experimental design and
   the dependency lockfile depend on it
-- the two verifier models of `verify_paper_values`, both written into
-  the record with every judgment, so keep each the same across the
-  user's studies rather than falling back to whatever key happens to
-  work: `citation_verifier_model` reads each passage citation (`gpt-4.1`
-  unless the user names another); `implementation_verifier_model` reads
-  each design's code and runs against the design
-  (`vercel_ai_gateway/openai/gpt-6-luna` unless the user names another)
+- the citation verifier model of `verify_paper_values`, written into
+  the record with every judgment, so keep it the same across the user's
+  studies rather than falling back to whatever key happens to work:
+  `citation_verifier_model` reads each passage citation (`gpt-4.1`
+  unless the user names another). The implementation review (each run's
+  code and `observed.json` against its declaration) is not a choice
+  here: the run workflow writes it after every run with the model fixed
+  in `run_experiment.yml`
 
 ## Invariants across steps
 

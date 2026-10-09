@@ -27,10 +27,17 @@ from airas.agent_session.research_trace import (
     record_step,
     write_derived_from,
 )
+from airas.core.research_paths import RESULTS_DIR, repo_root
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.research_trace import DerivedFromRepository
 from airas.dashboard.launcher import DEFAULT_DASHBOARD_PORT
 from airas.infra.litellm_client import LiteLLMClient
+from airas.infra.local_git import head_commit
+from airas.research_record.verify.implementation_review import (
+    DEFAULT_REVIEWER_MODEL,
+    finding_lines,
+    review_implementation,
+)
 from airas.research_record.verify.verify_paper import verify_paper
 from airas.research_record.verify.verify_record import verify_record
 from airas.usecases.publication.build_paper import build_paper
@@ -91,9 +98,8 @@ def _run_verify_paper(args: argparse.Namespace) -> None:
                 ),
                 require_history=not args.allow_unavailable_history,
                 citation_verifier_model=args.citation_verifier_model,
-                implementation_verifier_model=args.implementation_verifier_model,
                 litellm_client=LiteLLMClient()
-                if args.citation_verifier_model or args.implementation_verifier_model
+                if args.citation_verifier_model
                 else None,
             )
         )
@@ -116,6 +122,34 @@ def _run_publish_paper(args: argparse.Namespace) -> None:
     ]
     print(json.dumps([r.model_dump() for r in reports], indent=2, ensure_ascii=False))
     sys.exit(0 if all(r.ok for r in reports) else 1)
+
+
+def _run_review_implementation(args: argparse.Namespace) -> None:
+    root = repo_root(args.local_path)
+    commit = args.commit or head_commit(root)
+    if commit is None:
+        print("no commit to review: pass --commit", file=sys.stderr)
+        sys.exit(1)
+    review = asyncio.run(
+        review_implementation(
+            root,
+            args.run_id,
+            commit,
+            model=args.model,
+            litellm_client=LiteLLMClient(),
+            results_dir=args.results_dir,
+        )
+    )
+    if isinstance(review, str):
+        print(review)
+        return
+    problems, reports = finding_lines(args.run_id, review)
+    lines = [f"FAIL {p}" for p in problems] + [f"REPORT {r}" for r in reports]
+    print("\n".join(lines or [f"no findings ({review.model})"]))
+    if summary := os.environ.get("GITHUB_STEP_SUMMARY"):
+        with open(summary, "a", encoding="utf-8") as f:
+            f.write(f"### implementation review ({review.model})\n\n")
+            f.write("".join(f"- {line}\n" for line in lines) or "- no findings\n")
 
 
 def _run_verify_record(args: argparse.Namespace) -> None:
@@ -323,13 +357,6 @@ def main() -> None:
         ),
     )
     verify.add_argument(
-        "--implementation-verifier-model",
-        help=(
-            "Have this model read each design's code and runs against the design "
-            "before the check, and write the review into record.json"
-        ),
-    )
-    verify.add_argument(
         "--no-provenance",
         action="store_true",
         help="Skip the provenance cross-check against the execution backend",
@@ -386,6 +413,24 @@ def main() -> None:
         ),
     )
 
+    review = subparsers.add_parser(
+        "review-implementation",
+        help=(
+            "Have a model read one run's code (at its commit) and observed.json "
+            "against its declaration, and write implementation_review.json into the "
+            "run's results. Meant for the run workflow, after the run"
+        ),
+    )
+    review.add_argument("--local-path", default=".")
+    review.add_argument("--run-id", required=True)
+    review.add_argument("--commit", help="The commit the run executed (default: HEAD)")
+    review.add_argument("--model", default=DEFAULT_REVIEWER_MODEL)
+    review.add_argument(
+        "--results-dir",
+        default=RESULTS_DIR,
+        help="Where the run wrote its outputs, relative to --local-path",
+    )
+
     publish = subparsers.add_parser(
         "publish-paper",
         help=(
@@ -427,6 +472,8 @@ def main() -> None:
         _run_publish_paper(args)
     elif args.command == "verify-record":
         _run_verify_record(args)
+    elif args.command == "review-implementation":
+        _run_review_implementation(args)
     elif args.command == "loop":
         _run_loop(args)
     else:
