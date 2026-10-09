@@ -73,6 +73,14 @@ from a post-hoc one. Declare late additions with `append_to_record`
    other way fail verification. If the same experiment ran more than
    once, declare the run that should be reported and tell the user the
    others exist (the selection is reviewable at verification).
+   The results also hold `implementation_review.json`, which the workflow
+   wrote after the run (a model's reading of the code and `observed.json`
+   against the declaration at the run's commit). The gate reads it: a run
+   without one, or whose design was declared again since, fails — so the
+   design must be settled in the sanity loop (`write-experiment-code`,
+   step 5) before a pilot or full run, and a declaration fixed afterwards
+   means running again. Its `contradiction` / `unverified` findings fail
+   the gate; `undeclared` ones are listed in `reports` for you to read.
 
 **Output**: committed results under `.research/results/` — `eval_inputs/`,
 `metrics.json` and the evaluation report for an experiment, `lean.json` and

@@ -314,23 +314,23 @@ class ReviewFinding(BaseModel):
 
 
 class ImplementationReview(BaseModel):
-    """A model's reading of the design's code and runs against the design."""
+    """A model's reading of one run's code and observation against its
+    declaration; `.research/results/<run_id>/implementation_review.json`,
+    written by the run workflow and imported with the run's provenance."""
 
-    commit: str = Field(pattern=r"^[0-9a-f]{40}$")
-    observed: dict[str, str] = Field(
-        description="run_id -> sha256 of its observed.json"
-    )
-    inputs_sha256: str = Field(
-        description="Of everything the model read: declaration, passages, code, runs. "
-        "A change to any of them needs a new review"
-    )
+    design_id: str
     model: str
+    commit: str = Field(pattern=r"^[0-9a-f]{40}$")
+    observed_sha256: str = Field(description="Of the observed.json the model read")
+    declaration_sha256: str = Field(
+        description="Of the declaration the model read (hypothesis notes aside): "
+        "a design declared again after its run needs a new run"
+    )
     findings: list[ReviewFinding] = Field(default_factory=list)
 
 
 class SeyvalDesign(Design[SeyvalRun]):
     repository_integration: Optional[RepositoryIntegration] = None
-    reviews: list[ImplementationReview] = Field(default_factory=list)
 
 
 def walk_metric_path(node: Any, path: str) -> float:

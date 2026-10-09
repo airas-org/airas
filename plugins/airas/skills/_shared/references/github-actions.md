@@ -44,6 +44,11 @@ github_owner=..., repository_name=...)` で `status` / `conclusion` を見る。
 返らないので、失敗の原因は `execution_url` の run ページか
 `download_workflow_artifacts` の `stdout.txt` / `stderr.txt` を読む。
 
+実行後に workflow が `implementation_review.json` を results に書く（run のコミットの
+コードと observed.json を宣言 — record、凍結前は `.research/design.json` — に対してモデルが
+読んだ所見）。所見は run ページの step summary か、`download_workflow_artifacts` で
+取った JSON で読む。sanity の所見を潰してから pilot / full に進む。
+
 `conclusion` が `success` になったら `import_run_outputs(backend="github_actions",
 execution_id=..., branch_name="verify")` で artifact をリポジトリに取り込む。
 `branch_name` は staging ref（`verify`）で、`main` ではない。取り込み後は

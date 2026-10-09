@@ -15,7 +15,7 @@ concurrency:
 
 env:
   # airas を引いているテンプレートの workflow
-  AIRAS_WORKFLOWS: verify_record.yml verify_paper.yml publish_paper.yml
+  AIRAS_WORKFLOWS: verify_record.yml verify_paper.yml publish_paper.yml run_experiment.yml
 
 jobs:
   pin:

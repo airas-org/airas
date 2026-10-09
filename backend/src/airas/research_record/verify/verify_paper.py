@@ -42,7 +42,6 @@ async def verify_paper(
     store_factory: StoreFactory = default_store,
     record: RecordVerification | None = None,
     citation_verifier_model: str | None = None,
-    implementation_verifier_model: str | None = None,
     litellm_client: LiteLLMClient | None = None,
 ) -> PaperVerification:
     """The paper's numbers are the record's, and the record holds; then, optionally, it builds."""
@@ -53,8 +52,6 @@ async def verify_paper(
             require_provenance=require_provenance,
             require_history=require_history,
             store_factory=store_factory,
-            implementation_verifier_model=implementation_verifier_model,
-            litellm_client=litellm_client,
         )
     root = repo_root(local_path)
     latex_dir = root / ".research" / "latex" / template

@@ -120,7 +120,6 @@ async def _verify_paper(
     pdf_path: str | None,
     check_provenance: bool,
     citation_verifier_model: str | None = None,
-    implementation_verifier_model: str | None = None,
 ) -> PaperVerification:
     # The same verification CI runs, with this server's clients.
     # Unavailable provenance or history is surfaced here, not failed: only
@@ -135,10 +134,7 @@ async def _verify_paper(
         require_history=False,
         store_factory=_output_store,
         citation_verifier_model=citation_verifier_model,
-        implementation_verifier_model=implementation_verifier_model,
-        litellm_client=_litellm_client()
-        if citation_verifier_model or implementation_verifier_model
-        else None,
+        litellm_client=_litellm_client() if citation_verifier_model else None,
     )
 
 
@@ -148,7 +144,6 @@ async def verify_paper_values(
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
     check_provenance: bool = True,
     citation_verifier_model: str | None = None,
-    implementation_verifier_model: str | None = None,
 ) -> dict[str, Any]:
     """Check that everything the paper states is what was declared and measured.
 
@@ -193,14 +188,17 @@ async def verify_paper_values(
     model read each unjudged citation against its passage first; the
     judgments are written into the record and committed, so the same call
     then reports only what the model found unsupported. Re-run with it
-    after rewriting a sentence that cites a passage.
-    `implementation_verifier_model` likewise reads each design's code and
-    runs against the design (once per state of declaration, code and runs;
-    the review is written into the record): contradictions and declared
-    steps the code lacks fail, choices the record does not declare are
-    listed in `record.reports` for review. Both names are written into the
-    record, so keep them the same across a user's studies. Requires an LLM
-    provider key when either is given.
+    after rewriting a sentence that cites a passage. The model's name is
+    written into the record, so keep it the same across a user's studies.
+    Requires an LLM provider key when given.
+
+    The implementation review is not run here: the run workflow writes
+    `implementation_review.json` into each run's results after the run (a
+    model reads the code at the run's commit and observed.json against the
+    declaration), and this check reads it — `contradiction` and
+    `unverified` findings fail, `undeclared` ones are listed in
+    `record.reports` for you to read. A run without one, or whose design
+    was declared again since, fails: run it again.
     """
     refresh_environment()
     verification = await _verify_paper(
@@ -209,7 +207,6 @@ async def verify_paper_values(
         None,
         check_provenance,
         citation_verifier_model,
-        implementation_verifier_model,
     )
     return verification.model_dump()
 

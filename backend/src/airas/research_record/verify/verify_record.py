@@ -12,16 +12,11 @@ from pydantic import ValidationError
 from airas.core.research_paths import RECORD_PATH, repo_root
 from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import ResearchRecord
-from airas.infra.litellm_client import LiteLLMClient
-from airas.infra.local_git import commit_paths
 from airas.infra.run_output_store import default_store
 from airas.research_record.read.load_record import load_record
 from airas.research_record.read.read_run_outputs import (
     load_metrics_data,
     run_ids_with_verifier_report,
-)
-from airas.research_record.verify._verify_implementation import (
-    verify_implementation,
 )
 from airas.research_record.verify._verify_quoted_passages import verify_quoted_passages
 from airas.research_record.verify._verify_record_git_history import (
@@ -41,6 +36,7 @@ from airas.research_record.verify._verify_run_observations import (
     verify_run_observations,
 )
 from airas.research_record.verify._verify_run_results import verify_run_results
+from airas.research_record.verify.implementation_review import verify_implementation
 
 
 # TODO: 循環依存が気になる
@@ -56,11 +52,7 @@ async def verify_record(
     require_provenance: bool = True,
     require_history: bool = True,
     store_factory: StoreFactory = default_store,
-    implementation_verifier_model: str | None = None,
-    litellm_client: LiteLLMClient | None = None,
 ) -> RecordVerification:
-    """With `implementation_verifier_model`, each design's code and runs are
-    also read against the design and the review written into the record."""
     root = repo_root(local_path)
     try:
         record = load_record(str(root))
@@ -101,16 +93,10 @@ async def verify_record(
     reports: list[str] = []
     if stage == "results":
         problems += await asyncio.to_thread(verify_run_observations, root, record)
-        review_problems, reports, reviewed = await verify_implementation(
-            root,
-            record,
-            model=implementation_verifier_model,
-            litellm_client=litellm_client,
+        review_problems, reports = await asyncio.to_thread(
+            verify_implementation, root, record
         )
         problems += review_problems
-        if reviewed:
-            record.save(str(root))
-            commit_paths(root, [RECORD_PATH], "record: review implementation")
         if check_provenance and (
             scope := provenance_scope(record, metrics_data, reported_run_ids)
         ):
