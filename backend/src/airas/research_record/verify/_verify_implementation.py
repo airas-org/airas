@@ -30,6 +30,7 @@ from airas.infra.local_git import file_bytes_at_commit, files_at_commit
 _CODE_PATHS = ["src", "config", "Dockerfile"]
 # ponytail: 値の一覧は上位 10 件に切る。observed.json 1 本が 10 万トークン級になるのを防ぐ
 _VALUES_SHOWN = 10
+_OPENS_SHOWN = 100
 
 
 class _Review(BaseModel):
@@ -85,10 +86,17 @@ def _trimmed(observed: dict[str, Any]) -> dict[str, Any]:
             if "values" in arg:
                 arg["values"] = arg["values"][:_VALUES_SHOWN]
     observed.pop("env", None)
-    observed["processes"] = [
-        {k: v for k, v in p.items() if k != "env"}
-        for p in observed.get("processes", [])
-    ]
+    # プロセスの一覧と開いたファイルの全件は手法について何も言わない: full run では数百プロセス、
+    # 件ごとのファイルで 1 MB 級になり、そのままでは 25 万トークンを超える
+    observed["processes"] = len(observed.get("processes", []))
+    opens = observed.get("reaches", {}).get("opens", {})
+    if len(opens) > _OPENS_SHOWN:
+        ranked = sorted(
+            opens.items(),
+            key=lambda kv: -sum(n for m, n in kv[1].items() if m != "experiment_code"),
+        )
+        observed["reaches"]["opens"] = dict(ranked[:_OPENS_SHOWN])
+        observed["reaches"]["opens_total"] = len(opens)
     return observed
 
 
