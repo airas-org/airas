@@ -26,8 +26,10 @@ from airas.core.types.research_record import (
 from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.local_git import file_bytes_at_commit, files_at_commit
 
-# The experiment code and its settings; the Dockerfile fixes how the upstream is installed.
-_CODE_PATHS = ["src", "config", "Dockerfile"]
+# The experiment code and its settings, the Dockerfile that installs the upstream, and
+# the Makefile and eval plan that run the evaluator: without them the review reads
+# `evaluate.py` as never scoring anything.
+_CODE_PATHS = ["src", "config", "Dockerfile", "Makefile", ".research/evaluation.json"]
 # ponytail: 値の一覧は上位 10 件に切る。observed.json 1 本が 10 万トークン級になるのを防ぐ
 _VALUES_SHOWN = 10
 _OPENS_SHOWN = 100

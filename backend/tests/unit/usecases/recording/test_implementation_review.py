@@ -242,7 +242,7 @@ async def test_code_git_cannot_show_is_not_reviewed(tmp_path: Path) -> None:
     problems, _, reviewed = await _verify(root, _record("f" * 40), judge)
     assert reviewed == 0 and judge.prompts == []
     assert problems == [
-        "design d1: the code at commit ffffffffffff (src, config, Dockerfile) could not "
+        "design d1: the code at commit ffffffffffff (src, config, Dockerfile, Makefile, .research/evaluation.json) could not "
         "be read; not reviewed"
     ]
 
