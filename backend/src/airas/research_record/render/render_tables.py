@@ -54,6 +54,13 @@ def render_table_tex(
         r"\hline",
     ]
     for row in spec.rows:
+        if row.run_id not in metrics_data:
+            # claims.tex と同じ: まだ結果の無い run の行は pending。run は段階的に揃うので、
+            # 1 本目の結果を record に入れる時点で表全体が揃っている必要はない
+            lines.append(
+                " & ".join([row.label] + ["pending"] * len(spec.columns)) + r" \\"
+            )
+            continue
         cells = [row.label]
         for column in spec.columns:
             value = 0.0
