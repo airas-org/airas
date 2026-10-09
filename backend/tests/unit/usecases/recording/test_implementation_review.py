@@ -196,7 +196,9 @@ async def test_a_model_reads_the_design_once_and_its_findings_are_kept(
     review = record.hypotheses[0].claims[0].designs[0].reviews[0]
     assert review.commit == commit and review.observed == {"run-1": sha}
     assert review.model == "judge-1" and review.findings == FINDINGS
-    assert review.inputs_sha256 == hashlib.sha256(prompt.encode()).hexdigest()
+    assert (
+        review.inputs_sha256 != hashlib.sha256(prompt.encode()).hexdigest()
+    )  # not the prompt's wording
     assert problems == [
         "design d1: contradiction: 宣言は 2 型、コードは Hill を含む 3 型 (src/adapter.py:1 KINDS) "
         "[judge-1]"
@@ -240,7 +242,7 @@ async def test_code_git_cannot_show_is_not_reviewed(tmp_path: Path) -> None:
     problems, _, reviewed = await _verify(root, _record("f" * 40), judge)
     assert reviewed == 0 and judge.prompts == []
     assert problems == [
-        "design d1: the code at commit ffffffffffff (src, config, Dockerfile) could not "
+        "design d1: the code at commit ffffffffffff (src, config, Dockerfile, Makefile, .research/evaluation.json) could not "
         "be read; not reviewed"
     ]
 

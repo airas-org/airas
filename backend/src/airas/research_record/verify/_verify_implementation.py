@@ -26,10 +26,13 @@ from airas.core.types.research_record import (
 from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.local_git import file_bytes_at_commit, files_at_commit
 
-# The experiment code and its settings; the Dockerfile fixes how the upstream is installed.
-_CODE_PATHS = ["src", "config", "Dockerfile"]
+# The experiment code and its settings, the Dockerfile that installs the upstream, and
+# the Makefile and eval plan that run the evaluator: without them the review reads
+# `evaluate.py` as never scoring anything.
+_CODE_PATHS = ["src", "config", "Dockerfile", "Makefile", ".research/evaluation.json"]
 # ponytail: 値の一覧は上位 10 件に切る。observed.json 1 本が 10 万トークン級になるのを防ぐ
 _VALUES_SHOWN = 10
+_OPENS_SHOWN = 100
 
 
 class _Review(BaseModel):
@@ -85,10 +88,17 @@ def _trimmed(observed: dict[str, Any]) -> dict[str, Any]:
             if "values" in arg:
                 arg["values"] = arg["values"][:_VALUES_SHOWN]
     observed.pop("env", None)
-    observed["processes"] = [
-        {k: v for k, v in p.items() if k != "env"}
-        for p in observed.get("processes", [])
-    ]
+    # プロセスの一覧と開いたファイルの全件は手法について何も言わない: full run では数百プロセス、
+    # 件ごとのファイルで 1 MB 級になり、そのままでは 25 万トークンを超える
+    observed["processes"] = len(observed.get("processes", []))
+    opens = observed.get("reaches", {}).get("opens", {})
+    if len(opens) > _OPENS_SHOWN:
+        ranked = sorted(
+            opens.items(),
+            key=lambda kv: -sum(n for m, n in kv[1].items() if m != "experiment_code"),
+        )
+        observed["reaches"]["opens"] = dict(ranked[:_OPENS_SHOWN])
+        observed["reaches"]["opens_total"] = len(opens)
     return observed
 
 
@@ -267,12 +277,14 @@ async def verify_implementation(
                 f"({', '.join(_CODE_PATHS)}) could not be read; not reviewed"
             )
             continue
+        declaration = _declaration(record, hypothesis, claim, design)
+        passages = _passages(record, hypothesis, claim, design)
         inputs = _INPUTS.format(
             design_id=design.id,
             run_ids=", ".join(observed),
             commit=commit[:12],
-            record=_declaration(record, hypothesis, claim, design),
-            passages=_passages(record, hypothesis, claim, design),
+            record=declaration,
+            passages=passages,
             code=code,
             observed=json.dumps(
                 {
@@ -284,7 +296,14 @@ async def verify_implementation(
                 ensure_ascii=False,
             ),
         )
-        inputs_sha256 = hashlib.sha256(inputs.encode()).hexdigest()
+        # 本文ではなく入力そのものを hash する: 本文の体裁（間引き方、見出し）は airas の版で
+        # 変わり、repo の CI は作成時の版に pin されているので、本文の hash だと版が違うだけで
+        # 判定が無効になる
+        inputs_sha256 = hashlib.sha256(
+            "\n".join(
+                [declaration, passages, code, *sorted(observed.values())]
+            ).encode()
+        ).hexdigest()
         review = _current_review(design, commit, observed, inputs_sha256)
         if review is None and model is not None:
             if litellm_client is None:
