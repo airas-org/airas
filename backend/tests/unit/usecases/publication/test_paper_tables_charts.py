@@ -78,6 +78,12 @@ def test_table_cells_come_from_the_row_run() -> None:
     assert r"\label{tab:main_results}" in tex
 
 
+def test_table_row_of_a_run_without_results_renders_pending() -> None:
+    tex = render_table_tex(TABLE, {"run_1": METRICS_DATA["run_1"]})
+    assert r"Ours & pending & pending \\" in tex
+    assert r"Baseline & 0.871 & 0.32 \\" in tex
+
+
 def test_table_reference_column_shows_published_and_difference() -> None:
     published = ReferenceValues(
         quoted_passage_ids=["s1.p1"], values={"run_1": 0.85, "run_2": 0.9}
