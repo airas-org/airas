@@ -275,12 +275,14 @@ async def verify_implementation(
                 f"({', '.join(_CODE_PATHS)}) could not be read; not reviewed"
             )
             continue
+        declaration = _declaration(record, hypothesis, claim, design)
+        passages = _passages(record, hypothesis, claim, design)
         inputs = _INPUTS.format(
             design_id=design.id,
             run_ids=", ".join(observed),
             commit=commit[:12],
-            record=_declaration(record, hypothesis, claim, design),
-            passages=_passages(record, hypothesis, claim, design),
+            record=declaration,
+            passages=passages,
             code=code,
             observed=json.dumps(
                 {
@@ -292,7 +294,14 @@ async def verify_implementation(
                 ensure_ascii=False,
             ),
         )
-        inputs_sha256 = hashlib.sha256(inputs.encode()).hexdigest()
+        # 本文ではなく入力そのものを hash する: 本文の体裁（間引き方、見出し）は airas の版で
+        # 変わり、repo の CI は作成時の版に pin されているので、本文の hash だと版が違うだけで
+        # 判定が無効になる
+        inputs_sha256 = hashlib.sha256(
+            "\n".join(
+                [declaration, passages, code, *sorted(observed.values())]
+            ).encode()
+        ).hexdigest()
         review = _current_review(design, commit, observed, inputs_sha256)
         if review is None and model is not None:
             if litellm_client is None:
