@@ -66,9 +66,15 @@ refine until the hypothesis rests on passages you have actually read.
    when they lack what the design needs. A gap the papers at hand cannot
    confirm is a reason to go back to `search-papers`, not to assume.
    Write the prose in the user's working language; metric names stay
-   English identifiers.
+   English identifiers. The design's `summary` states every choice that
+   fixes the hypothesis space, what the method gets to see, how it
+   selects and how it is scored — enough to re-implement the run without
+   the code — and lists each departure from the paper's method as
+   `paper: … / here: … / why: …`. Depart only where the paper's form
+   cannot be run; declaring a departure does not excuse it.
 5. **Agree the design with the user before any code is written**: run
-   ids, params, claims with criteria and predictions, tables. A
+   ids, params, claims with criteria and predictions, tables, and the
+   departure list from step 4 as a table. A
    consultation is not a go-ahead to build. Then write the agreed
    design to `.research/design.json` — exactly the `literature` and
    `hypotheses` arguments `preregister_record` will take — and commit

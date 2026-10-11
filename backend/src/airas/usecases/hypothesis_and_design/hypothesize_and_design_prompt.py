@@ -53,6 +53,14 @@ not the re-export `scigym.api.LLM`), `arguments` = one per knob: `argument` as \
 on the grid, and `reason`). The gate compares these with what the run's \
 hook observed the upstream being called with.
 
+The design's `summary` states every choice that fixes the hypothesis \
+space, what the method gets to see, how it selects and how it is scored, \
+at the level someone could re-implement the run without the code. Where \
+it departs from the paper's method, the summary lists each departure as \
+`paper: … / here: … / why: …`; a departure is removed where the paper's \
+form can be run, not declared, and the list goes to the user before the \
+freeze.
+
 ## The claims
 The claims together should imply the hypothesis (c1 ∧ … ∧ cn ⇒ h1). For \
 each claim:
