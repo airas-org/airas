@@ -120,3 +120,10 @@ def test_the_code_and_paper_prompts_carry_their_contracts():
     assert "SANITY_VALIDATION: PASS" in code and "metrics.json" in code
     assert r"\input{claims.tex}" in paper and r"\airasval" in paper
     assert "After the experiments" in paper
+
+
+def test_hypothesis_and_design_fixes_the_summary_contract():
+    prompt = build_prompt("hypothesis_and_design")["prompt"]
+    assert "re-implement the run without the code" in prompt
+    assert "`paper: … / here: … / why: …`" in prompt
+    assert "the list goes to the user before the freeze" in prompt
