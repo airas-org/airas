@@ -332,7 +332,7 @@ classDiagram
         - `basis` 根拠（prior work, pilot など）
       - `verdict` verified 時に criterion を runs の metrics に適用して導出。metric が解決できなければ `inconclusive`
       - **designs[]**
-        - `id` / `summary` / `quoted_passage_ids[]`
+        - `id` / `summary` / `quoted_passage_ids[]`。`summary` は仮説空間・手法が見る情報・選択規則・採点を決める選択をすべて書く（コード無しで再実装できる粒度）。論文の手法との差は段階ごとに「論文: … / ここ: … / 理由: …」で列挙する（論文の形で走らせられる差は宣言ではなく除く）
         - `repository_integration` 文献のリポジトリが持つ手法をこの design がどう走らせるか（省略可）。上流のファイルは改変しない前提。結果のある run の `observed.json` と照合される（上の「観測」）
           - `repository_id` 走らせるリポジトリ（`"s1.r1"`）。その `method_entry` が手法の入口
           - `extension_points[]` adapter が継承・override・差し替えしてよい上流の名前
