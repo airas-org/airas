@@ -49,7 +49,7 @@ def render_verification_md(
 ) -> str:
     by_status = {
         status: [r for r in verification.declaration_statuses if r.status == status]
-        for status in ("mismatch", "skipped", "ok")
+        for status in ("mismatch", "unverified", "verified")
     }
     return "\n".join(
         [
@@ -64,12 +64,12 @@ def render_verification_md(
             "## mismatch（problems）",
             "",
             _table(by_status["mismatch"], record, repo_url, commit),
-            "## skipped（比べていない: 人間と judge が読む）",
+            "## unverified（比べていない: 人間と judge が読む）",
             "",
-            _table(by_status["skipped"], record, repo_url, commit),
+            _table(by_status["unverified"], record, repo_url, commit),
             _details(
-                f"ok（{len(by_status['ok'])} 行）",
-                _table(by_status["ok"], record, repo_url, commit),
+                f"verified（{len(by_status['verified'])} 行）",
+                _table(by_status["verified"], record, repo_url, commit),
             ),
         ]
     )

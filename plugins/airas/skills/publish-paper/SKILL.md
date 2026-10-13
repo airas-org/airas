@@ -76,7 +76,7 @@ local stage.
    design's `reviews[]` (`undeclared`, `unverified`, `contradiction`)
    and declare in the record (or change in the code) what should not
    have been a silent choice. `verify_record`'s `declaration_statuses` is the
-   whole record with the gate's coverage on it: its `skipped` rows are
+   whole record with the gate's coverage on it: its `unverified` rows are
    what no deterministic check compared, so that is what you read. CI
    commits the same, with a link to the record.json line and to the
    evidence file of each row, as `.research/verification.md` on the
@@ -102,7 +102,7 @@ local stage.
 3. **Report what CI's verification says, not just that it passed.**
    Once the gate has run (step 5), read its report rather than the
    local one:
-   a result's `declaration_statuses` row `skipped` with the store
+   a result's `declaration_statuses` row `unverified` with the store
    unreachable — say so rather than presenting the numbers as
    provenance-backed; "other completed runs of the same commit" on that
    row — the same code ran more than once, name the run the paper reports;

@@ -88,7 +88,7 @@ def _append_params_statuses(
             verification.append_declaration_status(
                 f"{run_path}/params/{key}",
                 f"no {PROVENANCE_MANIFEST_PATH} entry for the run",
-                "skipped",
+                "unverified",
                 evidence_path=PROVENANCE_MANIFEST_PATH,
             )
         return
@@ -111,7 +111,7 @@ def _append_params_statuses(
                 verification.append_declaration_status(
                     path,
                     f"{PROVENANCE_MANIFEST_PATH} holds only overrides, none for this key",
-                    "skipped",
+                    "unverified",
                 )
             continue
         same = str(resolved[key]) == str(wanted)
@@ -121,7 +121,7 @@ def _append_params_statuses(
             if same
             else f"run '{run.run_id}': declared '{key}={wanted}' but "
             f"executed '{key}={resolved[key]}'",
-            "ok" if same else "mismatch",
+            "verified" if same else "mismatch",
         )
 
 
@@ -149,7 +149,7 @@ def _append_result_statuses(
             if same
             else f"run '{rid}': the result differs from the {claim.verifier.kind} "
             "report in the results directory",
-            "ok" if same else "mismatch",
+            "verified" if same else "mismatch",
             evidence_path=f"{RESULTS_DIR}/{rid}/",
         )
         return
@@ -172,7 +172,7 @@ def _append_result_statuses(
             if same_id
             else f"run '{rid}': the result's id {result.id!r} is not the "
             f"manifest's execution {declared.execution_id!r}",
-            "ok" if same_id else "mismatch",
+            "verified" if same_id else "mismatch",
             evidence_path=PROVENANCE_MANIFEST_PATH,
         )
         same_commit = result.commit == declared.commit_hash
@@ -182,7 +182,7 @@ def _append_result_statuses(
             if same_commit
             else f"run '{rid}': the result's commit {result.commit!r} is "
             f"not the manifest's {declared.commit_hash!r}",
-            "ok" if same_commit else "mismatch",
+            "verified" if same_commit else "mismatch",
             evidence_path=PROVENANCE_MANIFEST_PATH,
         )
 
@@ -194,7 +194,7 @@ def _append_result_statuses(
             if same_metrics
             else f"run '{rid}': the result's metrics differ from "
             f"{RESULTS_DIR}/{rid}/metrics.json",
-            "ok" if same_metrics else "mismatch",
+            "verified" if same_metrics else "mismatch",
             evidence_path=f"{RESULTS_DIR}/{rid}/metrics.json",
         )
 
@@ -211,7 +211,7 @@ def _append_result_statuses(
             if same_inputs
             else f"run '{rid}': the result's eval_inputs hash does not match "
             "the eval_inputs file in the results directory",
-            "ok" if same_inputs else "mismatch",
+            "verified" if same_inputs else "mismatch",
             evidence_path=f"{RESULTS_DIR}/{rid}/",
         )
 
@@ -228,7 +228,7 @@ def _append_result_statuses(
             if same_eval
             else f"run '{rid}': the result's eval_report differs from the "
             "evaluator's report in the results directory",
-            "ok" if same_eval else "mismatch",
+            "verified" if same_eval else "mismatch",
             evidence_path=f"{RESULTS_DIR}/{rid}/",
         )
 
@@ -260,7 +260,7 @@ def _append_verified_statuses(
                 if held
                 else f"claim {claim.id}: stored as verified, which the recomputation "
                 "from the run outputs finds otherwise",
-                "ok" if held else "mismatch",
+                "verified" if held else "mismatch",
                 evidence_path=RESULTS_DIR,
             )
             if not held:
@@ -273,6 +273,6 @@ def _append_verified_statuses(
                 if held
                 else f"claim {claim.id}: stored with a verdict {claim.verdict}, which the "
                 f"recomputation finds {status.verdict if status else None}",
-                "ok" if held else "mismatch",
+                "verified" if held else "mismatch",
                 evidence_path=RESULTS_DIR,
             )

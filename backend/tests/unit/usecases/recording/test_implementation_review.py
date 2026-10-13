@@ -294,7 +294,7 @@ async def test_the_record_gate_writes_the_review_and_points_the_reviewer_at_it(
         for s in result.declaration_statuses
         if s.path == "hypotheses[h1]/claims[c1]/designs[d1]/reviews"
     ]
-    assert [s.status for s in reviews] == ["ok"]
+    assert [s.status for s in reviews] == ["verified"]
     assert "1 undeclared, 1 contradiction" in reviews[0].reason
     saved = ResearchRecord.load(str(root)).hypotheses[0].claims[0].designs[0].reviews
     assert len(saved) == 1 and saved[0].findings == FINDINGS

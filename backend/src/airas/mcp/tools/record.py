@@ -3,10 +3,12 @@ from typing import Any
 from airas.core.credentials import refresh_environment
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.literature_material import LiteratureMaterial
+from airas.core.types.record_verification import RecordVerification
 from airas.mcp.app import mcp
 from airas.mcp.context import (
     _arxiv_client,
     _async_session,
+    _github_client,
     _litellm_client,
     _output_store,
     _records_index,
@@ -22,6 +24,9 @@ from airas.research_record.verify.verify_record import (
     verify_record as verify_record_usecase,
 )
 from airas.usecases.literature.resolve_literatures import resolve_literatures
+from airas.usecases.verification.open_github_issues_for_verifiability import (
+    open_github_issues_for_verifiability as open_github_issues_for_verifiability_usecase,
+)
 
 
 async def _materials(
@@ -63,6 +68,33 @@ async def verify_record(
         litellm_client=_litellm_client() if implementation_verifier_model else None,
     )
     return result.model_dump()
+
+
+@mcp.tool()
+async def open_github_issues_for_verifiability(
+    local_path: str,
+    verification: dict[str, Any],
+    model: str,
+) -> dict[str, Any]:
+    """Read the unverified declarations of a `verify_record` result
+    against the record, the experiment code and the runs'
+    observations, and propose, per group of declarations one change would
+    resolve, a title, what to change, and whether the gate could then
+    compare it by itself (`verifiable`). One GitHub issue per verifiable
+    proposal, at most five per call, is opened on the repository `origin`
+    points at (a title already open is skipped); every proposal is returned
+    for the reviewer.
+    One model call per record; each input document is cut at 200 KB and
+    marked truncated."""
+    refresh_environment()
+    proposals, urls = await open_github_issues_for_verifiability_usecase(
+        local_path,
+        RecordVerification.model_validate(verification),
+        model=model,
+        litellm_client=_litellm_client(),
+        github_client=_github_client(),
+    )
+    return {"proposals": [p.model_dump() for p in proposals], "issue_urls": urls}
 
 
 @mcp.tool()

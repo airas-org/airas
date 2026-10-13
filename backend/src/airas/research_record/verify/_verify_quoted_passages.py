@@ -45,7 +45,7 @@ def _snapshot_text(
         problem = f"{relpath} does not match the sha256 the record holds"
     else:
         verification.append_declaration_status(
-            path, f"sha256 of {relpath}", "ok", evidence_path=relpath
+            path, f"sha256 of {relpath}", "verified", evidence_path=relpath
         )
         return (root / relpath).read_text(encoding="utf-8")
     verification.append_declaration_status(
@@ -70,7 +70,7 @@ def verify_quoted_passages(
             "a registry consulted at preregistration"
             if source.verified_by
             else f"source {source.id}: no registry verified it (preregister_record does)",
-            "ok" if source.verified_by else "mismatch",
+            "verified" if source.verified_by else "mismatch",
         )
         texts = [
             _snapshot_text(root, source, snapshot, verification)
@@ -82,14 +82,14 @@ def verify_quoted_passages(
                 verification.append_declaration_status(
                     quote_path,
                     "a snapshot of the source is missing or altered",
-                    "skipped",
+                    "unverified",
                     evidence_path=f"{SOURCES_DIR}/{source.id}/",
                 )
             elif any(passage_is_quoted(t, passage.quote) for t in texts if t):
                 verification.append_declaration_status(
                     quote_path,
                     f"verbatim in {SOURCES_DIR}/{source.id}/",
-                    "ok",
+                    "verified",
                     evidence_path=f"{SOURCES_DIR}/{source.id}/",
                 )
             else:

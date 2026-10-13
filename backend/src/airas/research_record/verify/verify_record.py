@@ -68,7 +68,7 @@ def _append_provenance_statuses(
             verification.append_declaration_status(
                 result_paths.get(dir_name, f"{RESULTS_DIR}/{dir_name}"),
                 f"{provenance.source} stored outputs unavailable: {provenance.detail}",
-                "skipped",
+                "unverified",
                 evidence_path=f"{RESULTS_DIR}/{dir_name}/",
             )
         return
@@ -84,7 +84,7 @@ def _append_provenance_statuses(
             if check.matched
             else f"{provenance.source}: {RESULTS_DIR}/{check.dir} is not backed by stored "
             f"run outputs — {check.detail}",
-            "ok" if check.matched else "mismatch",
+            "verified" if check.matched else "mismatch",
             evidence_path=f"{RESULTS_DIR}/{check.dir}/",
         )
 
@@ -94,12 +94,12 @@ def _append_unchecked_declarations(
 ) -> None:
     noted = {s.path for s in verification.declaration_statuses}
     compared = [
-        s.path for s in verification.declaration_statuses if s.status != "skipped"
+        s.path for s in verification.declaration_statuses if s.status != "unverified"
     ]
     for path in declaration_paths(record):
         if path in noted or any(path.startswith(c + "/") for c in compared):
             continue
-        verification.append_declaration_status(path, "no check", "skipped")
+        verification.append_declaration_status(path, "no check", "unverified")
 
 
 async def verify_record(

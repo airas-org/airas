@@ -480,7 +480,7 @@ def test_unreachable_provenance_fails_where_required(tmp_path: Path) -> None:
     unbacked = [
         s
         for s in relaxed.declaration_statuses
-        if s.status == "skipped" and "stored outputs unavailable" in s.reason
+        if s.status == "unverified" and "stored outputs unavailable" in s.reason
     ]
     assert unbacked and all("/results[" in s.path for s in unbacked), (
         relaxed.declaration_statuses

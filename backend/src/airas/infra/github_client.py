@@ -1251,6 +1251,38 @@ class GithubClient(BaseHTTPClient):
                 self._raise_for_status(response, path)
                 return False
 
+    async def alist_open_issue_titles(
+        self, github_owner: str, repository_name: str
+    ) -> list[str]:
+        path = f"/repos/{github_owner}/{repository_name}/issues"
+        titles: list[str] = []
+        page = 1
+        while True:
+            response = await self.aget(
+                path=path, params={"state": "open", "per_page": 100, "page": page}
+            )
+            if response.status_code != 200:
+                raise GithubClientError(
+                    f"listing issues failed ({response.status_code}): {path}"
+                )
+            issues = response.json()
+            # The endpoint lists pull requests as issues too.
+            titles += [i["title"] for i in issues if "pull_request" not in i]
+            if len(issues) < 100:
+                return titles
+            page += 1
+
+    async def acreate_issue(
+        self, github_owner: str, repository_name: str, title: str, body: str
+    ) -> str:
+        path = f"/repos/{github_owner}/{repository_name}/issues"
+        response = await self.apost(path=path, json={"title": title, "body": body})
+        if response.status_code != 201:
+            raise GithubClientError(
+                f"creating an issue failed ({response.status_code}): {path}"
+            )
+        return str(response.json()["html_url"])
+
     async def alist_workflow_runs(
         self,
         github_owner: str,
