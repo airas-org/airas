@@ -89,5 +89,7 @@ def write_verification_md(root: Path, verification: RecordVerification) -> str:
         normalize_git_url(remote_origin_url(root) or ""),
         head_commit(root) or "",
     )
-    (root / VERIFICATION_MD_PATH).write_text(markdown, encoding="utf-8")
+    report = root / VERIFICATION_MD_PATH
+    report.parent.mkdir(parents=True, exist_ok=True)
+    report.write_text(markdown, encoding="utf-8")
     return markdown
