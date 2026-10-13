@@ -12,7 +12,7 @@ class DeclarationStatus(BaseModel):
     reason: str = Field(
         description="The evidence it was held against, what differed, or why it was not compared"
     )
-    status: Literal["ok", "mismatch", "skipped"]
+    status: Literal["verified", "mismatch", "unverified"]
     evidence_path: str = Field(
         default="",
         description="Repository-relative file the declaration was held against",
@@ -23,8 +23,8 @@ class RecordVerification(BaseModel):
     stage: Literal["prereg", "results"] = "prereg"
     declaration_statuses: list[DeclarationStatus] = Field(
         default_factory=list,
-        description="Every live declaration once at least: ok / mismatch rows are "
-        "what the gate compared, skipped rows are what it did not (record − coverage)",
+        description="Every live declaration once at least: verified / mismatch rows "
+        "are what the gate compared, unverified rows are what it did not (record − coverage)",
     )
 
     @computed_field
@@ -41,7 +41,7 @@ class RecordVerification(BaseModel):
         self,
         path: str,
         reason: str,
-        status: Literal["ok", "mismatch", "skipped"],
+        status: Literal["verified", "mismatch", "unverified"],
         evidence_path: str = "",
     ) -> None:
         self.declaration_statuses.append(

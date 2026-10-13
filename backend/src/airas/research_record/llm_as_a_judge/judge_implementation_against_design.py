@@ -331,7 +331,7 @@ async def judge_implementation_against_design(
             target.reviews_path,
             f"review by {review.model} of the code at {commit[:12]} and the runs: "
             + (f"{kinds} (read them on the design)" if kinds else "no findings"),
-            "ok",
+            "verified",
             evidence_path=RECORD_PATH,
         )
     return reviewed

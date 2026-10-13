@@ -65,7 +65,7 @@ def _verify_consistency(
             if subject in own
             else f"claim {claim.id}: criterion names run '{subject}', "
             "which this claim does not declare",
-            "ok" if subject in own else "mismatch",
+            "verified" if subject in own else "mismatch",
             evidence_path=RECORD_PATH,
         )
         # The reference may be another seyval claim's run (a shared baseline):
@@ -78,7 +78,7 @@ def _verify_consistency(
                 if reference in seyval_runs
                 else f"claim {claim.id}: criterion names run '{reference}', "
                 "which no seyval claim declares",
-                "ok" if reference in seyval_runs else "mismatch",
+                "verified" if reference in seyval_runs else "mismatch",
                 evidence_path=RECORD_PATH,
             )
 
@@ -93,7 +93,7 @@ def _verify_consistency(
                     if known
                     else f"table {spec.key}: row references run '{row.run_id}', "
                     "which no design declares",
-                    "ok" if known else "mismatch",
+                    "verified" if known else "mismatch",
                     evidence_path=RECORD_PATH,
                 )
 
@@ -152,7 +152,10 @@ def _verify_passage_references(
             )
         if pids and not missing:
             verification.append_declaration_status(
-                path, "passages the sources declare", "ok", evidence_path=RECORD_PATH
+                path,
+                "passages the sources declare",
+                "verified",
+                evidence_path=RECORD_PATH,
             )
         return missing
 
@@ -186,7 +189,7 @@ def _verify_passage_references(
                         if stated
                         else f"table {spec.key}: column {column.header!r} gives {value!r} for "
                         f"'{run_id}', which {cited} does not state",
-                        "ok" if stated else "mismatch",
+                        "verified" if stated else "mismatch",
                         evidence_path=RECORD_PATH,
                     )
     for hypothesis, claim in record.latest_claims():
@@ -237,7 +240,7 @@ def _verify_repository_integrations(
                 else f"design {design.id}: repository_integration.repository_id "
                 f"'{integration.repository_id}' is not a repository of this "
                 "record that declares a method_entry",
-                "ok" if declared else "mismatch",
+                "verified" if declared else "mismatch",
                 evidence_path=RECORD_PATH,
             )
 

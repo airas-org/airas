@@ -520,7 +520,7 @@ def _statuses(tmp_path: Path, record: ResearchRecord, path_suffix: str) -> list[
     ]
 
 
-def test_a_redacted_value_is_skipped_not_covered(tmp_path: Path) -> None:
+def test_a_redacted_value_is_unverified_not_covered(tmp_path: Path) -> None:
     record = _record(tmp_path, _template_import(tmp_path))
     record.hypotheses[0].claims[0].designs[0].repository_integration.arguments = [
         ArgumentValue(argument="pkg.runner.Runner.__init__.n", value=20)
@@ -529,7 +529,7 @@ def test_a_redacted_value_is_skipped_not_covered(tmp_path: Path) -> None:
     _redacted(observed)
     _write(tmp_path, observed)
     rows = _statuses(tmp_path, record, "arguments[pkg.runner.Runner.__init__.n]/value")
-    assert len(rows) == 1 and rows[0].startswith("skipped: ")
+    assert len(rows) == 1 and rows[0].startswith("unverified: ")
 
 
 def test_a_declared_extension_point_nothing_used_stays_unverified(
@@ -545,8 +545,8 @@ def test_a_declared_extension_point_nothing_used_stays_unverified(
     _write(tmp_path, _observed(tmp_path))
     rows = _statuses(tmp_path, record, "/extension_points")
     assert rows == [
-        "ok: pkg.model.Model: observed as a redefinition or an override in run 'run-1'",
-        "skipped: pkg.model.Trainer: declared, but nothing in run 'run-1' redefined or overrode it",
+        "verified: pkg.model.Model: observed as a redefinition or an override in run 'run-1'",
+        "unverified: pkg.model.Trainer: declared, but nothing in run 'run-1' redefined or overrode it",
     ]
 
 

@@ -84,11 +84,13 @@ def test_what_no_check_compared_is_listed_as_skipped(tmp_path: Path) -> None:
         verify_record(str(tmp_path), check_provenance=False, require_history=False)
     )
     by_path = {s.path: s for s in result.declaration_statuses}
-    assert by_path["hypotheses[h1]/claims[c1]/criterion"].status == "ok"
-    assert by_path["hypotheses[h1]/claims[c1]/prediction"].status == "skipped"
+    assert by_path["hypotheses[h1]/claims[c1]/criterion"].status == "verified"
+    assert by_path["hypotheses[h1]/claims[c1]/prediction"].status == "unverified"
     assert by_path["hypotheses[h1]/claims[c1]/prediction"].reason == "no check"
-    assert by_path["hypotheses[h1]/claims[c1]/designs[d1]/summary"].status == "skipped"
-    assert by_path["hypotheses[h1]/assumptions[0]"].status == "skipped"
+    assert (
+        by_path["hypotheses[h1]/claims[c1]/designs[d1]/summary"].status == "unverified"
+    )
+    assert by_path["hypotheses[h1]/assumptions[0]"].status == "unverified"
     # every live declaration appears once at least
     assert set(declaration_paths(_record())) <= set(by_path)
 
@@ -96,11 +98,13 @@ def test_what_no_check_compared_is_listed_as_skipped(tmp_path: Path) -> None:
 def test_a_compared_parent_covers_its_leaves() -> None:
     verification = RecordVerification()
     verification.append_declaration_status(
-        "hypotheses[h1]/claims[c1]/designs[d1]/runs[proposed]/params", "manifest", "ok"
+        "hypotheses[h1]/claims[c1]/designs[d1]/runs[proposed]/params",
+        "manifest",
+        "verified",
     )
     _append_unchecked_declarations(_record(), verification)
     unchecked = {
-        s.path for s in verification.declaration_statuses if s.status == "skipped"
+        s.path for s in verification.declaration_statuses if s.status == "unverified"
     }
     assert (
         "hypotheses[h1]/claims[c1]/designs[d1]/runs[proposed]/params/epochs"
@@ -137,7 +141,7 @@ def test_the_report_links_each_row_to_the_record_and_its_evidence(
     )
     data = json.loads((tmp_path / ".research/record.json").read_text(encoding="utf-8"))
     markdown = render_verification_md(result, data, "https://github.com/o/r", "abc123")
-    assert "## skipped" in markdown
+    assert "## unverified" in markdown
     assert "`hypotheses[h1]/claims[c1]/designs[d1]/summary`" in markdown
     assert "https://github.com/o/r/blob/abc123/.research/record.json#L" in markdown
     assert (

@@ -113,7 +113,7 @@ def _same_value(declared: Any, item: dict[str, Any]) -> bool | None:
 
 def _argument_status(
     label: str, argument: str, value: Any, bound: dict[str, dict[str, Any]]
-) -> tuple[str, Literal["ok", "mismatch", "skipped"]]:
+) -> tuple[str, Literal["verified", "mismatch", "unverified"]]:
     fn, _, arg = argument.rpartition(".")
     called = bound.get(fn)
     if called is None:
@@ -136,12 +136,12 @@ def _argument_status(
     if all(same is None for same in comparisons.values()):
         return (
             f"{label}: {argument} is recorded redacted and cannot be compared",
-            "skipped",
+            "unverified",
         )
     seen_values = [e.get("value", e.get("sha256", "redacted")) for e in entry["values"]]
     return (
         f"observed {argument} = {seen_values!r} over {called['calls']} calls in {label}",
-        "ok",
+        "verified",
     )
 
 
@@ -174,7 +174,7 @@ def _append_run_statuses(
         verification.append_declaration_status(
             observed_relpath,
             "first commit unavailable: hook and trusted files unchecked",
-            "skipped",
+            "unverified",
             evidence_path=MAKEFILE_PATH,
         )
     else:
@@ -189,7 +189,7 @@ def _append_run_statuses(
             if hook_ok
             else f"{label}: observed.json was not written by the {HOOK_PATH} the "
             "repository was created with",
-            "ok" if hook_ok else "mismatch",
+            "verified" if hook_ok else "mismatch",
             evidence_path=HOOK_PATH,
         )
         for result in run.results:
@@ -220,7 +220,7 @@ def _append_run_statuses(
                 if not changed
                 else f"{label}: {', '.join(changed)} at commit {result.commit[:12]} "
                 "differ from the repository's first commit",
-                "mismatch" if changed else "ok",
+                "mismatch" if changed else "verified",
                 evidence_path=MAKEFILE_PATH,
             )
 
@@ -237,7 +237,7 @@ def _append_run_statuses(
         "observed loaded_file_hashes of its module"
         if entry_hashed
         else f"{label}: no loaded module of {repository.method_entry} has a file hash",
-        "ok" if entry_hashed else "mismatch",
+        "verified" if entry_hashed else "mismatch",
         evidence_path=observed_relpath,
     )
     snapshot_problems = [
@@ -264,7 +264,7 @@ def _append_run_statuses(
         verification.append_declaration_status(
             f"{repository_path}/snapshot",
             f"observed loaded_file_hashes of {len(upstream)} {package} modules in {label}",
-            "ok",
+            "verified",
             evidence_path=repository_snapshot_relpath(repository.id),
         )
 
@@ -275,7 +275,7 @@ def _append_run_statuses(
         f"observed calls in {label}: {bound[repository.method_entry]['calls']} calls"
         if entry_called
         else f"{label}: method_entry {repository.method_entry} was never called",
-        "ok" if entry_called else "mismatch",
+        "verified" if entry_called else "mismatch",
         evidence_path=observed_relpath,
     )
     # A fixed value is declared; a varied one is this run's params entry. The
@@ -328,7 +328,7 @@ def _append_run_statuses(
                 src_path,
                 f"observed src_modules sha256 of {len(observed.get('src_modules', {}))} "
                 "files vs this commit",
-                "ok",
+                "verified",
                 evidence_path=observed_relpath,
             )
 
@@ -367,7 +367,7 @@ def _append_run_statuses(
             f"{point}: observed as a redefinition or an override in {label}"
             if used
             else f"{point}: declared, but nothing in {label} redefined or overrode it",
-            "ok" if used else "skipped",
+            "verified" if used else "unverified",
             evidence_path=observed_relpath,
         )
 
