@@ -83,7 +83,7 @@ def _append_run_results(
     # verified and verdict are set once and never back; a later disagreement
     # is a verification failure to report, not a value to overwrite.
     appended = 0
-    for _, claim in record.active_claims():
+    for _, claim in record.latest_claims():
         for _, run in claim.runs():
             result = derive_result(root, claim, run, metrics_data, manifest)
             if result is None:
@@ -136,7 +136,7 @@ def _write_paper_values(
     )
     paths = [f".research/latex/{template}/{VALUES_TEX_FILENAME}"]
     tables: dict[str, str] = {}
-    if specs := record.active_tables():
+    if specs := record.latest_tables():
         tables_dir = latex_dir / TABLES_DIR_NAME
         tables_dir.mkdir(parents=True, exist_ok=True)
         for spec in specs:

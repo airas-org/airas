@@ -53,7 +53,7 @@ def _same(s: LiteratureSource, m: LiteratureMaterial) -> bool:
 
 
 def _existing(record: ResearchRecord, m: LiteratureMaterial) -> LiteratureSource | None:
-    return next((s for s in record.active_literature() if _same(s, m)), None)
+    return next((s for s in record.latest_literature() if _same(s, m)), None)
 
 
 def _pin_repositories(

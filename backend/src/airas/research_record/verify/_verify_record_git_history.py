@@ -9,6 +9,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from airas.core.research_paths import RECORD_PATH
+from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import ResearchRecord
 from airas.core.types.run_provenance import (
     PROVENANCE_MANIFEST_PATH,
@@ -31,22 +32,14 @@ LEAF_KEYS = frozenset({"params"})
 def _verify_append_only(
     root: Path,
     record: ResearchRecord,
-    require_history: bool,
-    check_version: Callable[[ResearchRecord], list[str]] = lambda _: [],
-) -> list[str]:
-    unavailable = (
-        [
-            "record.json's append-only history could not be checked (shallow "
-            "clone or no git history) — CI must check out with fetch-depth: 0"
-        ]
-        if require_history
-        else []
-    )
+    check_version: Callable[[ResearchRecord, RecordVerification], None],
+) -> list[str] | None:
+    """Problems, or None when there is no history to check."""
     if is_shallow(root):
-        return unavailable
+        return None
     edges = commits_with_parents(root, RECORD_PATH)
     if edges is None:
-        return unavailable
+        return None
 
     # The record as of each commit involved. Absent counts as empty, so a
     # deletion is a shrink and a first creation contains nothing to lose.
@@ -63,11 +56,11 @@ def _verify_append_only(
 
     # A declaration may only name passages already in the record when it
     # lands: a passage registered afterwards was not what it was grounded on.
-    problems = [
-        f"{commit_hash[:12]}: {problem}"
-        for commit_hash, version in versions.items()
-        for problem in check_version(version)
-    ]
+    problems = []
+    for commit_hash, version in versions.items():
+        checked = RecordVerification()
+        check_version(version, checked)
+        problems += [f"{commit_hash[:12]}: {problem}" for problem in checked.problems]
     # Each commit against each of its parents — not against its neighbour in
     # a linear list, which would set two sibling branches against each other.
     problems += [
@@ -194,8 +187,27 @@ def verify_record_git_history(
     root: Path,
     record: ResearchRecord,
     require_history: bool,
-    check_version: Callable[[ResearchRecord], list[str]],
-) -> list[str]:
-    return _verify_append_only(root, record, require_history, check_version) + (
-        _verify_manifest_history(root, require_history)
-    )
+    check_version: Callable[[ResearchRecord, RecordVerification], None],
+    verification: RecordVerification,
+) -> None:
+    problems = _verify_append_only(root, record, check_version)
+    if problems is None:
+        verification.append_declaration_status(
+            RECORD_PATH,
+            "record.json's append-only history could not be checked (shallow "
+            "clone or no git history) — CI must check out with fetch-depth: 0",
+            "mismatch" if require_history else "skipped",
+        )
+    else:
+        for problem in problems:
+            verification.append_declaration_status(RECORD_PATH, problem, "mismatch")
+        if not problems:
+            verification.append_declaration_status(
+                RECORD_PATH,
+                "every committed version contains its parent and names only passages it held",
+                "ok",
+            )
+    for problem in _verify_manifest_history(root, require_history):
+        verification.append_declaration_status(
+            PROVENANCE_MANIFEST_PATH, problem, "mismatch"
+        )

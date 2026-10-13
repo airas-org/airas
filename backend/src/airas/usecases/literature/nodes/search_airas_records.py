@@ -1,13 +1,13 @@
 from airas.core.types.paper_search import PaperSearchResult
-from airas.core.types.research_record import active
+from airas.core.types.research_record import latest
 from airas.infra.airas_records_index import AirasRecordsIndex, RecordEntry
 
 
 def _abstract(entry: RecordEntry) -> str:
     lines = []
-    for hypothesis in entry.record.active_hypotheses():
+    for hypothesis in entry.record.latest_hypotheses():
         lines.append(f"{hypothesis.id}: {hypothesis.statement}")
-        for claim in active(hypothesis.claims, "id"):
+        for claim in latest(hypothesis.claims, "id"):
             lines.append(
                 f"  {claim.id} [{claim.verdict or 'pending'}]: {claim.statement}"
             )

@@ -10,6 +10,7 @@ from typing import (
     Iterator,
     Literal,
     Mapping,
+    NamedTuple,
     Optional,
     Sequence,
     TypeVar,
@@ -18,7 +19,11 @@ from typing import (
 
 from pydantic import BaseModel, Discriminator, Field, Tag, model_validator
 
-from airas.core.research_paths import record_path
+from airas.core.research_paths import (
+    fulltext_relpath,
+    record_path,
+    repository_snapshot_relpath,
+)
 from airas.core.types.map_record_to_publication import TableSpec
 
 HYPOTHESIS_ID_PATTERN = r"^h[1-9][0-9]*$"
@@ -64,13 +69,13 @@ ParamsT = TypeVar("ParamsT")
 ResultT = TypeVar("ResultT")
 
 
-def active(entries: Sequence[T], id_attr: str) -> list[T]:
+def latest(entries: Sequence[T], id_attr: str) -> list[T]:
     # With append order guaranteed, position carries what a `supersedes`
     # field would: the last entry for an id is the live one.
-    latest: dict[str, T] = {}
+    by_id: dict[str, T] = {}
     for entry in entries:
-        latest[getattr(entry, id_attr)] = entry
-    return list(latest.values())
+        by_id[getattr(entry, id_attr)] = entry
+    return list(by_id.values())
 
 
 class Run(BaseModel, Generic[ParamsT, ResultT]):
@@ -124,8 +129,8 @@ class ClaimBase(BaseModel, Generic[VerifierT, DesignT]):
         # wants a different shape overrides this.
         return [
             (design, run)
-            for design in active(self.designs, "id")
-            for run in active(design.runs, "run_id")
+            for design in latest(self.designs, "id")
+            for run in latest(design.runs, "run_id")
         ]
 
 
@@ -187,6 +192,12 @@ class Repository(BaseModel):
     )
 
 
+class Snapshot(NamedTuple):
+    field: str  # "fulltext" / "repositories[s1.r1]/snapshot"
+    relpath: str  # .research/sources/s1/fulltext.txt
+    ref: Optional[InputRef]
+
+
 class LiteratureSource(BaseModel):
     id: str = Field(pattern=SOURCE_ID_PATTERN)
     title: str
@@ -209,6 +220,21 @@ class LiteratureSource(BaseModel):
     parser: str = Field(default="", description="e.g. 'pymupdf 1.26.0'")
     repositories: list[Repository] = Field(default_factory=list)
     passages: list[QuotedPassage] = Field(default_factory=list)
+
+    def snapshots(self) -> list[Snapshot]:
+        declared = [
+            Snapshot(
+                f"repositories[{r.id}]/snapshot",
+                repository_snapshot_relpath(r.id),
+                r.snapshot,
+            )
+            for r in self.repositories
+        ]
+        if self.doi or self.arxiv_id or not self.repositories:
+            declared.append(
+                Snapshot("fulltext", fulltext_relpath(self.id), self.fulltext)
+            )
+        return declared
 
     @model_validator(mode="after")
     def _parts_belong_to_this_source(self) -> LiteratureSource:
@@ -574,39 +600,39 @@ class ResearchRecord(BaseModel):
         )
         return path
 
-    def active_literature(self) -> list[LiteratureSource]:
-        return active(self.literature, "id")
+    def latest_literature(self) -> list[LiteratureSource]:
+        return latest(self.literature, "id")
 
     def passage_index(self) -> dict[str, tuple[LiteratureSource, QuotedPassage]]:
         return {
             passage.id: (source, passage)
-            for source in self.active_literature()
-            for passage in active(source.passages, "id")
+            for source in self.latest_literature()
+            for passage in latest(source.passages, "id")
         }
 
-    def active_hypotheses(self) -> list[Hypothesis]:
-        return active(self.hypotheses, "id")
+    def latest_hypotheses(self) -> list[Hypothesis]:
+        return latest(self.hypotheses, "id")
 
-    def active_claims(self) -> Iterator[tuple[Hypothesis, ClaimDeclaration]]:
-        for hypothesis in self.active_hypotheses():
-            for claim in active(hypothesis.claims, "id"):
+    def latest_claims(self) -> Iterator[tuple[Hypothesis, ClaimDeclaration]]:
+        for hypothesis in self.latest_hypotheses():
+            for claim in latest(hypothesis.claims, "id"):
                 yield hypothesis, claim
 
-    def active_runs(
+    def latest_runs(
         self,
     ) -> Iterator[tuple[Hypothesis, ClaimDeclaration, AnyDesign, AnyRun]]:
-        for hypothesis, claim in self.active_claims():
+        for hypothesis, claim in self.latest_claims():
             for design, run in claim.runs():
                 yield hypothesis, claim, design, run
 
     def run_index(self) -> dict[str, AnyRun]:
-        return {run.run_id: run for _, _, _, run in self.active_runs()}
+        return {run.run_id: run for _, _, _, run in self.latest_runs()}
 
     def claim_index(self) -> dict[str, ClaimDeclaration]:
-        return {claim.id: claim for _, claim in self.active_claims()}
+        return {claim.id: claim for _, claim in self.latest_claims()}
 
-    def active_tables(self) -> list[TableSpec]:
-        return [t for h in self.active_hypotheses() for t in active(h.tables, "key")]
+    def latest_tables(self) -> list[TableSpec]:
+        return [t for h in self.latest_hypotheses() for t in latest(h.tables, "key")]
 
-    def active_charts(self) -> list[ChartDeclaration]:
-        return [c for h in self.active_hypotheses() for c in active(h.charts, "path")]
+    def latest_charts(self) -> list[ChartDeclaration]:
+        return [c for h in self.latest_hypotheses() for c in latest(h.charts, "path")]

@@ -1,8 +1,3 @@
-"""Each Seyval design, read against the code at its runs' commit and the runs'
-observed.json: does the code do only what the design declares? A model reads
-once per (commit, observed) and its findings are recorded on the design;
-without a model, only recorded reviews count."""
-
 from __future__ import annotations
 
 import asyncio
@@ -14,6 +9,7 @@ from typing import Any, NamedTuple
 from pydantic import BaseModel
 
 from airas.core.research_paths import OBSERVED_FILENAME, RESULTS_DIR
+from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import (
     ClaimDeclaration,
     Hypothesis,
@@ -84,6 +80,7 @@ def _trimmed(observed: dict[str, Any]) -> dict[str, Any]:
         for arg in fn.get("args", []):
             if "values" in arg:
                 arg["values"] = arg["values"][:_VALUES_SHOWN]
+
     observed.pop("env", None)
     observed["processes"] = [
         {k: v for k, v in p.items() if k != "env"}
@@ -100,7 +97,7 @@ def _declaration(
 ) -> str:
     repositories = [
         r.model_dump(include={"id", "url", "commit", "method_entry"})
-        for s in record.active_literature()
+        for s in record.latest_literature()
         for r in s.repositories
     ]
     return json.dumps(
@@ -150,11 +147,13 @@ def _code(root: Path, commit: str) -> str | None:
     files = files_at_commit(root, commit, _CODE_PATHS)
     if files is None:
         return None  # git が見せられないコミット: 空のコードを読ませた判定を残さない
+
     pages = []
     for path in files:
         data = file_bytes_at_commit(root, commit, path)
         if data is None:
             return None
+
         pages.append(f"--- {path} ---\n{data.decode('utf-8', errors='replace')}")
     return "\n\n".join(pages)
 
@@ -189,6 +188,7 @@ async def _judge(client: LiteLLMClient, model: str, inputs: str) -> list[ReviewF
     )
     if review is None:
         raise ValueError(f"no review from {model}")
+
     return review.findings
 
 
@@ -200,12 +200,19 @@ class _Target(NamedTuple):
     observed: dict[str, str]  # run_id -> sha256 of its observed.json
     problems: list[str]
 
+    @property
+    def reviews_path(self) -> str:
+        return (
+            f"hypotheses[{self.hypothesis.id}]/claims[{self.claim.id}]"
+            f"/designs[{self.design.id}]/reviews"
+        )
+
 
 def _targets(root: Path, record: ResearchRecord) -> list[_Target]:
     """Every design with an integration whose runs all have results."""
     targets: list[_Target] = []
     seen: set[int] = set()
-    for hypothesis, claim, design, _ in record.active_runs():
+    for hypothesis, claim, design, _ in record.latest_runs():
         if (
             not isinstance(claim, SeyvalClaim)
             or not isinstance(design, SeyvalDesign)
@@ -213,10 +220,12 @@ def _targets(root: Path, record: ResearchRecord) -> list[_Target]:
             or id(design) in seen
         ):
             continue
+
         seen.add(id(design))
         latest = {run.run_id: run.latest_result() for run in design.runs}
         if any(r is None or r.commit is None for r in latest.values()):
             continue
+
         commits = {r.commit for r in latest.values() if r is not None}
         problems: list[str] = []
         if len(commits) != 1:
@@ -226,11 +235,13 @@ def _targets(root: Path, record: ResearchRecord) -> list[_Target]:
             )
             targets.append(_Target(hypothesis, claim, design, "", {}, problems))
             continue
+
         observed = {}
         for run_id in latest:
             path = _observed_path(root, run_id)
             if not path.is_file():
                 break  # the observation check reports it
+
             observed[run_id] = hashlib.sha256(path.read_bytes()).hexdigest()
         else:
             targets.append(
@@ -241,30 +252,32 @@ def _targets(root: Path, record: ResearchRecord) -> list[_Target]:
     return targets
 
 
-async def verify_implementation(
+async def judge_implementation_against_design(
     root: Path,
     record: ResearchRecord,
+    verification: RecordVerification,
     *,
     model: str | None = None,
     litellm_client: LiteLLMClient | None = None,
-) -> tuple[list[str], list[str], int]:
-    """(problems, reports for the reviewer, reviews written). With `model`,
-    every design without a current review is read first and the review
-    appended to it — the caller saves the record."""
-    problems: list[str] = []
-    reports: list[str] = []
+) -> int:
+    """Reviews written. With `model`, every design without a current review
+    is read first and the review appended to it — the caller saves the record."""
     reviewed = 0
-    for hypothesis, claim, design, commit, observed, target_problems in _targets(
-        root, record
-    ):
-        problems += target_problems
+    for target in _targets(root, record):
+        hypothesis, claim, design, commit, observed, target_problems = target
+        for problem in target_problems:
+            verification.append_declaration_status(
+                target.reviews_path, problem, "mismatch"
+            )
         if not commit:
             continue
         code = await asyncio.to_thread(_code, root, commit)
         if code is None:
-            problems.append(
+            verification.append_declaration_status(
+                target.reviews_path,
                 f"design {design.id}: the code at commit {commit[:12]} "
-                f"({', '.join(_CODE_PATHS)}) could not be read; not reviewed"
+                f"({', '.join(_CODE_PATHS)}) could not be read; not reviewed",
+                "mismatch",
             )
             continue
         inputs = _INPUTS.format(
@@ -299,16 +312,23 @@ async def verify_implementation(
             design.reviews.append(review)
             reviewed += 1
         if review is None:
-            problems.append(
+            verification.append_declaration_status(
+                target.reviews_path,
                 f"design {design.id}: no implementation review covers its declaration, the "
                 f"code at commit {commit[:12]} and its runs as they stand "
-                "(verify with a model to write one)"
+                "(verify with a model to write one)",
+                "mismatch",
             )
             continue
-        for f in review.findings:
-            line = f"design {design.id}: {f.kind}: {f.statement} ({f.where})"
-            if f.kind == "undeclared":
-                reports.append(line)
-            else:
-                problems.append(f"{line} [{review.model}]")
-    return problems, reports, reviewed
+        kinds = ", ".join(
+            f"{n} {kind}"
+            for kind in ("undeclared", "unverified", "contradiction")
+            if (n := sum(f.kind == kind for f in review.findings))
+        )
+        verification.append_declaration_status(
+            target.reviews_path,
+            f"review by {review.model} of the code at {commit[:12]} and the runs: "
+            + (f"{kinds} (read them on the design)" if kinds else "no findings"),
+            "ok",
+        )
+    return reviewed

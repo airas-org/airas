@@ -38,6 +38,9 @@ from airas.core.types.run_provenance import (
     ResultsDirProvenance,
     RunProvenanceManifest,
 )
+from airas.research_record.llm_as_a_judge.judge_citation_against_passage import (
+    _collect_citations as collect_citations,
+)
 from airas.research_record.read.load_record import load_record
 from airas.research_record.read.read_run_outputs import load_metrics_data
 from airas.research_record.read.scan_main_tex import scan_main_tex
@@ -52,9 +55,6 @@ from airas.research_record.render.render_references_bib import render_references
 from airas.research_record.update._add_literatures import _write_pages
 from airas.research_record.update.append_to_record import (
     _append_run_results as update_record_with_results,
-)
-from airas.research_record.verify._verify_citation_meaning import (
-    _collect_citations as collect_citations,
 )
 from airas.research_record.verify.verify_paper import verify_paper
 from airas.research_record.verify.verify_record import RecordVerification, verify_record
@@ -476,10 +476,16 @@ def test_unreachable_provenance_fails_where_required(tmp_path: Path) -> None:
         store_factory=_no_store,
     )
     assert relaxed.ok, relaxed.problems
-    # What the cross-check found travels with the result, so CI's report can
-    # show it (status, sibling runs) rather than only a pass/fail.
-    assert relaxed.provenance is not None
-    assert relaxed.provenance["status"] == "unavailable"
+    # What the cross-check found travels with the result as skipped rows, so
+    # CI's report shows what stayed unbacked rather than only a pass/fail.
+    unbacked = [
+        s
+        for s in relaxed.declaration_statuses
+        if s.status == "skipped" and "stored outputs unavailable" in s.reason
+    ]
+    assert unbacked and all("/results[" in s.path for s in unbacked), (
+        relaxed.declaration_statuses
+    )
 
 
 def test_a_shallow_clone_fails_rather_than_passing_quietly(tmp_path: Path) -> None:
@@ -929,7 +935,7 @@ def _write_cited_paper(repo: Path, body: str, bib: str | None = None) -> None:
     record = load_record(str(repo))
     (latex_dir / "claims.tex").write_text(render_claims_tex(record, {}))
     (latex_dir / "references.bib").write_text(
-        render_references_bib(record.active_literature()) if bib is None else bib
+        render_references_bib(record.latest_literature()) if bib is None else bib
     )
 
 

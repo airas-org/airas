@@ -93,7 +93,7 @@ def record_line(data: Any, run_id: str, tail: str) -> int | None:
             for d, design in enumerate(claim.get("designs") or []):
                 for r, run in enumerate(design.get("runs") or []):
                     if run.get("run_id") == run_id:
-                        # last entry for an id is the live one (see `active`)
+                        # last entry for an id is the live one (see `latest`)
                         path = ["hypotheses", h, "claims", c, "designs", d, "runs", r]
                         live = run
     if not path:

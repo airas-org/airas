@@ -71,10 +71,13 @@ local stage.
    (`unjudged_citations`), so re-run with them after a rewrite — with
    both models settled up front (`auto-research`), not a different
    one per run. The second model reads each design's code and runs
-   against its declaration once per state of the three: `contradiction`
-   and `unverified` findings fail, `undeclared` ones are listed in
-   `record.reports` — read them, and declare in the record (or change in
-   the code) what should not have been a silent choice.
+   against its declaration once per state of the three. A design with
+   no such review fails; the findings do not — read them on the
+   design's `reviews[]` (`undeclared`, `unverified`, `contradiction`)
+   and declare in the record (or change in the code) what should not
+   have been a silent choice. `record.declaration_statuses` is the
+   whole record with the gate's coverage on it: its `skipped` rows are
+   what no deterministic check compared, so that is what you read.
    Bibliography: `preregister_record` wrote
    `.research/latex/{template}/references.bib` from the record and the
    gate regenerates it — never edit it.
@@ -96,9 +99,10 @@ local stage.
 3. **Report what CI's verification says, not just that it passed.**
    Once the gate has run (step 5), read its report rather than the
    local one:
-   `provenance.status == "unavailable"` — say so rather than
-   presenting the numbers as provenance-backed; `sibling_run_ids` —
-   the same code ran more than once, name the run the paper reports;
+   a result's `declaration_statuses` row `skipped` with the store
+   unreachable — say so rather than presenting the numbers as
+   provenance-backed; "other completed runs of the same commit" on that
+   row — the same code ran more than once, name the run the paper reports;
    `\unverified{...}` occurrences — surface them for human review;
    `unverified_claims` — claims some of whose declared runs have no
    results may still be published, but say so honestly in the paper and

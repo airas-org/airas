@@ -3,6 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
+from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import (
     ArgumentValue,
     Criterion,
@@ -25,6 +26,12 @@ from airas.research_record.verify._verify_record_in_itself import (
 
 ENTRY = "scigym.controller.Controller.run_benchmark"
 MAX_ITERATIONS = "scigym.controller.Controller.__init__.max_iterations"
+
+
+def _problems(record: ResearchRecord) -> list[str]:
+    verification = RecordVerification()
+    verify_record_in_itself(record, verification)
+    return verification.problems
 
 
 def _source(method_entry: str = ENTRY, code: bool = True) -> LiteratureSource:
@@ -93,14 +100,14 @@ INTEGRATION = RepositoryIntegration(
 
 
 def test_a_design_running_a_source_with_a_method_entry_passes() -> None:
-    assert verify_record_in_itself(_record(INTEGRATION)) == []
+    assert _problems(_record(INTEGRATION)) == []
 
 
 @pytest.mark.parametrize("source", [_source(code=False), _source(method_entry="")])
 def test_the_source_must_ship_code_with_a_method_entry(
     source: LiteratureSource,
 ) -> None:
-    problems = verify_record_in_itself(_record(INTEGRATION, source))
+    problems = _problems(_record(INTEGRATION, source))
     assert any("repository_integration.repository_id" in p for p in problems), problems
 
 

@@ -42,7 +42,7 @@ def compute_claim_statuses(
 ) -> list[ClaimStatus]:
     statuses: list[ClaimStatus] = []
     index = record.run_index()
-    for _, claim in record.active_claims():
+    for _, claim in record.latest_claims():
         runs = [run for _, run in claim.runs()]
         # A criterion may compare against another claim's run; that run's
         # result is data this claim rests on too.

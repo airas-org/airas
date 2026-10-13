@@ -17,14 +17,14 @@ from airas.core.types.record_verification import RecordVerification
 from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.local_git import commit_paths
 from airas.infra.run_output_store import default_store
+from airas.research_record.llm_as_a_judge.judge_citation_against_passage import (
+    judge_citation_against_passage,
+)
 from airas.research_record.read.load_record import load_record
 from airas.research_record.read.read_run_outputs import load_metrics_data
 from airas.research_record.read.scan_main_tex import without_comments
 from airas.research_record.render.render_claims_tex import write_claims_tex
 from airas.research_record.render.render_paper_values import VALUES_TEX_FILENAME
-from airas.research_record.verify._verify_citation_meaning import (
-    verify_citation_meaning,
-)
 from airas.research_record.verify._verify_paper_files import verify_paper_files
 from airas.research_record.verify._verify_results_against_store import StoreFactory
 from airas.research_record.verify.verify_record import verify_record
@@ -86,10 +86,10 @@ async def verify_paper(
             metrics_data = load_metrics_data(str(root))
         except ValueError:
             metrics_data = {}
-        if declared.active_literature():
+        if declared.latest_literature():
             # Judged first, so claims.tex below is compared against the record
             # as it stands after the judgments.
-            unjudged, unsupported, judged = await verify_citation_meaning(
+            unjudged, unsupported, judged = await judge_citation_against_passage(
                 root,
                 declared,
                 without_comments(main_tex),

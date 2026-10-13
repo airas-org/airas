@@ -11,10 +11,12 @@ from airas.core.research_paths import (
     MAKEFILE_PATH,
     OBSERVED_FILENAME,
     PAGE_SEPARATOR,
+    RECORD_PATH,
     RESULTS_DIR,
     TRUSTED_PATHS,
     repository_snapshot_relpath,
 )
+from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import (
     Repository,
     RepositoryIntegration,
@@ -31,24 +33,30 @@ from airas.infra.local_git import (
 )
 
 
-def _first_commit(root: Path) -> tuple[str | None, list[str]]:
+def _first_commit(root: Path, verification: RecordVerification) -> str | None:
     """The commit the trusted files are compared with — the template import,
-    a repository prepare_repository created starts from — or why there is none."""
+    a repository prepare_repository created starts from — or None, reported."""
     if is_shallow(root) or (first := root_commit(root)) is None:
-        return None, [
+        verification.append_declaration_status(
+            RECORD_PATH,
             f"{', '.join(TRUSTED_PATHS)} could not be compared with the repository's "
             "first commit (shallow clone, no git history, or several root commits) — "
-            "CI must check out with fetch-depth: 0"
-        ]
+            "CI must check out with fetch-depth: 0",
+            "mismatch",
+        )
+        return None
     # The import must carry the run path and the gate: the Makefile, the hook, the workflows.
     required = (MAKEFILE_PATH, HOOK_PATH, ".github")
     missing = [p for p in required if file_bytes_at_commit(root, first, p) is None]
     if missing:
-        return None, [
+        verification.append_declaration_status(
+            RECORD_PATH,
             f"the repository's first commit has no {', '.join(missing)}: it was not "
-            "created from airas-template"
-        ]
-    return first, []
+            "created from airas-template",
+            "mismatch",
+        )
+        return None
+    return first
 
 
 def _pages(text: str) -> dict[str, str]:
@@ -101,32 +109,37 @@ def _same_value(declared: Any, item: dict[str, Any]) -> bool | None:
     return None
 
 
-def _argument_problem(
+def _argument_status(
     label: str, argument: str, value: Any, bound: dict[str, dict[str, Any]]
-) -> str | None:
+) -> tuple[str, bool]:
+    """(what observed.json holds for the argument, or what is wrong; it matches)."""
     fn, _, arg = argument.rpartition(".")
     called = bound.get(fn)
     if called is None:
-        return f"{label}: {fn} (argument {arg}) was never called"
+        return f"{label}: {fn} (argument {arg}) was never called", False
 
     entry = next((a for a in called.get("args", []) if a.get("name") == arg), None)
     if entry is None or entry["calls"] < called["calls"]:
-        return f"{label}: {fn} was called without an argument {arg}"
+        return f"{label}: {fn} was called without an argument {arg}", False
 
     other = next(
         (e for e in entry.get("values", []) if _same_value(value, e) is False), None
     )
     if other is not None:
         seen = other.get("value", other)
-        return f"{label}: {argument} was {seen!r}, not the declared {value!r}"
-    return None
+        return f"{label}: {argument} was {seen!r}, not the declared {value!r}", False
+    seen_values = [e.get("value", e.get("sha256", "redacted")) for e in entry["values"]]
+    return (
+        f"observed {argument} = {seen_values!r} over {called['calls']} calls in {label}",
+        True,
+    )
 
 
 def _covered(name: str, extension_points: list[str]) -> bool:
     return name in extension_points or name.rsplit(".", 1)[0] in extension_points
 
 
-def _run_problems(
+def _append_run_statuses(
     root: Path,
     run: SeyvalRun,
     observed: dict[str, Any],
@@ -134,40 +147,65 @@ def _run_problems(
     integration: RepositoryIntegration,
     pages: dict[str, str],
     first_commit: str | None,
-) -> list[str]:
+    run_path: str,
+    design_path: str,
+    verification: RecordVerification,
+) -> None:
     label = f"run '{run.run_id}'"
-    problems: list[str] = []
+    repository_path = (
+        f"literature[{repository.id.split('.')[0]}]/repositories[{repository.id}]"
+    )
+    trusted = ", ".join(TRUSTED_PATHS)
+    latest_result_path = f"{run_path}/results[{run.results[-1].id}]"
 
-    if first_commit is not None:
+    if first_commit is None:
+        verification.append_declaration_status(
+            latest_result_path,
+            "first commit unavailable: hook and trusted files unchecked",
+            "skipped",
+        )
+    else:
         trusted_hook = file_bytes_at_commit(root, first_commit, HOOK_PATH) or b""
-        if (
+        hook_ok = (
             observed.get("hook", {}).get("sha256")
-            != hashlib.sha256(trusted_hook).hexdigest()
-        ):
-            problems.append(
-                f"{label}: observed.json was not written by the {HOOK_PATH} the repository "
-                "was created with"
-            )
+            == hashlib.sha256(trusted_hook).hexdigest()
+        )
+        verification.append_declaration_status(
+            latest_result_path,
+            f"observed.json hook sha256 vs {HOOK_PATH} at the first commit"
+            if hook_ok
+            else f"{label}: observed.json was not written by the {HOOK_PATH} the "
+            "repository was created with",
+            "ok" if hook_ok else "mismatch",
+        )
         for result in run.results:
+            result_path = f"{run_path}/results[{result.id}]/commit"
             if result.commit is None:
-                problems.append(
-                    f"{label}: result {result.id} names no commit to check "
-                    f"{', '.join(TRUSTED_PATHS)} at"
+                verification.append_declaration_status(
+                    result_path,
+                    f"{label}: result {result.id} names no commit to check {trusted} at",
+                    "mismatch",
                 )
                 continue
             changed = paths_changed_between(
                 root, first_commit, result.commit, TRUSTED_PATHS
             )
             if changed is None:
-                problems.append(
-                    f"{label}: {', '.join(TRUSTED_PATHS)} at commit {result.commit[:12]} "
-                    "could not be compared with the repository's first commit"
+                verification.append_declaration_status(
+                    result_path,
+                    f"{label}: {trusted} at commit {result.commit[:12]} "
+                    "could not be compared with the repository's first commit",
+                    "mismatch",
                 )
-            elif changed:
-                problems.append(
-                    f"{label}: {', '.join(changed)} at commit {result.commit[:12]} differ "
-                    "from the repository's first commit"
-                )
+                continue
+            verification.append_declaration_status(
+                result_path,
+                f"{trusted} at this commit vs the first commit"
+                if not changed
+                else f"{label}: {', '.join(changed)} at commit {result.commit[:12]} "
+                "differ from the repository's first commit",
+                "mismatch" if changed else "ok",
+            )
 
     package = repository.method_entry.split(".")[0]
     upstream = [
@@ -176,88 +214,132 @@ def _run_problems(
         if m.split(".")[0] == package
     ]
     # Without the entry's own module among the hashes, the checks below pass on nothing.
-    if not any(repository.method_entry.startswith(m + ".") for m, _ in upstream):
-        problems.append(
-            f"{label}: no loaded module of {repository.method_entry} has a file hash"
-        )
-    problems += [
+    entry_hashed = any(repository.method_entry.startswith(m + ".") for m, _ in upstream)
+    verification.append_declaration_status(
+        f"{repository_path}/method_entry",
+        "observed loaded_file_hashes of its module"
+        if entry_hashed
+        else f"{label}: no loaded module of {repository.method_entry} has a file hash",
+        "ok" if entry_hashed else "mismatch",
+    )
+    snapshot_problems = [
         f"{label}: loaded module {module} ({entry.get('file')}) has no file in the snapshot "
         f"of {repository.id} — generated at build, or the snapshot's files were too narrow"
         for module, entry in upstream
         if _page_for(pages, module) is None
     ]
-    problems += [
+    snapshot_problems += [
         f"{label}: loaded module {module} differs from the snapshot of {repository.id} — "
         "the upstream was modified"
         for module, entry in upstream
         if (body := _page_for(pages, module)) is not None
         and text_sha256(body) != entry.get("sha256")
     ]
+    for problem in snapshot_problems:
+        verification.append_declaration_status(
+            f"{repository_path}/snapshot", problem, "mismatch"
+        )
+    if not snapshot_problems:
+        verification.append_declaration_status(
+            f"{repository_path}/snapshot",
+            f"observed loaded_file_hashes of {len(upstream)} {package} modules in {label}",
+            "ok",
+        )
 
     bound = observed.get("calls", {})
-    if repository.method_entry not in bound:
-        problems.append(
-            f"{label}: method_entry {repository.method_entry} was never called"
-        )
+    entry_called = repository.method_entry in bound
+    verification.append_declaration_status(
+        f"{repository_path}/method_entry",
+        f"observed calls in {label}: {bound[repository.method_entry]['calls']} calls"
+        if entry_called
+        else f"{label}: method_entry {repository.method_entry} was never called",
+        "ok" if entry_called else "mismatch",
+    )
     # A fixed value is declared; a varied one is this run's params entry.
-    expected: list[tuple[str, Any]] = []
     for setting in integration.arguments:
+        argument_path = (
+            f"{design_path}/repository_integration/arguments[{setting.argument}]"
+        )
         if not setting.params_key:
-            expected.append((setting.argument, setting.value))
+            value = setting.value
         elif setting.params_key in run.params:
-            expected.append((setting.argument, run.params[setting.params_key]))
+            value = run.params[setting.params_key]
         else:
-            problems.append(
+            verification.append_declaration_status(
+                argument_path,
                 f"{label}: {setting.argument} reads params[{setting.params_key!r}], "
-                "which the run does not declare"
+                "which the run does not declare",
+                "mismatch",
             )
-    problems += [
-        problem
-        for argument, value in expected
-        if (problem := _argument_problem(label, argument, value, bound)) is not None
-    ]
+            continue
+        reason, same = _argument_status(label, setting.argument, value, bound)
+        verification.append_declaration_status(
+            argument_path, reason, "ok" if same else "mismatch"
+        )
 
     # The experiment code that ran is the code at the latest result's commit:
     # observed.json is the latest run's, earlier results keep their own commits.
-    latest = run.latest_result()
-    commit = latest.commit if latest is not None else None
-    if commit is not None:
+    latest = run.results[-1]
+    if latest.commit is not None:
+        src_problems = []
         for path, sha in observed.get("src_modules", {}).items():
-            data = file_bytes_at_commit(root, commit, path)
+            data = file_bytes_at_commit(root, latest.commit, path)
             if data is None:
-                problems.append(
-                    f"{label}: {path} ran but commit {commit[:12]} has no such file"
+                src_problems.append(
+                    f"{label}: {path} ran but commit {latest.commit[:12]} has no such file"
                 )
             elif hashlib.sha256(data).hexdigest() != sha:
-                problems.append(
-                    f"{label}: {path} that ran differs from commit {commit[:12]}"
+                src_problems.append(
+                    f"{label}: {path} that ran differs from commit {latest.commit[:12]}"
                 )
+        for problem in src_problems:
+            verification.append_declaration_status(
+                f"{latest_result_path}/commit", problem, "mismatch"
+            )
+        if not src_problems:
+            verification.append_declaration_status(
+                f"{latest_result_path}/commit",
+                f"observed src_modules sha256 of {len(observed.get('src_modules', {}))} "
+                "files vs this commit",
+                "ok",
+            )
 
     # Changes to the upstream or any dependency: a name redefined from src/ or
     # by exec, or a src class overriding the upstream's methods, each needs an
     # extension point.
     points = integration.extension_points
-    problems += [
+    extension_problems = [
         f"{label}: {name} is defined in {file}, which no extension_point declares"
         for name, file in observed.get("redefinitions", {}).items()
         if not _covered(name, points)
     ]
-    problems += [
+    extension_problems += [
         f"{label}: {cls} overrides {base}.{', '.join(uncovered)}, which no extension_point declares"
         for cls, base, overrides in _overrides(observed, package)
         if base not in points
         and (uncovered := [m for m in overrides if not _covered(f"{base}.{m}", points)])
     ]
-    return problems
+    extension_points_path = f"{design_path}/repository_integration/extension_points"
+    for problem in extension_problems:
+        verification.append_declaration_status(
+            extension_points_path, problem, "mismatch"
+        )
+    if not extension_problems:
+        verification.append_declaration_status(
+            extension_points_path,
+            f"observed redefinitions and overridden {package} methods in {label}",
+            "ok",
+        )
 
 
-def verify_run_observations(root: Path, record: ResearchRecord) -> list[str]:
-    repositories = {r.id: r for s in record.active_literature() for r in s.repositories}
-    problems: list[str] = []
+def verify_run_observations(
+    root: Path, record: ResearchRecord, verification: RecordVerification
+) -> None:
+    repositories = {r.id: r for s in record.latest_literature() for r in s.repositories}
     first_commit: str | None = None
     first_checked = False
 
-    for _, claim, design, run in record.active_runs():
+    for hypothesis, claim, design, run in record.latest_runs():
         if not (
             isinstance(claim, SeyvalClaim)
             and isinstance(design, SeyvalDesign)
@@ -273,31 +355,47 @@ def verify_run_observations(root: Path, record: ResearchRecord) -> list[str]:
         if repository is None:
             continue  # the record's own checks report it
 
+        design_path = (
+            f"hypotheses[{hypothesis.id}]/claims[{claim.id}]/designs[{design.id}]"
+        )
+        run_path = f"{design_path}/runs[{run.run_id}]"
+        latest_result_path = f"{run_path}/results[{run.results[-1].id}]"
         observed_path = root / RESULTS_DIR / run.run_id / OBSERVED_FILENAME
         if not observed_path.is_file():
-            problems.append(
+            verification.append_declaration_status(
+                latest_result_path,
                 f"run '{run.run_id}': no {OBSERVED_FILENAME} among its outputs "
-                "(the Makefile writes it)"
+                "(the Makefile writes it)",
+                "mismatch",
             )
             continue
 
         if not first_checked:  # once per repository, only when a run needs it
-            first_commit, first_problems = _first_commit(root)
-            problems += first_problems
+            first_commit = _first_commit(root, verification)
             first_checked = True
 
         observed = json.loads(observed_path.read_text(encoding="utf-8"))
         if observed.get("version") != 3:
-            problems.append(
+            verification.append_declaration_status(
+                latest_result_path,
                 f"run '{run.run_id}': {OBSERVED_FILENAME} is version "
-                f"{observed.get('version')}, written by an older hook; the gate reads version 3"
+                f"{observed.get('version')}, written by an older hook; the gate reads version 3",
+                "mismatch",
             )
             continue
         snapshot = root / repository_snapshot_relpath(repository.id)
         pages = (
             _pages(snapshot.read_text(encoding="utf-8")) if snapshot.is_file() else {}
         )
-        problems += _run_problems(
-            root, run, observed, repository, integration, pages, first_commit
+        _append_run_statuses(
+            root,
+            run,
+            observed,
+            repository,
+            integration,
+            pages,
+            first_commit,
+            run_path,
+            design_path,
+            verification,
         )
-    return problems

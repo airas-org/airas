@@ -413,11 +413,11 @@ def provenance_scope(
     dirs = {run_id for run_id in record.run_index() if run_id in reported_run_ids}
     dirs |= {
         row.run_id
-        for spec in record.active_tables()
+        for spec in record.latest_tables()
         for row in spec.rows
         if row.run_id in metrics_data
     }
-    for chart in record.active_charts():
+    for chart in record.latest_charts():
         for ref in _metric_refs(chart.spec):
             match = max(
                 (k for k in metrics_data if ref == k or ref.startswith(k + ".")),
@@ -436,29 +436,4 @@ def _metric_refs(node: Any) -> list[str]:
         return [r for v in node.values() for r in _metric_refs(v)]
     if isinstance(node, list):
         return [r for v in node for r in _metric_refs(v)]
-    return []
-
-
-def provenance_problems(
-    provenance: _ProvenanceCheckResult | None, required: bool
-) -> list[str]:
-    # A mismatch means the local outputs are not backed by any completed run
-    # in the platform's storage; "unavailable" fails only where required.
-    if provenance is None:
-        return (
-            [
-                "the provenance cross-check did not run (record.json references no results directories, or the check was disabled)"
-            ]
-            if required
-            else []
-        )
-    if provenance.status == "mismatch":
-        return [
-            f"{provenance.source}: local outputs are not backed by stored run "
-            "outputs — " + (provenance.detail or "see provenance.checks")
-        ]
-    if provenance.status == "unavailable" and required:
-        return [
-            f"provenance unavailable: {provenance.detail or 'see provenance.checks'}"
-        ]
     return []
