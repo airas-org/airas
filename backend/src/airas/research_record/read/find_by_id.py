@@ -18,7 +18,7 @@ def find_hypothesis(record: ResearchRecord, hypothesis_id: str) -> Hypothesis:
 
 
 def find_source(record: ResearchRecord, source_id: str) -> LiteratureSource:
-    for source in record.active_literature():
+    for source in record.latest_literature():
         if source.id == source_id:
             return source
     raise ValueError(

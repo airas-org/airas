@@ -8,9 +8,6 @@ from airas.core.types.run_provenance import PROVENANCE_MANIFEST_PATH
 from airas.infra.run_output_store import RunExpired, SeyvalOutputStore, StoredRun
 from airas.infra.seyval_client import SeyvalClient
 from airas.research_record.verify._verify_results_against_store import (
-    provenance_problems as _provenance_problems,
-)
-from airas.research_record.verify._verify_results_against_store import (
     verify_results_against_store,
 )
 
@@ -270,8 +267,7 @@ async def test_mismatch_fails_verification_report(tmp_path: Path) -> None:
     provenance = await _verify(fake, str(tmp_path), {"run-1"})
 
     assert provenance.source == "seyval" and provenance.status == "mismatch"
-    problems = _provenance_problems(provenance, required=False)
-    assert problems and "not backed by stored run outputs" in problems[0]
+    assert not provenance.checks[0].matched and "differs" in provenance.checks[0].detail
 
 
 def test_git_url_normalization_covers_common_origin_forms() -> None:

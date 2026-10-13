@@ -1,25 +1,51 @@
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
+
+
+class DeclarationStatus(BaseModel):
+    path: str = Field(
+        description="hypotheses[h1]/claims[c1]/designs[d1]/runs[run-1]/params/epochs"
+    )
+    reason: str = Field(
+        description="The evidence it was held against, what differed, or why it was not compared"
+    )
+    status: Literal["ok", "mismatch", "skipped"]
+    evidence_path: str = Field(
+        default="",
+        description="Repository-relative file the declaration was held against",
+    )
 
 
 class RecordVerification(BaseModel):
-    ok: bool
-    stage: Literal["prereg", "results"]
-    problems: list[str] = Field(default_factory=list)
-    reports: list[str] = Field(
+    stage: Literal["prereg", "results"] = "prereg"
+    declaration_statuses: list[DeclarationStatus] = Field(
         default_factory=list,
-        description="For the reviewer, not failures: choices the code or the "
-        "runs make that the record does not declare",
+        description="Every live declaration once at least: ok / mismatch rows are "
+        "what the gate compared, skipped rows are what it did not (record − coverage)",
     )
-    provenance: dict[str, Any] | None = Field(
-        default=None,
-        description=(
-            "The cross-check against the backends' stored run outputs: status "
-            "(verified / mismatch / unavailable) and, per results directory, "
-            "the run it is pinned to, its commit, the files compared and the "
-            "sibling runs of the same commit. None when it did not run."
-        ),
-    )
+
+    @computed_field
+    @property
+    def problems(self) -> list[str]:
+        return [s.reason for s in self.declaration_statuses if s.status == "mismatch"]
+
+    @computed_field
+    @property
+    def ok(self) -> bool:
+        return not self.problems
+
+    def append_declaration_status(
+        self,
+        path: str,
+        reason: str,
+        status: Literal["ok", "mismatch", "skipped"],
+        evidence_path: str = "",
+    ) -> None:
+        self.declaration_statuses.append(
+            DeclarationStatus(
+                path=path, reason=reason, status=status, evidence_path=evidence_path
+            )
+        )

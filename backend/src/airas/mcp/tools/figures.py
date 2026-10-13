@@ -12,7 +12,7 @@ from airas.core.research_paths import (
 from airas.core.types.research_record import (
     ChartDeclaration,
     RenderedChart,
-    active,
+    latest,
 )
 from airas.infra.local_git import commit_paths
 from airas.mcp.app import mcp
@@ -95,7 +95,7 @@ async def render_chart(
         data = render_chart_bytes(resolved, suffix)
 
         declared = next(
-            (c for c in active(target.charts, "path") if c.path == relative),
+            (c for c in latest(target.charts, "path") if c.path == relative),
             None,
         )
         if declared and (declared.spec != spec or declared.format != suffix):
@@ -113,7 +113,7 @@ async def render_chart(
                 )
             )
         next(
-            c for c in active(target.charts, "path") if c.path == relative
+            c for c in latest(target.charts, "path") if c.path == relative
         ).renders.append(RenderedChart(renderer=renderer_version()))
         record.save(local_path)
         path.parent.mkdir(parents=True, exist_ok=True)

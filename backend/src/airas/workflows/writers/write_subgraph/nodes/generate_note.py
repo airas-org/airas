@@ -11,7 +11,7 @@ from airas.core.types.experiment_history import (
     ExperimentHistory,
 )
 from airas.core.types.research_hypothesis import ResearchHypothesis
-from airas.core.types.research_record import LiteratureSource, active
+from airas.core.types.research_record import LiteratureSource, latest
 from airas.core.types.research_study import ResearchStudy
 from airas.workflows.writers.write_subgraph.nodes.parse_bibtex_to_dict import (
     parse_bibtex_to_dict,
@@ -112,7 +112,7 @@ def literature_candidates(literature: list[LiteratureSource]) -> list[dict[str, 
             "citation_key": source.bibkey,
             "content": "\n".join(
                 f'- {p.id} ({p.node_type}): "{p.quote}"'
-                for p in active(source.passages, "id")
+                for p in latest(source.passages, "id")
             )
             or "(no passages declared)",
         }

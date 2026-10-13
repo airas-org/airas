@@ -77,7 +77,7 @@ def run_ids_with_verifier_report(root: Path, record: ResearchRecord) -> set[str]
     than verified with nothing to check."""
     return {
         run.run_id
-        for _, claim in record.active_claims()
+        for _, claim in record.latest_claims()
         for _, run in claim.runs()
         if isinstance(
             _read_json(_verifier_report_path(root, claim.verifier.kind, run.run_id)),

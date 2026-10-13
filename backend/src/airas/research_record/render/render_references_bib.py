@@ -83,5 +83,5 @@ def write_references_bib(local_path: str, template: str, record: ResearchRecord)
     relpath = f".research/latex/{template}/{REFERENCES_BIB_FILENAME}"
     path = repo_root(local_path) / relpath
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(render_references_bib(record.active_literature()), encoding="utf-8")
+    path.write_text(render_references_bib(record.latest_literature()), encoding="utf-8")
     return relpath

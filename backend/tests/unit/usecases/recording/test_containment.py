@@ -16,6 +16,7 @@ from airas.core.types.map_record_to_publication import (
     TableRowSpec,
     TableSpec,
 )
+from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import (
     ClaimDeclaration,
     Criterion,
@@ -30,16 +31,22 @@ from airas.core.types.research_record import (
     SeyvalRun,
     SeyvalVerifier,
     VerifierKind,
-    active,
+    latest,
 )
 from airas.research_record.verify._verify_record_git_history import (
     _containment_violations,
 )
 from airas.research_record.verify._verify_record_in_itself import (
-    verify_record_in_itself as verify_consistency,
+    verify_record_in_itself,
 )
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
+
+
+def _problems(record: ResearchRecord) -> list[str]:
+    verification = RecordVerification()
+    verify_record_in_itself(record, verification)
+    return verification.problems
 
 
 def record_append_violations(older: ResearchRecord, newer: ResearchRecord) -> list[str]:
@@ -196,7 +203,7 @@ def test_the_last_entry_for_an_id_is_the_live_one() -> None:
     revised.designs.append(SeyvalDesign(id="d2", runs=[SeyvalRun(run_id="ablation")]))
     record.hypotheses[0].claims.append(revised)
 
-    live = [c for _, c in record.active_claims()]
+    live = [c for _, c in record.latest_claims()]
     assert [c.id for c in live] == ["c1"]
     assert [d.id for d in live[0].designs] == ["d1", "d2"]
     assert set(record.run_index()) == {"proposed", "baseline", "ablation"}
@@ -209,7 +216,7 @@ def test_a_run_declared_under_two_claims_is_caught() -> None:
     """Run ids address a results directory, so a run belongs to one claim."""
     record = _record()
     record.hypotheses[0].claims.append(_claim("c2", run_id="proposed"))
-    assert any("repo-unique" in p for p in verify_consistency(record))
+    assert any("repo-unique" in p for p in _problems(record))
 
 
 def test_a_claim_with_no_run_is_caught() -> None:
@@ -225,7 +232,7 @@ def test_a_claim_with_no_run_is_caught() -> None:
             prediction=Prediction(low=0.1, high=0.3, basis="pilot"),
         )
     )
-    assert any("declares no run" in p for p in verify_consistency(record))
+    assert any("declares no run" in p for p in _problems(record))
 
 
 def test_a_table_row_on_an_undeclared_run_is_caught() -> None:
@@ -238,11 +245,11 @@ def test_a_table_row_on_an_undeclared_run_is_caught() -> None:
             rows=[TableRowSpec(run_id="ghost", label="?")],
         )
     )
-    assert any("which no design declares" in p for p in verify_consistency(record))
+    assert any("which no design declares" in p for p in _problems(record))
 
 
 def test_a_clean_record_has_no_problems() -> None:
-    assert verify_consistency(_record()) == []
+    assert _problems(_record()) == []
 
 
 @pytest.mark.parametrize("bad_id", ["claim1", "C1", "c0"])
@@ -264,7 +271,7 @@ def test_active_keeps_order_and_takes_the_last_entry_per_id() -> None:
         SeyvalRun(run_id="b"),
         SeyvalRun(run_id="a", description="revised"),
     ]
-    assert [(r.run_id, r.description) for r in active(runs, "run_id")] == [
+    assert [(r.run_id, r.description) for r in latest(runs, "run_id")] == [
         ("a", "revised"),
         ("b", ""),
     ]

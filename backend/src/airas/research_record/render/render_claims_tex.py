@@ -8,7 +8,7 @@ from airas.core.types.research_record import (
     LeanResult,
     ResearchRecord,
     SeyvalClaim,
-    active,
+    latest,
 )
 from airas.research_record.read.read_run_outputs import load_metrics_data
 from airas.research_record.render._latex_text import AUTO_GENERATED_HEADER, latex_text
@@ -67,7 +67,7 @@ def _claim_passages(claim: Any) -> list[str]:
     ids = list(claim.quoted_passage_ids)
     if isinstance(claim, SeyvalClaim):
         ids += claim.criterion.quoted_passage_ids
-    for design in active(claim.designs, "id"):
+    for design in latest(claim.designs, "id"):
         ids += design.quoted_passage_ids
     return list(dict.fromkeys(ids))
 
@@ -77,14 +77,14 @@ def render_claims_tex(record: ResearchRecord, metrics_data: dict[str, Any]) -> s
     # freeze commit can carry it before any run exists.
     ops = {">=": r"\geq", "<=": r"\leq", ">": ">", "<": "<"}
     lines = [AUTO_GENERATED_HEADER]
-    for hypothesis in record.active_hypotheses():
+    for hypothesis in record.latest_hypotheses():
         lines.append(
             rf"\noindent\textbf{{Hypothesis {_number(hypothesis.id)}.}} "
             + latex_text(hypothesis.statement)
             + _cite(record, hypothesis.quoted_passage_ids)
         )
         lines.append(r"\begin{enumerate}")
-        for claim in active(hypothesis.claims, "id"):
+        for claim in latest(hypothesis.claims, "id"):
             lines.append(
                 rf"\item[\textbf{{Claim {_number(claim.id)}}}] "
                 + latex_text(claim.statement)

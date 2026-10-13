@@ -9,6 +9,7 @@ from typing import Any
 import pytest
 
 from airas.core.hashing import file_sha256, text_sha256
+from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import (
     ArgumentValue,
     Criterion,
@@ -34,6 +35,12 @@ ENTRY = "pkg.runner.Runner.run"
 RUNNER_PY = "class Runner:\n    def __init__(self, n=5): ...\n    def run(self): ...\n"
 SNAPSHOT = f"==> pkg/runner.py <==\n{RUNNER_PY}"
 ADAPTER_PY = "import pkg\nclass MyModel(pkg.model.Model):\n    def predict(self): ...\n"
+
+
+def _problems(tmp_path: Path, record: ResearchRecord) -> list[str]:
+    verification = RecordVerification()
+    verify_run_observations(tmp_path, record, verification)
+    return verification.problems
 
 
 def _git(root: Path, *args: str) -> str:
@@ -191,12 +198,12 @@ def _write(root: Path, observed: dict[str, Any]) -> None:
 def test_a_run_that_agrees_with_its_declaration_passes(tmp_path: Path) -> None:
     record = _record(tmp_path, _template_import(tmp_path))
     _write(tmp_path, _observed(tmp_path))
-    assert verify_run_observations(tmp_path, record) == []
+    assert _problems(tmp_path, record) == []
 
 
 def test_a_realized_run_without_observed_json_fails(tmp_path: Path) -> None:
     record = _record(tmp_path, _template_import(tmp_path))
-    assert verify_run_observations(tmp_path, record) == [
+    assert _problems(tmp_path, record) == [
         "run 'run-1': no observed.json among its outputs (the Makefile writes it)"
     ]
 
@@ -204,7 +211,7 @@ def test_a_realized_run_without_observed_json_fails(tmp_path: Path) -> None:
 def test_an_older_hooks_observed_json_is_reported_not_read(tmp_path: Path) -> None:
     record = _record(tmp_path, _template_import(tmp_path))
     _write(tmp_path, {"version": 1, "processes": []})
-    problems = verify_run_observations(tmp_path, record)
+    problems = _problems(tmp_path, record)
     assert problems == [
         "run 'run-1': observed.json is version 1, written by an older hook; the "
         "gate reads version 3"
@@ -300,7 +307,7 @@ def test_each_departure_from_the_declaration_is_reported(
     observed = _observed(tmp_path)
     mutate(observed)
     _write(tmp_path, observed)
-    problems = verify_run_observations(tmp_path, record)
+    problems = _problems(tmp_path, record)
     assert len(problems) == 1 and expected in problems[0], problems
 
 
@@ -315,7 +322,7 @@ def test_a_run_from_a_commit_that_edited_the_trusted_files_fails(
     _git(tmp_path, "commit", "-q", "-am", "skip the hook")
     record = _record(tmp_path, _git(tmp_path, "rev-parse", "HEAD"))
     _write(tmp_path, observed)
-    problems = verify_run_observations(tmp_path, record)
+    problems = _problems(tmp_path, record)
     assert len(problems) == 1 and problems[0].startswith(
         "run 'run-1': Makefile at commit "
     ), problems
@@ -328,7 +335,7 @@ def test_a_workflow_edited_after_the_import_is_reported(tmp_path: Path) -> None:
     _git(tmp_path, "commit", "-q", "-am", "own gate")
     record = _record(tmp_path, _git(tmp_path, "rev-parse", "HEAD"))
     _write(tmp_path, observed)
-    problems = verify_run_observations(tmp_path, record)
+    problems = _problems(tmp_path, record)
     assert len(problems) == 1 and problems[0].startswith(
         "run 'run-1': .github/workflows/verify_record.yml at commit "
     ), problems
@@ -342,13 +349,13 @@ def test_a_knob_varied_over_runs_is_read_from_each_runs_params(tmp_path: Path) -
     ]
     design.runs[0].params = {"n": 20}
     _write(tmp_path, _observed(tmp_path))
-    assert verify_run_observations(tmp_path, record) == []
+    assert _problems(tmp_path, record) == []
     design.runs[0].params = {"n": 7}
-    assert verify_run_observations(tmp_path, record) == [
+    assert _problems(tmp_path, record) == [
         "run 'run-1': pkg.runner.Runner.__init__.n was 20, not the declared 7"
     ]
     design.runs[0].params = {}
-    assert verify_run_observations(tmp_path, record) == [
+    assert _problems(tmp_path, record) == [
         "run 'run-1': pkg.runner.Runner.__init__.n reads params['n'], which the run "
         "does not declare"
     ]
@@ -363,7 +370,7 @@ def test_a_repository_without_the_template_hook_in_its_first_commit_is_reported(
     _git(tmp_path, "commit", "-q", "--amend", "-m", "no hook")
     record = _record(tmp_path, _git(tmp_path, "rev-parse", "HEAD"))
     _write(tmp_path, observed)
-    assert verify_run_observations(tmp_path, record) == [
+    assert _problems(tmp_path, record) == [
         "the repository's first commit has no .airas/sitecustomize.py: it was not "
         "created from airas-template"
     ]
@@ -373,7 +380,7 @@ def test_a_result_commit_git_cannot_show_is_reported_not_passed(tmp_path: Path) 
     _template_import(tmp_path)
     record = _record(tmp_path, "f" * 40)
     _write(tmp_path, _observed(tmp_path))
-    problems = verify_run_observations(tmp_path, record)
+    problems = _problems(tmp_path, record)
     assert problems == [
         "run 'run-1': Makefile, .github, .airas at commit ffffffffffff could not be "
         "compared with the repository's first commit",
@@ -395,7 +402,7 @@ def test_a_history_with_several_roots_cannot_serve_as_the_reference(
     _git(tmp_path, "merge", "-q", "--allow-unrelated-histories", "-m", "merge", "other")
     record = _record(tmp_path, first)
     _write(tmp_path, observed)
-    problems = verify_run_observations(tmp_path, record)
+    problems = _problems(tmp_path, record)
     assert len(problems) == 1 and "several root commits" in problems[0], problems
 
 
@@ -424,7 +431,7 @@ def test_a_long_or_structured_value_is_compared_through_its_recording(
         },
     ]
     _write(tmp_path, observed)
-    assert verify_run_observations(tmp_path, record) == []
+    assert _problems(tmp_path, record) == []
 
 
 def test_a_rerun_is_checked_against_its_own_commit_not_earlier_results(
@@ -446,7 +453,7 @@ def test_a_rerun_is_checked_against_its_own_commit_not_earlier_results(
     observed = _observed(tmp_path)
     observed["src_modules"]["src/adapter.py"] = text_sha256(ADAPTER_PY + "# v2\n")
     _write(tmp_path, observed)
-    assert verify_run_observations(tmp_path, record) == []
+    assert _problems(tmp_path, record) == []
 
 
 def _redacted(o: dict[str, Any]) -> None:
@@ -497,7 +504,58 @@ def test_a_hashed_or_redacted_value_is_compared_through_its_recording(
     observed = _observed(tmp_path)
     mutate(observed)
     _write(tmp_path, observed)
-    problems = verify_run_observations(tmp_path, record)
+    problems = _problems(tmp_path, record)
     assert len(problems) == len(expected) and all(
         e in p for e, p in zip(expected, problems, strict=True)
     ), problems
+
+
+def _statuses(tmp_path: Path, record: ResearchRecord, path_suffix: str) -> list[str]:
+    verification = RecordVerification()
+    verify_run_observations(tmp_path, record, verification)
+    return [
+        f"{s.status}: {s.reason}"
+        for s in verification.declaration_statuses
+        if s.path.endswith(path_suffix)
+    ]
+
+
+def test_a_redacted_value_is_skipped_not_covered(tmp_path: Path) -> None:
+    record = _record(tmp_path, _template_import(tmp_path))
+    record.hypotheses[0].claims[0].designs[0].repository_integration.arguments = [
+        ArgumentValue(argument="pkg.runner.Runner.__init__.n", value=20)
+    ]
+    observed = _observed(tmp_path)
+    _redacted(observed)
+    _write(tmp_path, observed)
+    rows = _statuses(tmp_path, record, "arguments[pkg.runner.Runner.__init__.n]/value")
+    assert len(rows) == 1 and rows[0].startswith("skipped: ")
+
+
+def test_a_declared_extension_point_nothing_used_stays_unverified(
+    tmp_path: Path,
+) -> None:
+    record = _record(tmp_path, _template_import(tmp_path))
+    record.hypotheses[0].claims[0].designs[
+        0
+    ].repository_integration.extension_points = [
+        "pkg.model.Model",
+        "pkg.model.Trainer",
+    ]
+    _write(tmp_path, _observed(tmp_path))
+    rows = _statuses(tmp_path, record, "/extension_points")
+    assert rows == [
+        "ok: pkg.model.Model: observed as a redefinition or an override in run 'run-1'",
+        "skipped: pkg.model.Trainer: declared, but nothing in run 'run-1' redefined or overrode it",
+    ]
+
+
+def test_the_hook_check_sits_on_observed_json_not_on_the_result(tmp_path: Path) -> None:
+    record = _record(tmp_path, _template_import(tmp_path))
+    _write(tmp_path, _observed(tmp_path))
+    verification = RecordVerification()
+    verify_run_observations(tmp_path, record, verification)
+    hook_rows = [
+        s for s in verification.declaration_statuses if "hook sha256" in s.reason
+    ]
+    assert [s.path for s in hook_rows] == [".research/results/run-1/observed.json"]

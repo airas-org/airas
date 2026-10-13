@@ -42,11 +42,11 @@ def searchable_text(entry: RecordEntry) -> str:
     return "\n".join(
         [
             entry.title,
-            *(h.statement for h in record.active_hypotheses()),
-            *(c.statement for _, c in record.active_claims()),
+            *(h.statement for h in record.latest_hypotheses()),
+            *(c.statement for _, c in record.latest_claims()),
             *(
                 v
-                for s in record.active_literature()
+                for s in record.latest_literature()
                 for v in (s.title, s.doi, s.arxiv_id)
                 if v
             ),
@@ -57,7 +57,7 @@ def searchable_text(entry: RecordEntry) -> str:
 def _identifiers(entry: RecordEntry) -> set[str]:
     return {
         v.lower()
-        for s in entry.record.active_literature()
+        for s in entry.record.latest_literature()
         for v in (s.doi, s.arxiv_id)
         if v
     }
@@ -67,7 +67,7 @@ def _matches(entry: RecordEntry, verdict: str | None, stage: str | None) -> bool
     if stage is not None and entry.stage != stage:
         return False
     return verdict is None or any(
-        c.verdict == verdict for _, c in entry.record.active_claims()
+        c.verdict == verdict for _, c in entry.record.latest_claims()
     )
 
 
@@ -101,7 +101,7 @@ class AirasRecordsIndex:
             if main_tex and (match := _TITLE.search(main_tex))
             else ""
         )
-        hypotheses = record.active_hypotheses()
+        hypotheses = record.latest_hypotheses()
         owner_repo, sha = record_id.rsplit("@", 1)
         return RecordEntry(
             id=record_id,

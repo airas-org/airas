@@ -1,8 +1,3 @@
-"""Each citation of a passage, read against the passage: does the citing
-text say only what the passage supports? A model judges once and its
-verdict is recorded on the passage; without a model, only recorded verdicts
-count and an unjudged citation is reported."""
-
 from __future__ import annotations
 
 import asyncio
@@ -13,10 +8,6 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from airas.core.research_paths import (
-    fulltext_relpath,
-    repository_snapshot_relpath,
-)
 from airas.core.types.research_record import (
     CitationJudgment,
     QuotedPassage,
@@ -63,11 +54,10 @@ def _collect_citations(
         if source.id not in texts:
             # The canonical paths the gate requires, not the record's own
             # `path`s: a crafted record must not choose what is read.
-            paths = [root / fulltext_relpath(source.id)] + [
-                root / repository_snapshot_relpath(r.id) for r in source.repositories
-            ]
             texts[source.id] = [
-                p.read_text(encoding="utf-8") for p in paths if p.is_file()
+                (root / snapshot.relpath).read_text(encoding="utf-8")
+                for snapshot in source.snapshots()
+                if (root / snapshot.relpath).is_file()
             ]
         context = next(
             (c for t in texts[source.id] if (c := quote_context(t, passage.quote))),
@@ -149,10 +139,11 @@ async def _judge(
     )
     if verdict is None:
         raise ValueError(f"no verdict from {model} for {citation.where}")
+
     return verdict
 
 
-async def verify_citation_meaning(
+async def judge_citation_against_passage(
     root: Path,
     record: ResearchRecord,
     main_tex: str,

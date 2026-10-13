@@ -10,6 +10,7 @@ RESULTS_DIR = ".research/results"
 # LaTeX template.
 RECORD_FILENAME = "record.json"
 RECORD_PATH = f".research/{RECORD_FILENAME}"
+VERIFICATION_MD_PATH = ".research/verification.md"
 
 # What a run writes into its .research/results/<run_id>/ directory, and the
 # reserved directory name for cross-run aggregates.

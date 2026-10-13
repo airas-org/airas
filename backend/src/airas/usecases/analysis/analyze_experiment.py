@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from airas.core.llm_config import NodeLLMConfig
 from airas.core.research_paths import repo_root
-from airas.core.types.research_record import ResearchRecord, SeyvalClaim, active
+from airas.core.types.research_record import ResearchRecord, SeyvalClaim, latest
 from airas.infra.litellm_client import LiteLLMClient
 from airas.research_record.read.derive_results import compute_claim_statuses
 from airas.research_record.read.load_record import load_record
@@ -31,9 +31,9 @@ def analysis_context(
         s.id: s.verdict for s in compute_claim_statuses(record, reported_run_ids)
     }
     hypotheses = []
-    for h in record.active_hypotheses():
+    for h in record.latest_hypotheses():
         claims = []
-        for c in active(h.claims, "id"):
+        for c in latest(h.claims, "id"):
             entry: dict[str, Any] = {
                 "id": c.id,
                 "statement": c.statement,

@@ -179,9 +179,16 @@ async def verify_paper_values(
     `.research/results/.provenance.json` (written by `import_run_outputs`)
     actually produced, that run must be completed, and its commit must be
     an ancestor of the local HEAD. Each check lists the other completed
-    runs of the same commit (`sibling_run_ids`); review them — repeated
-    executions mean the reported run was a choice. `provenance.status`
-    "unavailable" is surfaced without failing the local checks.
+    runs of the same commit; review them — repeated executions mean the
+    reported run was a choice. Each directory's outcome is a row of
+    `record.declaration_statuses` on the result it backs; an unreachable
+    store leaves those rows `skipped` without failing the local checks.
+
+    `record.declaration_statuses` lists every live declaration of the
+    record once at least: `ok` / `mismatch` rows say what the gate compared
+    it with, `skipped` rows (`reason` says why, or `no check`) are what
+    no deterministic check covers — the record minus the gate's coverage, which
+    is what a reviewer or a judge still has to read.
 
     `unverified` lists every `\\unverified{...}` the author marked —
     review input, not a failure. Run this after any step that may edit
@@ -196,11 +203,13 @@ async def verify_paper_values(
     after rewriting a sentence that cites a passage.
     `implementation_verifier_model` likewise reads each design's code and
     runs against the design (once per state of declaration, code and runs;
-    the review is written into the record): contradictions and declared
-    steps the code lacks fail, choices the record does not declare are
-    listed in `record.reports` for review. Both names are written into the
-    record, so keep them the same across a user's studies. Requires an LLM
-    provider key when either is given.
+    the review is written into the record). A design with no such review
+    fails; the findings themselves (`undeclared`, `unverified`,
+    `contradiction`) do not — they are the judge's reading, kept on the
+    design's `reviews[]` for the reviewer, and the row for the design's
+    `reviews` in `record.declaration_statuses` counts them. Both names are
+    written into the record, so keep them the same across a user's studies.
+    Requires an LLM provider key when either is given.
     """
     refresh_environment()
     verification = await _verify_paper(

@@ -18,6 +18,7 @@ from airas.core.types.map_record_to_publication import (
     TableRowSpec,
     TableSpec,
 )
+from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import (
     ChartDeclaration,
     Criterion,
@@ -44,6 +45,9 @@ from airas.research_record.verify._verify_paper_files import (
     _verify_charts,
     _verify_tables,
 )
+from airas.research_record.verify._verify_record_in_itself import (
+    verify_record_in_itself,
+)
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 
@@ -64,6 +68,12 @@ TABLE = TableSpec(
         TableRowSpec(run_id="run_1", label="Baseline"),
     ],
 )
+
+
+def _problems(record: ResearchRecord) -> list[str]:
+    verification = RecordVerification()
+    verify_record_in_itself(record, verification)
+    return verification.problems
 
 
 # --------------------------------------------------
@@ -179,10 +189,6 @@ def test_table_cells_link_to_their_lines_in_the_record() -> None:
 
 
 def test_table_reference_values_must_appear_in_their_passage() -> None:
-    from airas.research_record.verify._verify_record_in_itself import (
-        verify_record_in_itself,
-    )
-
     def record(values: dict[str, float]) -> ResearchRecord:
         column = TableColumnSpec(
             header="Acc (paper)",
@@ -232,12 +238,10 @@ def test_table_reference_values_must_appear_in_their_passage() -> None:
             ],
         )
 
-    assert verify_record_in_itself(record({"run_1": 0.85})) == []
-    problems = verify_record_in_itself(record({"run_1": 0.86}))
+    assert _problems(record({"run_1": 0.85})) == []
+    problems = _problems(record({"run_1": 0.86}))
     assert any("does not state" in p for p in problems), problems
-    problems = verify_record_in_itself(
-        record({"run_1": 0.85}).model_copy(update={"literature": []})
-    )
+    problems = _problems(record({"run_1": 0.85}).model_copy(update={"literature": []}))
     assert any("no source declares" in p for p in problems), problems
 
 

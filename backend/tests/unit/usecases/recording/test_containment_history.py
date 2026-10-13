@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from airas.core.research_paths import RECORD_PATH
+from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import (
     ClaimDeclaration,
     Criterion,
@@ -35,10 +36,18 @@ from airas.infra.local_git import commit_paths
 from airas.research_record.read.derive_results import compute_claim_statuses
 from airas.research_record.read.load_record import load_record
 from airas.research_record.verify._verify_record_git_history import (
-    _verify_append_only as verify_append_only,
+    verify_record_git_history,
 )
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
+
+
+def _problems(repo: Path, record: ResearchRecord, require_history: bool) -> list[str]:
+    verification = RecordVerification()
+    verify_record_git_history(
+        repo, record, require_history, lambda _version, _checked: None, verification
+    )
+    return verification.problems
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -143,7 +152,7 @@ def test_a_claim_whose_runs_all_have_results_is_verified(tmp_path: Path) -> None
 
     record = load_record(str(tmp_path))
     assert [s.verified for s in _status(record)] == [True]
-    assert verify_append_only(tmp_path, record, require_history=True) == []
+    assert _problems(tmp_path, record, require_history=True) == []
 
 
 def test_a_claim_missing_any_result_is_not_verified() -> None:
@@ -171,7 +180,7 @@ def test_appending_a_claim_after_results_is_allowed(tmp_path: Path) -> None:
     record.hypotheses[0].claims.append(_claim())
     record.save(str(tmp_path))
     _commit_all(tmp_path, "claim added afterwards")
-    assert verify_append_only(tmp_path, record, require_history=True) == []
+    assert _problems(tmp_path, record, require_history=True) == []
 
 
 def test_a_reworded_claim_violates_containment(tmp_path: Path) -> None:
@@ -183,7 +192,7 @@ def test_a_reworded_claim_violates_containment(tmp_path: Path) -> None:
     _c1(record).statement = "Proposed is competitive with baseline."  # softened
     record.save(str(tmp_path))
 
-    problems = verify_append_only(tmp_path, record, require_history=True)
+    problems = _problems(tmp_path, record, require_history=True)
     assert any("statement" in p for p in problems)
 
 
@@ -194,7 +203,7 @@ def test_changed_run_conditions_violate_containment(tmp_path: Path) -> None:
 
     record = load_record(str(tmp_path))
     _c1(record).designs[0].runs[0].params = {"mode": "pilot"}
-    problems = verify_append_only(tmp_path, record, require_history=True)
+    problems = _problems(tmp_path, record, require_history=True)
     assert any("params" in p for p in problems)
 
 
@@ -210,7 +219,7 @@ def test_legitimate_append_keeps_earlier_claims_verified(tmp_path: Path) -> None
     record.save(str(tmp_path))
     _commit_all(tmp_path, "append exploratory claim")
 
-    assert verify_append_only(tmp_path, record, require_history=True) == []
+    assert _problems(tmp_path, record, require_history=True) == []
     assert {s.id: s.verified for s in _status(record)} == {"c1": True, "c2": False}
 
 
@@ -223,7 +232,7 @@ def test_verified_true_then_false_is_a_violation(tmp_path: Path) -> None:
 
     record = load_record(str(tmp_path))
     _c1(record).verified = False
-    problems = verify_append_only(tmp_path, record, require_history=True)
+    problems = _problems(tmp_path, record, require_history=True)
     assert any("verified" in p for p in problems)
 
 
@@ -233,9 +242,9 @@ def test_verified_true_then_false_is_a_violation(tmp_path: Path) -> None:
 def test_no_git_repo_reports_unavailable(tmp_path: Path) -> None:
     _record(_claim()).save(str(tmp_path))
     record = load_record(str(tmp_path))
-    problems = verify_append_only(tmp_path, record, require_history=True)
+    problems = _problems(tmp_path, record, require_history=True)
     assert any("could not be checked" in p for p in problems)
-    assert verify_append_only(tmp_path, record, require_history=False) == []
+    assert _problems(tmp_path, record, require_history=False) == []
 
 
 def test_shallow_clone_reports_unavailable(tmp_path: Path) -> None:
@@ -254,9 +263,9 @@ def test_shallow_clone_reports_unavailable(tmp_path: Path) -> None:
         capture_output=True,
     )
     record = load_record(str(clone))
-    problems = verify_append_only(clone, record, require_history=True)
+    problems = _problems(clone, record, require_history=True)
     assert any("could not be checked" in p for p in problems)
-    assert verify_append_only(clone, record, require_history=False) == []
+    assert _problems(clone, record, require_history=False) == []
 
 
 def test_unparseable_committed_record_is_a_violation(tmp_path: Path) -> None:
@@ -268,5 +277,5 @@ def test_unparseable_committed_record_is_a_violation(tmp_path: Path) -> None:
     _commit_all(tmp_path, "fixed record")
 
     record = load_record(str(tmp_path))
-    problems = verify_append_only(tmp_path, record, require_history=True)
+    problems = _problems(tmp_path, record, require_history=True)
     assert any("not a valid record" in p for p in problems)

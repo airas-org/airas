@@ -45,7 +45,7 @@ def _verify_paper_citations(
 ) -> tuple[list[str], list[str]]:
     """Every cited key is a registered source and every passage locator one
     of that source's passages. Returns (problems, bibkeys never cited)."""
-    by_key = {source.bibkey: source for source in record.active_literature()}
+    by_key = {source.bibkey: source for source in record.latest_literature()}
     passages = record.passage_index()
     problems: dict[str, None] = {}
     cited: set[str] = set()
@@ -77,7 +77,7 @@ def _verify_references_bib(latex_dir: Path, record: ResearchRecord) -> list[str]
     if not path.is_file():
         return [f"{REFERENCES_BIB_FILENAME} is missing (preregister_record writes it)"]
     if path.read_text(encoding="utf-8") != render_references_bib(
-        record.active_literature()
+        record.latest_literature()
     ):
         return [
             f"{REFERENCES_BIB_FILENAME} differs from its regeneration from the "
@@ -94,10 +94,12 @@ def _verify_claims_tex(
     claims_path = latex_dir / CLAIMS_TEX_FILENAME
     if not claims_path.is_file():
         return [f"{CLAIMS_TEX_FILENAME} is missing (preregister_record writes it)"]
+
     if claims_path.read_text(encoding="utf-8") != render_claims_tex(
         record, metrics_data
     ):
         return [f"{CLAIMS_TEX_FILENAME} differs from its regeneration (manual edit?)"]
+
     return []
 
 
@@ -111,6 +113,7 @@ def _verify_values_tex(
     values_tex_path = latex_dir / VALUES_TEX_FILENAME
     problems: list[str] = []
     commit = record_link_commit(root)
+
     paper_values, undefined_keys = resolve_paper_values(
         record, metrics_data, used_keys, record_link_json(root, commit)
     )
@@ -151,13 +154,16 @@ def _verify_tables(
         if not table_path.is_file():
             problems.append(f"{relpath} is missing (update_record writes it)")
             continue
+
         try:
             expected = render_table_tex(spec, metrics_data, record_json)
         except ValueError as e:
             problems.append(f"{relpath}: {e}")
             continue
+
         if table_path.read_text(encoding="utf-8") != expected:
             problems.append(f"{relpath} differs from its regeneration (manual edit?)")
+
     tables_dir = latex_dir / TABLES_DIR_NAME
     if tables_dir.is_dir():
         for table_path in sorted(tables_dir.rglob("*.tex")):
@@ -174,10 +180,9 @@ def _verify_tables(
 def _verify_charts(
     record: ResearchRecord, local_repo_path: str, metrics_data: dict[str, Any]
 ) -> list[str]:
-    """Re-render every declared chart; reject undeclared chart files."""
-
     chart_dir = repo_root(local_repo_path) / CHART_DIR
-    charts = record.active_charts()
+    charts = record.latest_charts()
+
     declared = {c.path: c for c in charts}
     renderers = {c.path: c.renders[-1].renderer for c in charts if c.renders}
 
@@ -189,8 +194,10 @@ def _verify_charts(
         for chart_path in sorted(chart_dir.rglob("*")):
             if not chart_path.is_file():
                 continue
+
             if chart_path.suffix.lower() not in CHART_SUFFIXES:
                 continue
+
             relative = chart_path.relative_to(chart_dir).as_posix()
             if relative not in declared:
                 problems.append(
@@ -207,6 +214,7 @@ def _verify_charts(
                 "(render_chart writes it)"
             )
             continue
+
         try:
             resolved, _ = substitute_chart_refs(declaration.spec, metrics_data)
             expected = render_chart_bytes(resolved, declaration.format)
@@ -215,6 +223,7 @@ def _verify_charts(
                 f"{CHART_DIR}/{relative}: spec could not be re-rendered: {e}"
             )
             continue
+
         if chart_path.read_bytes() != expected:
             recorded = renderers.get(relative, "unknown renderer")
             hint = (
@@ -241,14 +250,14 @@ def verify_paper_files(
     main_tex: str,
     stage: Literal["prereg", "results"],
 ) -> tuple[list[str], list[str], list[str]]:
-    """(problems, \\unverified marks for human review, registered sources the
-    paper never cites). Every generated file matches its regeneration."""
     latex_dir = root / ".research" / "latex" / template
     values_tex_path = latex_dir / VALUES_TEX_FILENAME
+
     unverified, used_keys = scan_main_tex(main_tex) if main_tex else ([], [])
     problems = _verify_claims_tex(latex_dir, record, metrics_data)
     uncited: list[str] = []
-    if record.active_literature():
+
+    if record.latest_literature():
         cited_problems, uncited = _verify_paper_citations(record, main_tex)
         problems += cited_problems + _verify_references_bib(latex_dir, record)
     if stage == "prereg":
@@ -259,10 +268,11 @@ def verify_paper_files(
         if (latex_dir / TABLES_DIR_NAME).is_dir():
             problems.append(f"{TABLES_DIR_NAME}/ exists but no run outputs exist")
         return problems, unverified, uncited
+
     problems += _verify_values_tex(root, latex_dir, record, metrics_data, used_keys)
     problems += _verify_tables(
         latex_dir,
-        record.active_tables(),
+        record.latest_tables(),
         metrics_data,
         record_link_json(root, record_link_commit(root)),
     )

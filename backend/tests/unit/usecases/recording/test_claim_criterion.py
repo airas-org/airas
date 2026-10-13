@@ -7,6 +7,7 @@ metrics.
 import pytest
 from pydantic import ValidationError
 
+from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import (
     Criterion,
     Hypothesis,
@@ -29,11 +30,17 @@ from airas.research_record.verify._verify_record_git_history import (
     _containment_violations,
 )
 from airas.research_record.verify._verify_record_in_itself import (
-    verify_record_in_itself as verify_consistency,
+    verify_record_in_itself,
 )
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 PREDICTION = Prediction(low=0.02, high=0.04, basis="pilot")
+
+
+def _problems(record: ResearchRecord) -> list[str]:
+    verification = RecordVerification()
+    verify_record_in_itself(record, verification)
+    return verification.problems
 
 
 def _criterion(**kw: object) -> Criterion:
@@ -141,15 +148,13 @@ def test_a_criterion_must_be_a_range_apart_from_itself() -> None:
 
 def test_a_criterion_subject_must_be_the_claims_own_run() -> None:
     record = _record(_criterion(reference="ghost"), {})
-    assert any("'ghost'" in p for p in verify_consistency(record))
+    assert any("'ghost'" in p for p in _problems(record))
     # both runs are the claim's own, in either role
     assert (
-        verify_consistency(
-            _record(_criterion(subject="baseline", reference="proposed"), {})
-        )
+        _problems(_record(_criterion(subject="baseline", reference="proposed"), {}))
         == []
     )
-    assert verify_consistency(_record(_criterion(), {})) == []
+    assert _problems(_record(_criterion(), {})) == []
 
 
 def _two_claims(shared_result: dict[str, object] | None) -> ResearchRecord:
@@ -215,12 +220,12 @@ def test_a_criterion_reference_must_be_a_seyval_run() -> None:
     )
     record = _record(_criterion(reference="lemma"), {})
     record.hypotheses[0].claims.append(lean)
-    assert any("'lemma'" in p and "seyval" in p for p in verify_consistency(record))
+    assert any("'lemma'" in p and "seyval" in p for p in _problems(record))
 
 
 def test_a_criterion_may_reference_another_claims_run() -> None:
     # Declaring is fine: i80 is a run of the record, just not of c2.
-    assert verify_consistency(_two_claims({"accuracy": 0.9})) == []
+    assert _problems(_two_claims({"accuracy": 0.9})) == []
     # c2 is not verified until c1's i80 has its result, then it is judged on it.
     pending = compute_claim_statuses(_two_claims(None), {"i20", "i40"})
     assert [(s.id, s.verified, s.verdict) for s in pending] == [

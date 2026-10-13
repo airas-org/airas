@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import (
     Criterion,
     Hypothesis,
@@ -22,8 +23,10 @@ from airas.core.types.research_record import (
     SeyvalVerifier,
     VerifierKind,
 )
+from airas.research_record.llm_as_a_judge.judge_implementation_against_design import (
+    judge_implementation_against_design,
+)
 from airas.research_record.read.load_record import load_record
-from airas.research_record.verify._verify_implementation import verify_implementation
 from airas.research_record.verify.verify_record import verify_record
 
 ADAPTER_PY = "KINDS = ['mass_action', 'michaelis_menten', 'hill']\n"
@@ -158,17 +161,23 @@ FINDINGS = [
 
 async def _verify(
     root: Path, record: ResearchRecord, judge: _Judge | None = None
-) -> tuple[list[str], list[str], int]:
-    return await verify_implementation(
-        root, record, model="judge-1" if judge else None, litellm_client=judge
+) -> tuple[list[str], int]:
+    verification = RecordVerification()
+    reviewed = await judge_implementation_against_design(
+        root,
+        record,
+        verification,
+        model="judge-1" if judge else None,
+        litellm_client=judge,
     )
+    return verification.problems, reviewed
 
 
 async def test_without_a_model_an_unreviewed_design_fails(tmp_path: Path) -> None:
     root, commit = _repo(tmp_path)
     _observed(root, "run-1")
-    problems, reports, reviewed = await _verify(root, _record(commit))
-    assert reviewed == 0 and reports == []
+    problems, reviewed = await _verify(root, _record(commit))
+    assert reviewed == 0
     assert problems == [
         "design d1: no implementation review covers its declaration, the code at commit "
         f"{commit[:12]} and its runs as they stand (verify with a model to write one)"
@@ -182,7 +191,7 @@ async def test_a_model_reads_the_design_once_and_its_findings_are_kept(
     sha = _observed(root, "run-1")
     record = _record(commit)
     judge = _Judge(FINDINGS)
-    problems, reports, reviewed = await _verify(root, record, judge)
+    problems, reviewed = await _verify(root, record, judge)
     assert reviewed == 1 and len(judge.prompts) == 1
     prompt = judge.prompts[0]
     assert ADAPTER_PY in prompt and "budget: 20" in prompt  # the code at the commit
@@ -197,16 +206,10 @@ async def test_a_model_reads_the_design_once_and_its_findings_are_kept(
     assert review.commit == commit and review.observed == {"run-1": sha}
     assert review.model == "judge-1" and review.findings == FINDINGS
     assert review.inputs_sha256 == hashlib.sha256(prompt.encode()).hexdigest()
-    assert problems == [
-        "design d1: contradiction: 宣言は 2 型、コードは Hill を含む 3 型 (src/adapter.py:1 KINDS) "
-        "[judge-1]"
-    ]
-    assert reports == [
-        "design d1: undeclared: budget が 20 に固定 (config/config.yaml:1)"
-    ]
+    assert problems == []
     # the recorded review serves the gate without a model, and is not read again
     again = await _verify(root, record)
-    assert again == (problems, reports, 0)
+    assert again == ([], 0)
     assert len(judge.prompts) == 1
 
 
@@ -219,7 +222,7 @@ async def test_a_rerun_or_a_changed_declaration_needs_a_new_review(
     judge = _Judge([])
     await _verify(root, record, judge)
     _observed(root, "run-1", '{"version": 3, "calls": {"src.adapter.f": {}}}')
-    problems, _, _ = await _verify(root, record)
+    problems, _ = await _verify(root, record)
     assert problems and "no implementation review covers" in problems[0]
     await _verify(root, record, judge)
     record.hypotheses[0].notes.append("速度則に Hill も含める")
@@ -237,7 +240,7 @@ async def test_code_git_cannot_show_is_not_reviewed(tmp_path: Path) -> None:
     root, _ = _repo(tmp_path)
     _observed(root, "run-1")
     judge = _Judge([])
-    problems, _, reviewed = await _verify(root, _record("f" * 40), judge)
+    problems, reviewed = await _verify(root, _record("f" * 40), judge)
     assert reviewed == 0 and judge.prompts == []
     assert problems == [
         "design d1: the code at commit ffffffffffff (src, config, Dockerfile) could not "
@@ -265,14 +268,14 @@ async def test_runs_produced_by_different_code_cannot_be_reviewed_together(
     )
     _observed(root, "run-1")
     _observed(root, "run-2")
-    problems, _, reviewed = await _verify(root, record, _Judge([]))
+    problems, reviewed = await _verify(root, record, _Judge([]))
     assert reviewed == 0 and len(problems) == 1
     assert problems[0].startswith(
         "design d1: its runs' latest results are at different commits"
     )
 
 
-async def test_the_record_gate_writes_the_review_and_lists_undeclared_choices(
+async def test_the_record_gate_writes_the_review_and_points_the_reviewer_at_it(
     tmp_path: Path,
 ) -> None:
     root, commit = _repo(tmp_path)
@@ -286,10 +289,14 @@ async def test_the_record_gate_writes_the_review_and_lists_undeclared_choices(
         implementation_verifier_model="judge-1",
         litellm_client=_Judge(FINDINGS),
     )
-    assert result.reports == [
-        "design d1: undeclared: budget が 20 に固定 (config/config.yaml:1)"
+    assert not any("design d1:" in p for p in result.problems)
+    reviews = [
+        s
+        for s in result.declaration_statuses
+        if s.path == "hypotheses[h1]/claims[c1]/designs[d1]/reviews"
     ]
-    assert any(p.startswith("design d1: contradiction:") for p in result.problems)
+    assert [s.status for s in reviews] == ["ok"]
+    assert "1 undeclared, 1 contradiction" in reviews[0].reason
     saved = load_record(str(root)).hypotheses[0].claims[0].designs[0].reviews
     assert len(saved) == 1 and saved[0].findings == FINDINGS
     assert _git(root, "log", "-1", "--format=%s") == "record: review implementation"
