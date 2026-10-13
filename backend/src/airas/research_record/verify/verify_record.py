@@ -19,7 +19,6 @@ from airas.research_record.llm_as_a_judge.judge_implementation_against_design im
     judge_implementation_against_design,
 )
 from airas.research_record.read.declaration_paths import declaration_paths
-from airas.research_record.read.load_record import load_record
 from airas.research_record.read.read_run_outputs import (
     load_metrics_data,
     run_ids_with_verifier_report,
@@ -117,7 +116,7 @@ async def verify_record(
     verification = RecordVerification()
 
     try:
-        record = load_record(str(root))
+        record = ResearchRecord.load(str(root))
     except (ValidationError, ValueError) as e:
         verification.append_declaration_status(
             RECORD_PATH, f"{RECORD_PATH}: {e}", "mismatch"

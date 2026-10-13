@@ -7,6 +7,8 @@ from airas.mcp.app import mcp
 from airas.mcp.context import (
     _arxiv_client,
     _async_session,
+    _litellm_client,
+    _output_store,
     _records_index,
     _semantic_scholar_client,
 )
@@ -15,6 +17,9 @@ from airas.research_record.update.append_to_record import (
 )
 from airas.research_record.update.preregister_record import (
     preregister_record as preregister_record_usecase,
+)
+from airas.research_record.verify.verify_record import (
+    verify_record as verify_record_usecase,
 )
 from airas.usecases.literature.resolve_literatures import resolve_literatures
 
@@ -31,6 +36,33 @@ async def _materials(
         semantic_scholar_client=_semantic_scholar_client(),
         http=_async_session,
     )
+
+
+@mcp.tool()
+async def verify_record(
+    local_path: str,
+    check_provenance: bool = True,
+    implementation_verifier_model: str | None = None,
+) -> dict[str, Any]:
+    """Check declarations, run outputs, append-only history and provenance.
+
+    No paper is required. With `implementation_verifier_model`, read each
+    design's code and runs and commit missing implementation reviews first.
+    `declaration_statuses` reports compared and unchecked declarations.
+    Unavailable provenance or history is reported without failing locally;
+    CI requires both. Use `verify_paper_values` to check the paper separately.
+    """
+    refresh_environment()
+    result = await verify_record_usecase(
+        local_path,
+        check_provenance=check_provenance,
+        require_provenance=False,
+        require_history=False,
+        store_factory=_output_store,
+        implementation_verifier_model=implementation_verifier_model,
+        litellm_client=_litellm_client() if implementation_verifier_model else None,
+    )
+    return result.model_dump()
 
 
 @mcp.tool()

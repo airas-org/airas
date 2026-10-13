@@ -15,7 +15,6 @@ from airas.core.types.research_record import (
     ResearchRecord,
 )
 from airas.infra.local_git import commit_paths, restore_paths
-from airas.research_record.read.load_record import load_record
 from airas.research_record.render.render_claims_tex import (
     CLAIMS_TEX_FILENAME,
     write_claims_tex,
@@ -52,18 +51,13 @@ async def preregister_record(
 
     def _run() -> dict[str, Any]:
         path = record_path(local_path)
-        if (
-            path.is_file()
-            and ResearchRecord.model_validate_json(
-                path.read_text(encoding="utf-8")
-            ).hypotheses
-        ):
+        record = ResearchRecord.load(local_path) if path.is_file() else ResearchRecord()
+        if record.hypotheses:
             raise ValueError(
                 f"{path} already holds declarations — the record only ever "
                 "grows; add declarations with append_to_record"
             )
 
-        record = load_record(local_path) if path.is_file() else ResearchRecord()
         root = repo_root(local_path)
         snapshots: list[str] = []
         try:

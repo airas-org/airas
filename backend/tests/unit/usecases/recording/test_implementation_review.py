@@ -26,7 +26,6 @@ from airas.core.types.research_record import (
 from airas.research_record.llm_as_a_judge.judge_implementation_against_design import (
     judge_implementation_against_design,
 )
-from airas.research_record.read.load_record import load_record
 from airas.research_record.verify.verify_record import verify_record
 
 ADAPTER_PY = "KINDS = ['mass_action', 'michaelis_menten', 'hill']\n"
@@ -297,6 +296,6 @@ async def test_the_record_gate_writes_the_review_and_points_the_reviewer_at_it(
     ]
     assert [s.status for s in reviews] == ["ok"]
     assert "1 undeclared, 1 contradiction" in reviews[0].reason
-    saved = load_record(str(root)).hypotheses[0].claims[0].designs[0].reviews
+    saved = ResearchRecord.load(str(root)).hypotheses[0].claims[0].designs[0].reviews
     assert len(saved) == 1 and saved[0].findings == FINDINGS
     assert _git(root, "log", "-1", "--format=%s") == "record: review implementation"

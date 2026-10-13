@@ -2,23 +2,21 @@
 only builds. The two must not drift back into one command."""
 
 import argparse
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 from airas import cli
+from airas.core.types.record_verification import RecordVerification
 
 
 def _verify_args(local_path: str) -> argparse.Namespace:
     return argparse.Namespace(
         local_path=local_path,
         template=None,
-        no_provenance=False,
-        allow_unavailable_provenance=False,
-        allow_unavailable_history=False,
         citation_verifier_model=None,
-        implementation_verifier_model=None,
     )
 
 
@@ -76,12 +74,47 @@ def test_the_gate_verifies_without_building(
     monkeypatch.setattr(
         cli, "build_paper", lambda *a: pytest.fail("the gate must not build")
     )
+    monkeypatch.setattr(
+        cli, "verify_record", lambda *a, **k: pytest.fail("record has its own gate")
+    )
 
     async def verified(*_a, **_k):
         return SimpleNamespace(ok=True, model_dump=dict)
 
     monkeypatch.setattr(cli, "verify_paper", verified)
     assert _exit_code(cli._run_verify_paper, _verify_args(str(tmp_path))) == 0
+
+
+def test_record_gate_accepts_an_implementation_review_model(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / ".research").mkdir()
+    calls = []
+    client = object()
+
+    async def verified(*args, **kwargs):
+        calls.append(kwargs)
+        return RecordVerification()
+
+    monkeypatch.setattr(cli, "verify_record", verified)
+    monkeypatch.setattr(cli, "LiteLLMClient", lambda: client)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "airas",
+            "verify-record",
+            "--local-path",
+            str(tmp_path),
+            "--implementation-verifier-model",
+            "review-model",
+        ],
+    )
+    with pytest.raises(SystemExit) as exit:
+        cli.main()
+    assert exit.value.code == 0
+    assert calls[0]["implementation_verifier_model"] == "review-model"
+    assert calls[0]["litellm_client"] is client
 
 
 def test_an_unsupported_template_fails_even_beside_a_known_one(

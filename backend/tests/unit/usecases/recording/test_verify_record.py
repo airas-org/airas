@@ -41,7 +41,6 @@ from airas.core.types.run_provenance import (
 from airas.research_record.llm_as_a_judge.judge_citation_against_passage import (
     _collect_citations as collect_citations,
 )
-from airas.research_record.read.load_record import load_record
 from airas.research_record.read.read_run_outputs import load_metrics_data
 from airas.research_record.read.scan_main_tex import scan_main_tex
 from airas.research_record.render.render_claims_tex import render_claims_tex
@@ -212,7 +211,7 @@ def test_a_realized_record_passes(tmp_path: Path) -> None:
     assert report.ok, report.problems
     assert report.stage == "results"
     assert report.problems == []
-    assert _c1(load_record(str(repo))).verified is True
+    assert _c1(ResearchRecord.load(str(repo))).verified is True
 
 
 # ------------------------------------- A: what is already recorded
@@ -220,7 +219,7 @@ def test_a_realized_record_passes(tmp_path: Path) -> None:
 
 def test_a_reworded_claim_fails(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
-    record = load_record(str(repo))
+    record = ResearchRecord.load(str(repo))
     _c1(record).statement = "Proposed is competitive with baseline."
     record.save(str(repo))
 
@@ -232,7 +231,7 @@ def test_a_reworded_claim_fails(tmp_path: Path) -> None:
 def test_a_dropped_result_fails(tmp_path: Path) -> None:
     """Deleting the run that came out badly is the failure mode."""
     repo = _realized_repo(tmp_path)
-    record = load_record(str(repo))
+    record = ResearchRecord.load(str(repo))
     _c1(record).designs[0].runs[0].results.clear()
     record.save(str(repo))
 
@@ -310,7 +309,7 @@ def test_a_tampered_metrics_file_fails(tmp_path: Path) -> None:
 def test_a_hand_appended_result_fails(tmp_path: Path) -> None:
     """A result naming an execution the manifest never declared."""
     repo = _realized_repo(tmp_path)
-    record = load_record(str(repo))
+    record = ResearchRecord.load(str(repo))
     _c1(record).designs[0].runs[0].results.append(
         SeyvalResult(
             verifier="seyval",
@@ -455,7 +454,7 @@ def test_a_realized_record_passes_with_history_required(tmp_path: Path) -> None:
 
 def test_a_reworded_claim_is_reported_as_violated_history(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
-    record = load_record(str(repo))
+    record = ResearchRecord.load(str(repo))
     _c1(record).statement = "softened"
     record.save(str(repo))
     result = _verify(str(repo), require_history=True)
@@ -514,7 +513,7 @@ def _write_paper(repo: Path) -> Path:
     latex_dir = repo / ".research" / "latex" / "mdpi"
     latex_dir.mkdir(parents=True)
     (latex_dir / "main.tex").write_text(MAIN_TEX)
-    record = load_record(str(repo))
+    record = ResearchRecord.load(str(repo))
     values, _ = resolve_paper_values(
         record,
         load_metrics_data(str(repo)),
@@ -529,8 +528,6 @@ def _write_paper(repo: Path) -> Path:
 
 
 def _verify_paper(path: str, **kw: Any):
-    kw.setdefault("check_provenance", False)
-    kw.setdefault("require_history", False)
     return asyncio.run(verify_paper(path, "mdpi", **kw))
 
 
@@ -539,7 +536,7 @@ def test_a_paper_whose_numbers_match_the_record_passes(tmp_path: Path) -> None:
     _write_paper(repo)
     _commit(repo, "paper")
     result = _verify_paper(str(repo))
-    assert result.ok, result.record.problems + result.problems
+    assert result.ok, result.problems
 
 
 def test_a_hand_edited_values_tex_is_caught(tmp_path: Path) -> None:
@@ -563,7 +560,7 @@ def test_a_paper_without_a_record_fails(tmp_path: Path) -> None:
 
     result = _verify_paper(str(tmp_path))
     assert not result.ok
-    assert any("not found" in p for p in result.record.problems)
+    assert any("not found" in p for p in result.problems)
 
 
 def test_an_undeclared_airasval_key_fails(tmp_path: Path) -> None:
@@ -584,7 +581,7 @@ def test_an_undeclared_airasval_key_fails(tmp_path: Path) -> None:
 
 def test_the_criterion_decides_the_verdict(tmp_path: Path) -> None:
     repo = _realized_repo(tmp_path)
-    claim = _c1(load_record(str(repo)))
+    claim = _c1(ResearchRecord.load(str(repo)))
     assert claim.verified and claim.verdict == "supported"  # 0.902 - 0.871 >= 0.02
     assert _verify(str(repo)).ok
 
@@ -593,7 +590,7 @@ def test_a_rerun_that_flips_the_outcome_is_drift_not_a_new_verdict(
     tmp_path: Path,
 ) -> None:
     repo = _realized_repo(tmp_path)
-    record = load_record(str(repo))
+    record = ResearchRecord.load(str(repo))
     (repo / ".research" / "results" / "proposed" / "metrics.json").write_text(
         json.dumps({"accuracy": 0.875})
     )
@@ -632,8 +629,8 @@ def test_a_paper_may_list_its_claims_before_any_run(tmp_path: Path) -> None:
     _commit(tmp_path, "prereg")
 
     result = _verify_paper(str(tmp_path))
-    assert result.ok, result.record.problems + result.problems
-    assert result.record.stage == "prereg"
+    assert result.ok, result.problems
+    assert result.stage == "prereg"
     assert "pending" in (latex_dir / "claims.tex").read_text()
 
 
@@ -932,7 +929,7 @@ def _write_cited_paper(repo: Path, body: str, bib: str | None = None) -> None:
     (latex_dir / "main.tex").write_text(
         "\\documentclass{article}\n\\begin{document}\n" + body + "\n\\end{document}\n"
     )
-    record = load_record(str(repo))
+    record = ResearchRecord.load(str(repo))
     (latex_dir / "claims.tex").write_text(render_claims_tex(record, {}))
     (latex_dir / "references.bib").write_text(
         render_references_bib(record.latest_literature()) if bib is None else bib
@@ -944,7 +941,7 @@ def test_a_citation_of_a_registered_passage_passes_once_judged(tmp_path: Path) -
     _write_cited_paper(repo, r"Dropout helps \cite[s1.p1]{vaswani-2017-attention}.")
     _judge(repo, _Judge(lambda where: True))
     result = _verify_paper(str(repo))
-    assert result.ok, result.record.problems + result.problems
+    assert result.ok, result.problems
     assert result.uncited_sources == []
 
 
@@ -999,7 +996,7 @@ def test_sources_never_cited_are_reported_not_failed(tmp_path: Path) -> None:
     _write_cited_paper(repo, "No citations at all.")
     _judge(repo, _Judge(lambda where: True))
     result = _verify_paper(str(repo))
-    assert result.ok, result.record.problems + result.problems
+    assert result.ok, result.problems
     assert result.uncited_sources == ["vaswani-2017-attention"]
 
 
@@ -1059,11 +1056,11 @@ def test_the_judge_reads_every_citation_and_the_gate_reads_the_judgments(
     # The judge sees the quote in its snapshot, and the paragraph, not the paper.
     assert all("The rate is 0.1." in p for p in judge.prompts)
     assert "Unrelated" not in judge.prompts[0]
-    judgments = load_record(str(repo)).literature[0].passages[0].judgments
+    judgments = ResearchRecord.load(str(repo)).literature[0].passages[0].judgments
     assert [(j.supported, j.model) for j in judgments] == [(False, "judge-1")]
 
     result = _verify_paper(str(repo))
-    assert result.ok, result.record.problems + result.problems
+    assert result.ok, result.problems
     assert result.unjudged_citations == []
     assert result.unsupported_citations == [
         r"main.tex \cite[s1.p1]{vaswani-2017-attention} cites s1.p1: "

@@ -13,7 +13,6 @@ from airas.core.research_paths import PAGE_SEPARATOR, RECORD_PATH
 from airas.core.types.research_record import ResearchRecord
 from airas.infra.airas_records_index import RecordEntry
 from airas.mcp.tools import record as record_tools
-from airas.research_record.read.load_record import load_record
 from airas.usecases.literature import resolve_literatures as verify_module
 
 PAGES = [
@@ -182,7 +181,7 @@ async def test_a_paper_is_pinned_in_the_freeze_commit(tmp_path: Path) -> None:
     assert _Fetch.calls[0]["pdf_url"] == DB_PAPER["pdf_url"]
     snapshot = repo / ".research" / "sources" / "s1" / "fulltext.txt"
     assert snapshot.read_text(encoding="utf-8") == PAGE_SEPARATOR.join(PAGES)
-    record = load_record(str(repo))
+    record = ResearchRecord.load(str(repo))
     source = record.literature[0]
     assert (source.url, source.venue, source.year) == (
         DB_PAPER["pdf_url"],
@@ -227,7 +226,7 @@ async def test_a_paper_the_agent_found_on_the_web_gets_the_same_check(
     }
     result = await _preregister(repo, [paper])
     assert result["sources"]["s1"]["verified_by"] == "doi.org"
-    assert load_record(str(repo)).literature[0].doi == paper["doi"]
+    assert ResearchRecord.load(str(repo)).literature[0].doi == paper["doi"]
 
 
 async def test_a_paper_with_no_identifier_is_refused(tmp_path: Path) -> None:
@@ -277,7 +276,7 @@ async def test_passages_get_ids_and_ground_the_hypothesis(tmp_path: Path) -> Non
     result = await _preregister(repo, literature, quoted_passage_ids=["s1.p1"])
 
     assert result["sources"]["s1"]["passages"] == ["s1.p1"]
-    record = load_record(str(repo))
+    record = ResearchRecord.load(str(repo))
     assert record.hypotheses[0].quoted_passage_ids == ["s1.p1"]
     claims_tex = (repo / ".research" / "latex" / "mdpi" / "claims.tex").read_text()
     assert r"\cite[s1.p1]{vaswani-2017-attention}" in claims_tex
@@ -320,7 +319,7 @@ async def test_a_passage_id_cannot_be_passed_in(tmp_path: Path) -> None:
 async def test_the_same_paper_twice_is_pinned_once(tmp_path: Path) -> None:
     repo = _repo(tmp_path)
     await _preregister(repo, [DB_PAPER, DB_PAPER])
-    assert [s.id for s in load_record(str(repo)).literature] == ["s1"]
+    assert [s.id for s in ResearchRecord.load(str(repo)).literature] == ["s1"]
 
 
 # ------------------------------------------------------------ repositories
@@ -339,7 +338,7 @@ async def test_a_repository_is_pinned_at_its_commit_with_its_files(
 
     result = await _preregister(repo, literature)
 
-    source = load_record(str(repo)).literature[0]
+    source = ResearchRecord.load(str(repo)).literature[0]
     assert (source.repositories[0].commit, source.bibkey, source.verified_by) == (
         "a" * 40,
         "acme-2026-trainer",
@@ -366,7 +365,7 @@ async def test_a_paper_and_the_code_it_ships_are_one_source(tmp_path: Path) -> N
 
     await _preregister(repo, literature)
 
-    record = load_record(str(repo))
+    record = ResearchRecord.load(str(repo))
     assert [s.id for s in record.literature] == ["s1"]
     source = record.literature[0]
     assert (source.doi, source.repositories[0].commit, source.verified_by) == (
@@ -392,7 +391,7 @@ async def test_code_appended_to_a_pinned_paper_joins_it_as_the_next_repository(
         str(repo), literature=[{**DB_PAPER, "repositories": [REPO]}]
     )
 
-    record = load_record(str(repo))
+    record = ResearchRecord.load(str(repo))
     assert [s.id for s in record.literature] == ["s1"]
     assert [r.id for r in record.literature[0].repositories] == ["s1.r1"]
     assert (
@@ -440,7 +439,7 @@ async def test_an_airas_record_is_pinned_by_its_record_and_claims(
 
     result = await _preregister(repo, literature)
 
-    source = load_record(str(repo)).literature[0]
+    source = ResearchRecord.load(str(repo)).literature[0]
     assert (source.verified_by, source.repositories[0].commit) == (
         "airas_records",
         "b" * 40,
@@ -479,7 +478,7 @@ async def test_literature_appended_after_the_freeze_is_committed_with_the_bib(
     )
 
     assert list(result["appended"]["literature"]) == ["s2"]
-    assert [s.id for s in load_record(str(repo)).literature] == ["s1", "s2"]
+    assert [s.id for s in ResearchRecord.load(str(repo)).literature] == ["s1", "s2"]
     assert (
         "acme-2026-trainer"
         in (repo / ".research" / "latex" / "mdpi" / "references.bib").read_text()
@@ -500,7 +499,9 @@ async def test_passages_append_under_their_source_and_must_be_verbatim(
         passages=[{"node_type": "setup", "quote": "The rate is 0.1."}],
     )
     assert result["appended"]["passages"] == 1
-    assert [p.id for p in load_record(str(repo)).literature[0].passages] == ["s1.p1"]
+    assert [p.id for p in ResearchRecord.load(str(repo)).literature[0].passages] == [
+        "s1.p1"
+    ]
 
     with pytest.raises(ValueError, match="not found verbatim"):
         await record_tools.append_to_record(
@@ -508,7 +509,9 @@ async def test_passages_append_under_their_source_and_must_be_verbatim(
             source_id="s1",
             passages=[{"node_type": "setup", "quote": "Dropout is 0.1."}],
         )
-    assert [p.id for p in load_record(str(repo)).literature[0].passages] == ["s1.p1"]
+    assert [p.id for p in ResearchRecord.load(str(repo)).literature[0].passages] == [
+        "s1.p1"
+    ]
 
 
 async def test_passages_without_a_source_are_refused(tmp_path: Path) -> None:

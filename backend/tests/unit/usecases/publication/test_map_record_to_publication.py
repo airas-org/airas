@@ -45,6 +45,7 @@ from airas.research_record.update.append_to_record import (
     _append_run_results as update_record_with_results,
 )
 from airas.research_record.verify.verify_paper import verify_paper
+from airas.research_record.verify.verify_record import verify_record
 
 SEYVAL = SeyvalVerifier(kind=VerifierKind.SEYVAL)
 
@@ -427,15 +428,13 @@ def test_no_link_without_an_origin_or_a_commit() -> None:
 
 
 def _verify(path: str):
-    return asyncio.run(
-        verify_paper(path, TEMPLATE, check_provenance=False, require_history=False)
-    )
+    return asyncio.run(verify_paper(path, TEMPLATE))
 
 
 def test_verify_ok_on_fresh_generation(tmp_path: Path) -> None:
     _generate(tmp_path)
     result = _verify(str(tmp_path))
-    assert result.ok, result.record.problems + result.problems
+    assert result.ok, result.problems
     assert result.unverified == ["12345"]
 
 
@@ -446,8 +445,7 @@ def test_verify_detects_tampered_metrics(tmp_path: Path) -> None:
     )
     result = _verify(str(tmp_path))
     assert not result.ok
-    # The result's copy no longer matches the file, and the table differs.
-    assert any("metrics differ" in p for p in result.record.problems)
+    assert any("tables/main_results.tex differs" in p for p in result.problems)
 
 
 def test_verify_detects_edited_values_tex(tmp_path: Path) -> None:
@@ -469,12 +467,17 @@ def test_verify_flags_undeclared_keys(tmp_path: Path) -> None:
     assert any("run-9.accuracy" in p for p in result.problems)
 
 
-def test_verify_detects_dispatch_under_other_conditions(tmp_path: Path) -> None:
-    """Declared mode=full; the platform recorded mode=pilot."""
+def test_dispatch_conditions_are_checked_by_the_record_not_the_paper(
+    tmp_path: Path,
+) -> None:
     _generate(tmp_path, mode="pilot")
-    result = _verify(str(tmp_path))
-    assert not result.ok
-    assert any("executed 'mode=pilot'" in p for p in result.record.problems)
+    paper = _verify(str(tmp_path))
+    record = asyncio.run(
+        verify_record(str(tmp_path), check_provenance=False, require_history=False)
+    )
+    assert paper.ok, paper.problems
+    assert not record.ok
+    assert any("executed 'mode=pilot'" in p for p in record.problems)
 
 
 def test_prereg_stage_rejects_leftover_values_tex(tmp_path: Path) -> None:
@@ -484,7 +487,7 @@ def test_prereg_stage_rejects_leftover_values_tex(tmp_path: Path) -> None:
     (latex_dir / "values.tex").write_text("% stale\n")
     _record().save(str(tmp_path))
     result = _verify(str(tmp_path))
-    assert result.record.stage == "prereg"
+    assert result.stage == "prereg"
     assert not result.ok
     assert any("values.tex exists" in p for p in result.problems)
 
@@ -495,7 +498,7 @@ def test_a_paper_without_a_record_fails(tmp_path: Path) -> None:
     (latex_dir / "main.tex").write_text(MAIN_TEX)
     result = _verify(str(tmp_path))
     assert not result.ok
-    assert any("not found" in p for p in result.record.problems)
+    assert any("not found" in p for p in result.problems)
 
 
 # -------------------------------------------- the commit values.tex links into

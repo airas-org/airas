@@ -57,8 +57,8 @@ local stage.
    not failed. Need an undeclared value? Append the declaration with
    `append_to_record` and re-run — never type the number.
    Once the text is settled, run
-   `verify_paper_values` with `citation_verifier_model` and
-   `implementation_verifier_model`: the first reads every
+   `verify_record` with `implementation_verifier_model`, then
+   `verify_paper_values` with `citation_verifier_model`. The citation model reads every
    unjudged passage citation against the passage in its snapshot, writes
    the judgments into the record, and then reports what the model found
    overstated, clipped or reversed in `unsupported_citations` — review
@@ -70,12 +70,12 @@ local stage.
    no judgment covers as the text now stands fails the check
    (`unjudged_citations`), so re-run with them after a rewrite — with
    both models settled up front (`auto-research`), not a different
-   one per run. The second model reads each design's code and runs
+   one per run. The implementation model reads each design's code and runs
    against its declaration once per state of the three. A design with
    no such review fails; the findings do not — read them on the
    design's `reviews[]` (`undeclared`, `unverified`, `contradiction`)
    and declare in the record (or change in the code) what should not
-   have been a silent choice. `record.declaration_statuses` is the
+   have been a silent choice. `verify_record`'s `declaration_statuses` is the
    whole record with the gate's coverage on it: its `skipped` rows are
    what no deterministic check compared, so that is what you read. CI
    commits the same, with a link to the record.json line and to the

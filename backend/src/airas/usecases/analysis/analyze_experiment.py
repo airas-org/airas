@@ -9,7 +9,6 @@ from airas.core.research_paths import repo_root
 from airas.core.types.research_record import ResearchRecord, SeyvalClaim, latest
 from airas.infra.litellm_client import LiteLLMClient
 from airas.research_record.read.derive_results import compute_claim_statuses
-from airas.research_record.read.load_record import load_record
 from airas.research_record.read.read_run_outputs import (
     load_metrics_data,
     run_ids_with_verifier_report,
@@ -79,7 +78,7 @@ def analysis_context(
 
 def analysis_context_of(local_path: str) -> dict[str, Any]:
     root = repo_root(local_path)
-    record = load_record(local_path)
+    record = ResearchRecord.load(local_path)
     try:
         metrics = load_metrics_data(local_path)
     except ValueError:
