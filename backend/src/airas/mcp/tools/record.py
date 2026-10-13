@@ -1,9 +1,9 @@
 from typing import Any
 
 from airas.core.credentials import refresh_environment
+from airas.core.research_paths import VERIFICATION_MD_PATH, repo_root
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.literature_material import LiteratureMaterial
-from airas.core.types.record_verification import RecordVerification
 from airas.mcp.app import mcp
 from airas.mcp.context import (
     _arxiv_client,
@@ -13,6 +13,9 @@ from airas.mcp.context import (
     _output_store,
     _records_index,
     _semantic_scholar_client,
+)
+from airas.research_record.render.render_verification_md import (
+    write_verification_md,
 )
 from airas.research_record.update.append_to_record import (
     append_to_record as append_to_record_usecase,
@@ -53,7 +56,9 @@ async def verify_record(
 
     No paper is required. With `implementation_verifier_model`, read each
     design's code and runs and commit missing implementation reviews first.
-    `declaration_statuses` reports compared and unchecked declarations.
+    Returns the counts of verified / mismatch / unverified declarations and
+    the problems; the rows themselves, each linked to its record.json line
+    and its evidence, are written to `.research/verification.md` (`report`).
     Unavailable provenance or history is reported without failing locally;
     CI requires both. Use `verify_paper_values` to check the paper separately.
     """
@@ -67,16 +72,25 @@ async def verify_record(
         implementation_verifier_model=implementation_verifier_model,
         litellm_client=_litellm_client() if implementation_verifier_model else None,
     )
-    return result.model_dump()
+    write_verification_md(repo_root(local_path), result)
+    return {
+        "ok": result.ok,
+        "stage": result.stage,
+        "problems": result.problems,
+        "declarations": {
+            status: sum(s.status == status for s in result.declaration_statuses)
+            for status in ("verified", "mismatch", "unverified")
+        },
+        "report": VERIFICATION_MD_PATH,
+    }
 
 
 @mcp.tool()
 async def open_github_issues_for_verifiability(
     local_path: str,
-    verification: dict[str, Any],
     model: str,
 ) -> dict[str, Any]:
-    """Read the unverified declarations of a `verify_record` result
+    """Run the record check, read its unverified declarations
     against the record, the experiment code and the runs'
     observations, and propose, per group of declarations one change would
     resolve, a title, what to change, and whether the gate could then
@@ -89,10 +103,10 @@ async def open_github_issues_for_verifiability(
     refresh_environment()
     proposals, urls = await open_github_issues_for_verifiability_usecase(
         local_path,
-        RecordVerification.model_validate(verification),
         model=model,
         litellm_client=_litellm_client(),
         github_client=_github_client(),
+        store_factory=_output_store,
     )
     return {"proposals": [p.model_dump() for p in proposals], "issue_urls": urls}
 
