@@ -11,7 +11,10 @@ from airas.core.types.research_record import ResearchRecord
 from airas.infra.github_client import GithubClient
 from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.local_git import head_commit, normalize_git_url, remote_origin_url
+from airas.infra.run_output_store import default_store
 from airas.research_record.read.declaration_paths import declaration_paths
+from airas.research_record.verify._verify_results_against_store import StoreFactory
+from airas.research_record.verify.verify_record import verify_record
 
 ISSUE_TITLE_PREFIX = "verifiable: "
 _CODE_PATHS = ("src", "config", "Dockerfile")
@@ -142,13 +145,19 @@ def _inputs(
 
 async def open_github_issues_for_verifiability(
     local_path: str,
-    verification: RecordVerification,
     *,
     model: str,
     litellm_client: LiteLLMClient,
     github_client: GithubClient,
+    store_factory: StoreFactory = default_store,
 ) -> tuple[list[VerifiabilityProposal], list[str]]:
     root = repo_root(local_path)
+    verification = await verify_record(
+        local_path,
+        require_provenance=False,
+        require_history=False,
+        store_factory=store_factory,
+    )
     record = ResearchRecord.load(str(root))
     result = await litellm_client.structured_output(
         llm_name=model,

@@ -27,14 +27,13 @@ from airas.agent_session.research_trace import (
     record_step,
     write_derived_from,
 )
-from airas.core.research_paths import RECORD_PATH, VERIFICATION_MD_PATH, repo_root
+from airas.core.research_paths import repo_root
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.research_trace import DerivedFromRepository
 from airas.dashboard.launcher import DEFAULT_DASHBOARD_PORT
 from airas.infra.litellm_client import LiteLLMClient
-from airas.infra.local_git import head_commit, normalize_git_url, remote_origin_url
 from airas.research_record.render.render_verification_md import (
-    render_verification_md,
+    write_verification_md,
 )
 from airas.research_record.verify.verify_paper import verify_paper
 from airas.research_record.verify.verify_record import verify_record
@@ -132,18 +131,7 @@ def _run_verify_record(args: argparse.Namespace) -> None:
             else None,
         )
     )
-    root = repo_root(args.local_path)
-    try:
-        record_data = json.loads((root / RECORD_PATH).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        record_data = {}  # the verification itself reports the unreadable record
-    markdown = render_verification_md(
-        verification,
-        record_data,
-        normalize_git_url(remote_origin_url(root) or ""),
-        head_commit(root) or "",
-    )
-    (root / VERIFICATION_MD_PATH).write_text(markdown, encoding="utf-8")
+    markdown = write_verification_md(repo_root(args.local_path), verification)
     if summary := os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(summary, "a", encoding="utf-8") as f:
             f.write(markdown)

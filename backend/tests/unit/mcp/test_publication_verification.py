@@ -15,6 +15,18 @@ async def test_record_verification_needs_no_paper(tmp_path: Path) -> None:
     ResearchRecord().save(str(tmp_path))
     result = await record_tools.verify_record(str(tmp_path), check_provenance=False)
     assert result["ok"], result["problems"]
+    # no git history here, so the history check itself is the one unverified row
+    assert result["declarations"] == {"verified": 0, "mismatch": 0, "unverified": 1}
+    assert result["report"] == ".research/verification.md"
+    assert (tmp_path / result["report"]).read_text().startswith("# verify-record")
+
+
+async def test_a_missing_record_is_reported_and_the_report_still_written(
+    tmp_path: Path,
+) -> None:
+    result = await record_tools.verify_record(str(tmp_path), check_provenance=False)
+    assert not result["ok"] and "record.json" in result["problems"][0]
+    assert (tmp_path / result["report"]).is_file()
 
 
 async def test_paper_values_are_verified_without_running_the_record_check(

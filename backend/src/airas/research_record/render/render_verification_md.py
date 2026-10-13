@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any
 
-from airas.core.research_paths import RECORD_PATH
+from airas.core.research_paths import RECORD_PATH, VERIFICATION_MD_PATH
 from airas.core.types.record_verification import DeclarationStatus, RecordVerification
+from airas.infra.local_git import head_commit, normalize_git_url, remote_origin_url
 from airas.research_record.read.declaration_paths import record_json_line
 
 
@@ -73,3 +76,20 @@ def render_verification_md(
             ),
         ]
     )
+
+
+def write_verification_md(root: Path, verification: RecordVerification) -> str:
+    try:
+        record = json.loads((root / RECORD_PATH).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        record = {}  # the verification itself reports the unreadable record
+    markdown = render_verification_md(
+        verification,
+        record,
+        normalize_git_url(remote_origin_url(root) or ""),
+        head_commit(root) or "",
+    )
+    report = root / VERIFICATION_MD_PATH
+    report.parent.mkdir(parents=True, exist_ok=True)
+    report.write_text(markdown, encoding="utf-8")
+    return markdown
