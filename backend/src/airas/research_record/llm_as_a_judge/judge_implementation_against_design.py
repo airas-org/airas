@@ -8,7 +8,7 @@ from typing import Any, NamedTuple
 
 from pydantic import BaseModel
 
-from airas.core.research_paths import OBSERVED_FILENAME, RESULTS_DIR
+from airas.core.research_paths import OBSERVED_FILENAME, RECORD_PATH, RESULTS_DIR
 from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import (
     ClaimDeclaration,
@@ -267,7 +267,7 @@ async def judge_implementation_against_design(
         hypothesis, claim, design, commit, observed, target_problems = target
         for problem in target_problems:
             verification.append_declaration_status(
-                target.reviews_path, problem, "mismatch"
+                target.reviews_path, problem, "mismatch", evidence_path=RECORD_PATH
             )
         if not commit:
             continue
@@ -278,6 +278,7 @@ async def judge_implementation_against_design(
                 f"design {design.id}: the code at commit {commit[:12]} "
                 f"({', '.join(_CODE_PATHS)}) could not be read; not reviewed",
                 "mismatch",
+                evidence_path=RECORD_PATH,
             )
             continue
         inputs = _INPUTS.format(
@@ -318,6 +319,7 @@ async def judge_implementation_against_design(
                 f"code at commit {commit[:12]} and its runs as they stand "
                 "(verify with a model to write one)",
                 "mismatch",
+                evidence_path=RECORD_PATH,
             )
             continue
         kinds = ", ".join(
@@ -330,5 +332,6 @@ async def judge_implementation_against_design(
             f"review by {review.model} of the code at {commit[:12]} and the runs: "
             + (f"{kinds} (read them on the design)" if kinds else "no findings"),
             "ok",
+            evidence_path=RECORD_PATH,
         )
     return reviewed

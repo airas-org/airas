@@ -42,10 +42,12 @@ def _snapshot_text(
     elif file_sha256(root / relpath) != ref.sha256:
         problem = f"{relpath} does not match the sha256 the record holds"
     else:
-        verification.append_declaration_status(path, f"sha256 of {relpath}", "ok")
+        verification.append_declaration_status(
+            path, f"sha256 of {relpath}", "ok", evidence_path=relpath
+        )
         return (root / relpath).read_text(encoding="utf-8")
     verification.append_declaration_status(
-        path, f"source {source.id}: {problem}", "mismatch"
+        path, f"source {source.id}: {problem}", "mismatch", evidence_path=relpath
     )
     return None
 
@@ -79,14 +81,19 @@ def verify_quoted_passages(
                     quote_path,
                     "a snapshot of the source is missing or altered",
                     "skipped",
+                    evidence_path=f"{SOURCES_DIR}/{source.id}/",
                 )
             elif any(passage_is_quoted(t, passage.quote) for t in texts if t):
                 verification.append_declaration_status(
-                    quote_path, f"verbatim in {SOURCES_DIR}/{source.id}/", "ok"
+                    quote_path,
+                    f"verbatim in {SOURCES_DIR}/{source.id}/",
+                    "ok",
+                    evidence_path=f"{SOURCES_DIR}/{source.id}/",
                 )
             else:
                 verification.append_declaration_status(
                     quote_path,
                     f"passage {passage.id}: quote is not found verbatim in {SOURCES_DIR}/{source.id}/",
                     "mismatch",
+                    evidence_path=f"{SOURCES_DIR}/{source.id}/",
                 )

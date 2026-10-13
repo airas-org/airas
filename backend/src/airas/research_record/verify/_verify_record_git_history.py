@@ -197,17 +197,24 @@ def verify_record_git_history(
             "record.json's append-only history could not be checked (shallow "
             "clone or no git history) — CI must check out with fetch-depth: 0",
             "mismatch" if require_history else "skipped",
+            evidence_path=RECORD_PATH,
         )
     else:
         for problem in problems:
-            verification.append_declaration_status(RECORD_PATH, problem, "mismatch")
+            verification.append_declaration_status(
+                RECORD_PATH, problem, "mismatch", evidence_path=RECORD_PATH
+            )
         if not problems:
             verification.append_declaration_status(
                 RECORD_PATH,
                 "every committed version contains its parent and names only passages it held",
                 "ok",
+                evidence_path=RECORD_PATH,
             )
     for problem in _verify_manifest_history(root, require_history):
         verification.append_declaration_status(
-            PROVENANCE_MANIFEST_PATH, problem, "mismatch"
+            PROVENANCE_MANIFEST_PATH,
+            problem,
+            "mismatch",
+            evidence_path=PROVENANCE_MANIFEST_PATH,
         )

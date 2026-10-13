@@ -70,6 +70,7 @@ def _append_provenance_statuses(
                 result_paths.get(dir_name, f"{RESULTS_DIR}/{dir_name}"),
                 f"{provenance.source} stored outputs unavailable: {provenance.detail}",
                 "skipped",
+                evidence_path=f"{RESULTS_DIR}/{dir_name}/",
             )
         return
     for check in provenance.checks:
@@ -85,6 +86,7 @@ def _append_provenance_statuses(
             else f"{provenance.source}: {RESULTS_DIR}/{check.dir} is not backed by stored "
             f"run outputs — {check.detail}",
             "ok" if check.matched else "mismatch",
+            evidence_path=f"{RESULTS_DIR}/{check.dir}/",
         )
 
 

@@ -2,6 +2,7 @@
 addressed by id, and what no check compared is listed as skipped."""
 
 import asyncio
+import json
 from pathlib import Path
 
 from airas.core.types.record_verification import RecordVerification
@@ -16,7 +17,13 @@ from airas.core.types.research_record import (
     SeyvalVerifier,
     VerifierKind,
 )
-from airas.research_record.read.declaration_paths import declaration_paths
+from airas.research_record.read.declaration_paths import (
+    declaration_paths,
+    record_json_line,
+)
+from airas.research_record.render.render_verification_md import (
+    render_verification_md,
+)
 from airas.research_record.verify.verify_record import (
     _append_unchecked_declarations,
     verify_record,
@@ -102,4 +109,38 @@ def test_a_compared_parent_covers_its_leaves() -> None:
     assert (
         "hypotheses[h1]/claims[c1]/designs[d1]/runs[baseline]/params/epochs"
         in unchecked
+    )
+
+
+def test_a_declaration_path_resolves_to_its_record_json_line(tmp_path: Path) -> None:
+    record = _record()
+    revised = record.hypotheses[0].claims[0].model_copy(update={"statement": "softer"})
+    record.hypotheses[0].claims.append(revised)
+    text = record.save(str(tmp_path)).read_text(encoding="utf-8")
+    data = json.loads(text)
+    lines = text.splitlines()
+    line = record_json_line(data, "hypotheses[h1]/claims[c1]/statement")
+    assert line is not None and lines[line - 1].strip() == '"statement": "softer",'
+    line = record_json_line(
+        data, "hypotheses[h1]/claims[c1]/designs[d1]/runs[baseline]/params/epochs"
+    )
+    assert line is not None and lines[line - 1].strip() == '"epochs": 10'
+    assert record_json_line(data, "hypotheses[h1]/claims[ghost]/statement") is None
+
+
+def test_the_report_links_each_row_to_the_record_and_its_evidence(
+    tmp_path: Path,
+) -> None:
+    _record().save(str(tmp_path))
+    result = asyncio.run(
+        verify_record(str(tmp_path), check_provenance=False, require_history=False)
+    )
+    data = json.loads((tmp_path / ".research/record.json").read_text(encoding="utf-8"))
+    markdown = render_verification_md(result, data, "https://github.com/o/r", "abc123")
+    assert "## skipped" in markdown
+    assert "`hypotheses[h1]/claims[c1]/designs[d1]/summary`" in markdown
+    assert "https://github.com/o/r/blob/abc123/.research/record.json#L" in markdown
+    assert (
+        "[.research/record.json](https://github.com/o/r/blob/abc123/.research/record.json)"
+        in markdown
     )

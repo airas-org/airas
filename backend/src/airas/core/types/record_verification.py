@@ -13,6 +13,10 @@ class DeclarationStatus(BaseModel):
         description="The evidence it was held against, what differed, or why it was not compared"
     )
     status: Literal["ok", "mismatch", "skipped"]
+    evidence_path: str = Field(
+        default="",
+        description="Repository-relative file the declaration was held against",
+    )
 
 
 class RecordVerification(BaseModel):
@@ -38,7 +42,10 @@ class RecordVerification(BaseModel):
         path: str,
         reason: str,
         status: Literal["ok", "mismatch", "skipped"],
+        evidence_path: str = "",
     ) -> None:
         self.declaration_statuses.append(
-            DeclarationStatus(path=path, reason=reason, status=status)
+            DeclarationStatus(
+                path=path, reason=reason, status=status, evidence_path=evidence_path
+            )
         )

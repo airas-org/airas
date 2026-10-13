@@ -77,7 +77,10 @@ local stage.
    and declare in the record (or change in the code) what should not
    have been a silent choice. `record.declaration_statuses` is the
    whole record with the gate's coverage on it: its `skipped` rows are
-   what no deterministic check compared, so that is what you read.
+   what no deterministic check compared, so that is what you read. CI
+   commits the same, with a link to the record.json line and to the
+   evidence file of each row, as `.research/verification.md` on the
+   default branch.
    Bibliography: `preregister_record` wrote
    `.research/latex/{template}/references.bib` from the record and the
    gate regenerates it — never edit it.

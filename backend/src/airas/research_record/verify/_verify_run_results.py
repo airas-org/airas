@@ -89,6 +89,7 @@ def _append_params_statuses(
                 f"{run_path}/params/{key}",
                 f"no {PROVENANCE_MANIFEST_PATH} entry for the run",
                 "skipped",
+                evidence_path=PROVENANCE_MANIFEST_PATH,
             )
         return
     resolved = declared.parameters or {
@@ -149,6 +150,7 @@ def _append_result_statuses(
             else f"run '{rid}': the result differs from the {claim.verifier.kind} "
             "report in the results directory",
             "ok" if same else "mismatch",
+            evidence_path=f"{RESULTS_DIR}/{rid}/",
         )
         return
 
@@ -160,6 +162,7 @@ def _append_result_statuses(
             f"{PROVENANCE_MANIFEST_PATH} entry declares an execution for "
             "this directory",
             "mismatch",
+            evidence_path=PROVENANCE_MANIFEST_PATH,
         )
     else:
         same_id = result.id == declared.execution_id
@@ -170,6 +173,7 @@ def _append_result_statuses(
             else f"run '{rid}': the result's id {result.id!r} is not the "
             f"manifest's execution {declared.execution_id!r}",
             "ok" if same_id else "mismatch",
+            evidence_path=PROVENANCE_MANIFEST_PATH,
         )
         same_commit = result.commit == declared.commit_hash
         verification.append_declaration_status(
@@ -179,6 +183,7 @@ def _append_result_statuses(
             else f"run '{rid}': the result's commit {result.commit!r} is "
             f"not the manifest's {declared.commit_hash!r}",
             "ok" if same_commit else "mismatch",
+            evidence_path=PROVENANCE_MANIFEST_PATH,
         )
 
     if rid in metrics_data:
@@ -190,6 +195,7 @@ def _append_result_statuses(
             else f"run '{rid}': the result's metrics differ from "
             f"{RESULTS_DIR}/{rid}/metrics.json",
             "ok" if same_metrics else "mismatch",
+            evidence_path=f"{RESULTS_DIR}/{rid}/metrics.json",
         )
 
     expected_inputs = load_eval_inputs_ref(root, rid)
@@ -206,6 +212,7 @@ def _append_result_statuses(
             else f"run '{rid}': the result's eval_inputs hash does not match "
             "the eval_inputs file in the results directory",
             "ok" if same_inputs else "mismatch",
+            evidence_path=f"{RESULTS_DIR}/{rid}/",
         )
 
     expected_eval = load_eval_report(root, rid)
@@ -222,6 +229,7 @@ def _append_result_statuses(
             else f"run '{rid}': the result's eval_report differs from the "
             "evaluator's report in the results directory",
             "ok" if same_eval else "mismatch",
+            evidence_path=f"{RESULTS_DIR}/{rid}/",
         )
 
     # The evaluator's own `inputs_sha256` is deliberately not compared
@@ -253,6 +261,7 @@ def _append_verified_statuses(
                 else f"claim {claim.id}: stored as verified, which the recomputation "
                 "from the run outputs finds otherwise",
                 "ok" if held else "mismatch",
+                evidence_path=RESULTS_DIR,
             )
             if not held:
                 continue
@@ -265,4 +274,5 @@ def _append_verified_statuses(
                 else f"claim {claim.id}: stored with a verdict {claim.verdict}, which the "
                 f"recomputation finds {status.verdict if status else None}",
                 "ok" if held else "mismatch",
+                evidence_path=RESULTS_DIR,
             )

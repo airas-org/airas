@@ -43,6 +43,7 @@ def _first_commit(root: Path, verification: RecordVerification) -> str | None:
             "first commit (shallow clone, no git history, or several root commits) — "
             "CI must check out with fetch-depth: 0",
             "mismatch",
+            evidence_path=MAKEFILE_PATH,
         )
         return None
     # The import must carry the run path and the gate: the Makefile, the hook, the workflows.
@@ -54,6 +55,7 @@ def _first_commit(root: Path, verification: RecordVerification) -> str | None:
             f"the repository's first commit has no {', '.join(missing)}: it was not "
             "created from airas-template",
             "mismatch",
+            evidence_path=MAKEFILE_PATH,
         )
         return None
     return first
@@ -149,6 +151,7 @@ def _append_run_statuses(
     first_commit: str | None,
     run_path: str,
     design_path: str,
+    observed_relpath: str,
     verification: RecordVerification,
 ) -> None:
     label = f"run '{run.run_id}'"
@@ -163,6 +166,7 @@ def _append_run_statuses(
             latest_result_path,
             "first commit unavailable: hook and trusted files unchecked",
             "skipped",
+            evidence_path=observed_relpath,
         )
     else:
         trusted_hook = file_bytes_at_commit(root, first_commit, HOOK_PATH) or b""
@@ -177,6 +181,7 @@ def _append_run_statuses(
             else f"{label}: observed.json was not written by the {HOOK_PATH} the "
             "repository was created with",
             "ok" if hook_ok else "mismatch",
+            evidence_path=observed_relpath,
         )
         for result in run.results:
             result_path = f"{run_path}/results[{result.id}]/commit"
@@ -185,6 +190,7 @@ def _append_run_statuses(
                     result_path,
                     f"{label}: result {result.id} names no commit to check {trusted} at",
                     "mismatch",
+                    evidence_path=MAKEFILE_PATH,
                 )
                 continue
             changed = paths_changed_between(
@@ -196,6 +202,7 @@ def _append_run_statuses(
                     f"{label}: {trusted} at commit {result.commit[:12]} "
                     "could not be compared with the repository's first commit",
                     "mismatch",
+                    evidence_path=MAKEFILE_PATH,
                 )
                 continue
             verification.append_declaration_status(
@@ -205,6 +212,7 @@ def _append_run_statuses(
                 else f"{label}: {', '.join(changed)} at commit {result.commit[:12]} "
                 "differ from the repository's first commit",
                 "mismatch" if changed else "ok",
+                evidence_path=MAKEFILE_PATH,
             )
 
     package = repository.method_entry.split(".")[0]
@@ -221,6 +229,7 @@ def _append_run_statuses(
         if entry_hashed
         else f"{label}: no loaded module of {repository.method_entry} has a file hash",
         "ok" if entry_hashed else "mismatch",
+        evidence_path=observed_relpath,
     )
     snapshot_problems = [
         f"{label}: loaded module {module} ({entry.get('file')}) has no file in the snapshot "
@@ -237,13 +246,17 @@ def _append_run_statuses(
     ]
     for problem in snapshot_problems:
         verification.append_declaration_status(
-            f"{repository_path}/snapshot", problem, "mismatch"
+            f"{repository_path}/snapshot",
+            problem,
+            "mismatch",
+            evidence_path=repository_snapshot_relpath(repository.id),
         )
     if not snapshot_problems:
         verification.append_declaration_status(
             f"{repository_path}/snapshot",
             f"observed loaded_file_hashes of {len(upstream)} {package} modules in {label}",
             "ok",
+            evidence_path=repository_snapshot_relpath(repository.id),
         )
 
     bound = observed.get("calls", {})
@@ -254,6 +267,7 @@ def _append_run_statuses(
         if entry_called
         else f"{label}: method_entry {repository.method_entry} was never called",
         "ok" if entry_called else "mismatch",
+        evidence_path=observed_relpath,
     )
     # A fixed value is declared; a varied one is this run's params entry.
     for setting in integration.arguments:
@@ -270,11 +284,15 @@ def _append_run_statuses(
                 f"{label}: {setting.argument} reads params[{setting.params_key!r}], "
                 "which the run does not declare",
                 "mismatch",
+                evidence_path=observed_relpath,
             )
             continue
         reason, same = _argument_status(label, setting.argument, value, bound)
         verification.append_declaration_status(
-            argument_path, reason, "ok" if same else "mismatch"
+            argument_path,
+            reason,
+            "ok" if same else "mismatch",
+            evidence_path=observed_relpath,
         )
 
     # The experiment code that ran is the code at the latest result's commit:
@@ -294,7 +312,10 @@ def _append_run_statuses(
                 )
         for problem in src_problems:
             verification.append_declaration_status(
-                f"{latest_result_path}/commit", problem, "mismatch"
+                f"{latest_result_path}/commit",
+                problem,
+                "mismatch",
+                evidence_path=observed_relpath,
             )
         if not src_problems:
             verification.append_declaration_status(
@@ -302,6 +323,7 @@ def _append_run_statuses(
                 f"observed src_modules sha256 of {len(observed.get('src_modules', {}))} "
                 "files vs this commit",
                 "ok",
+                evidence_path=observed_relpath,
             )
 
     # Changes to the upstream or any dependency: a name redefined from src/ or
@@ -322,13 +344,14 @@ def _append_run_statuses(
     extension_points_path = f"{design_path}/repository_integration/extension_points"
     for problem in extension_problems:
         verification.append_declaration_status(
-            extension_points_path, problem, "mismatch"
+            extension_points_path, problem, "mismatch", evidence_path=observed_relpath
         )
     if not extension_problems:
         verification.append_declaration_status(
             extension_points_path,
             f"observed redefinitions and overridden {package} methods in {label}",
             "ok",
+            evidence_path=observed_relpath,
         )
 
 
@@ -360,13 +383,15 @@ def verify_run_observations(
         )
         run_path = f"{design_path}/runs[{run.run_id}]"
         latest_result_path = f"{run_path}/results[{run.results[-1].id}]"
-        observed_path = root / RESULTS_DIR / run.run_id / OBSERVED_FILENAME
+        observed_relpath = f"{RESULTS_DIR}/{run.run_id}/{OBSERVED_FILENAME}"
+        observed_path = root / observed_relpath
         if not observed_path.is_file():
             verification.append_declaration_status(
                 latest_result_path,
                 f"run '{run.run_id}': no {OBSERVED_FILENAME} among its outputs "
                 "(the Makefile writes it)",
                 "mismatch",
+                evidence_path=observed_relpath,
             )
             continue
 
@@ -381,6 +406,7 @@ def verify_run_observations(
                 f"run '{run.run_id}': {OBSERVED_FILENAME} is version "
                 f"{observed.get('version')}, written by an older hook; the gate reads version 3",
                 "mismatch",
+                evidence_path=observed_relpath,
             )
             continue
         snapshot = root / repository_snapshot_relpath(repository.id)
@@ -397,5 +423,6 @@ def verify_run_observations(
             first_commit,
             run_path,
             design_path,
+            observed_relpath,
             verification,
         )

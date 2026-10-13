@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from airas.core.research_paths import RECORD_PATH
 from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import ResearchRecord, SeyvalClaim, latest
 
@@ -31,6 +32,7 @@ def _verify_consistency(
                 f"'{first_owner}' and '{owner}' — run ids "
                 "address a results directory and must be repo-unique",
                 "mismatch",
+                evidence_path=RECORD_PATH,
             )
 
     for hypothesis, claim in record.latest_claims():
@@ -40,6 +42,7 @@ def _verify_consistency(
                 f"claim {claim.id}: declares no run — a claim with no "
                 "experiment cannot be verified",
                 "mismatch",
+                evidence_path=RECORD_PATH,
             )
 
     # Runs a criterion may compare against: only seyval runs carry metrics,
@@ -63,6 +66,7 @@ def _verify_consistency(
             else f"claim {claim.id}: criterion names run '{subject}', "
             "which this claim does not declare",
             "ok" if subject in own else "mismatch",
+            evidence_path=RECORD_PATH,
         )
         # The reference may be another seyval claim's run (a shared baseline):
         # still a run of this record, and the verdict waits for its result.
@@ -75,6 +79,7 @@ def _verify_consistency(
                 else f"claim {claim.id}: criterion names run '{reference}', "
                 "which no seyval claim declares",
                 "ok" if reference in seyval_runs else "mismatch",
+                evidence_path=RECORD_PATH,
             )
 
     declared = set(record.run_index())
@@ -89,6 +94,7 @@ def _verify_consistency(
                     else f"table {spec.key}: row references run '{row.run_id}', "
                     "which no design declares",
                     "ok" if known else "mismatch",
+                    evidence_path=RECORD_PATH,
                 )
 
 
@@ -105,6 +111,7 @@ def _verify_pinned_once(
                 f"literature[{source.id}]",
                 f"source {source.id}: declared twice — a source is pinned once",
                 "mismatch",
+                evidence_path=RECORD_PATH,
             )
         seen_sources.add(source.id)
         if bibkeys.setdefault(source.bibkey, source.id) != source.id:
@@ -113,6 +120,7 @@ def _verify_pinned_once(
                 f"source {source.id}: bibkey '{source.bibkey}' is also source "
                 f"{bibkeys[source.bibkey]}'s",
                 "mismatch",
+                evidence_path=RECORD_PATH,
             )
         seen_passages: set[str] = set()
         for passage in source.passages:
@@ -121,6 +129,7 @@ def _verify_pinned_once(
                     f"literature[{source.id}]/passages[{passage.id}]",
                     f"passage {passage.id}: declared twice — a quote is pinned once",
                     "mismatch",
+                    evidence_path=RECORD_PATH,
                 )
             seen_passages.add(passage.id)
 
@@ -136,11 +145,14 @@ def _verify_passage_references(
         missing = [pid for pid in pids if pid not in passages]
         for pid in missing:
             verification.append_declaration_status(
-                path, problem_head + unknown % pid, "mismatch"
+                path,
+                problem_head + unknown % pid,
+                "mismatch",
+                evidence_path=RECORD_PATH,
             )
         if pids and not missing:
             verification.append_declaration_status(
-                path, "passages the sources declare", "ok"
+                path, "passages the sources declare", "ok", evidence_path=RECORD_PATH
             )
         return missing
 
@@ -175,6 +187,7 @@ def _verify_passage_references(
                         else f"table {spec.key}: column {column.header!r} gives {value!r} for "
                         f"'{run_id}', which {cited} does not state",
                         "ok" if stated else "mismatch",
+                        evidence_path=RECORD_PATH,
                     )
     for hypothesis, claim in record.latest_claims():
         claim_path = _claim_path(hypothesis.id, claim.id)
@@ -225,6 +238,7 @@ def _verify_repository_integrations(
                 f"'{integration.repository_id}' is not a repository of this "
                 "record that declares a method_entry",
                 "ok" if declared else "mismatch",
+                evidence_path=RECORD_PATH,
             )
 
 

@@ -27,10 +27,15 @@ from airas.agent_session.research_trace import (
     record_step,
     write_derived_from,
 )
+from airas.core.research_paths import RECORD_PATH, VERIFICATION_MD_PATH, repo_root
 from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.research_trace import DerivedFromRepository
 from airas.dashboard.launcher import DEFAULT_DASHBOARD_PORT
 from airas.infra.litellm_client import LiteLLMClient
+from airas.infra.local_git import head_commit, normalize_git_url, remote_origin_url
+from airas.research_record.render.render_verification_md import (
+    render_verification_md,
+)
 from airas.research_record.verify.verify_paper import verify_paper
 from airas.research_record.verify.verify_record import verify_record
 from airas.usecases.publication.build_paper import build_paper
@@ -119,7 +124,7 @@ def _run_publish_paper(args: argparse.Namespace) -> None:
 
 
 def _run_verify_record(args: argparse.Namespace) -> None:
-    record = asyncio.run(
+    verification = asyncio.run(
         verify_record(
             args.local_path,
             check_provenance=not args.no_provenance,
@@ -129,8 +134,24 @@ def _run_verify_record(args: argparse.Namespace) -> None:
             require_history=not args.allow_unavailable_history,
         )
     )
-    print(json.dumps(record.model_dump(), indent=2, ensure_ascii=False))
-    sys.exit(0 if record.ok else 1)
+    root = repo_root(args.local_path)
+    record_file = root / RECORD_PATH
+
+    markdown = render_verification_md(
+        verification,
+        json.loads(record_file.read_text(encoding="utf-8"))
+        if record_file.is_file()
+        else {},
+        normalize_git_url(remote_origin_url(root) or ""),
+        head_commit(root) or "",
+    )
+    (root / VERIFICATION_MD_PATH).write_text(markdown, encoding="utf-8")
+    if summary := os.environ.get("GITHUB_STEP_SUMMARY"):
+        with open(summary, "a", encoding="utf-8") as f:
+            f.write(markdown)
+
+    print(json.dumps(verification.model_dump(), indent=2, ensure_ascii=False))
+    sys.exit(0 if verification.ok else 1)
 
 
 def _run_hook(args: argparse.Namespace) -> None:

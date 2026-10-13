@@ -11,6 +11,7 @@ from airas.core.research_paths import RECORD_PATH
 from airas.core.types.map_record_to_publication import PaperValue
 from airas.core.types.research_record import ResearchRecord
 from airas.infra.local_git import commits_touching, file_bytes_at_commit
+from airas.research_record.read.declaration_paths import line_at
 from airas.research_record.render._latex_text import AUTO_GENERATED_HEADER, latex_text
 from airas.research_record.render._resolve_ref import resolve_ref
 
@@ -59,29 +60,6 @@ def _resolve_paper_ref(
     return f"{resolve_ref(metrics_data, ref):g}"
 
 
-def _json_lines(node: Any) -> int:
-    """Lines `node` takes as record.save writes it (indent=2)."""
-    items = list(node.values()) if isinstance(node, dict) else node
-    if not isinstance(items, list):
-        return 1
-    return 2 + sum(_json_lines(item) for item in items) if items else 1
-
-
-def _line_at(data: Any, path: list[Any]) -> int | None:
-    """1-based line of record.json holding the node at `path`, or None. ponytail:
-    counts the layout record.save writes; a hand-formatted record gets no line."""
-    node, line = data, 1
-    try:
-        for key in path:
-            items = list(node.values()) if isinstance(node, dict) else node
-            index = list(node).index(key) if isinstance(node, dict) else int(key)
-            line += 1 + sum(_json_lines(item) for item in items[:index])
-            node = items[index]
-    except (ValueError, IndexError, TypeError):
-        return None
-    return line
-
-
 def record_line(data: Any, run_id: str, tail: str) -> int | None:
     """Line of record.json holding run `run_id`'s `tail` (a metric path or
     `params.<key>`), or None. The caller has already split the ref, so a dot
@@ -104,7 +82,7 @@ def record_line(data: Any, run_id: str, tail: str) -> int | None:
         path += ["results", len(results) - 1, "metrics", *tail.split(".")]
     else:
         return None
-    return _line_at(data, path)
+    return line_at(data, path)
 
 
 def passage_line(data: Any, passage_id: str) -> int | None:
@@ -112,7 +90,7 @@ def passage_line(data: Any, passage_id: str) -> int | None:
     for i, source in enumerate(data.get("literature") or []):
         for j, passage in enumerate(source.get("passages") or []):
             if passage.get("id") == passage_id:
-                return _line_at(data, ["literature", i, "passages", j, "quote"])
+                return line_at(data, ["literature", i, "passages", j, "quote"])
     return None
 
 
