@@ -76,8 +76,8 @@ async def open_github_issues_for_verifiability(
     verification: dict[str, Any],
     model: str,
 ) -> dict[str, Any]:
-    """Read the unverified declarations of a `verify_paper_values` result
-    (its `record`) against the record, the experiment code and the runs'
+    """Read the unverified declarations of a `verify_record` result
+    against the record, the experiment code and the runs'
     observations, and propose, per group of declarations one change would
     resolve, a title, what to change, and whether the gate could then
     compare it by itself (`verifiable`). One GitHub issue per verifiable

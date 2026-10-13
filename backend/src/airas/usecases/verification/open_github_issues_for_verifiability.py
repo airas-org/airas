@@ -87,11 +87,10 @@ when nothing applies.
 
 
 def _document(text: str) -> str:
-    return (
-        text
-        if len(text) <= _DOCUMENT_BYTES
-        else text[:_DOCUMENT_BYTES] + "\n(truncated)"
-    )
+    data = text.encode("utf-8")
+    if len(data) <= _DOCUMENT_BYTES:
+        return text
+    return data[:_DOCUMENT_BYTES].decode("utf-8", errors="ignore") + "\n(truncated)"
 
 
 def _inputs(
@@ -115,16 +114,23 @@ def _inputs(
     texts = {
         name: json.dumps(value, ensure_ascii=False) for name, value in documents.items()
     }
+    # A committed symlink or a run_id with ".." must not read outside the checkout.
+    inside = root.resolve()
     for path in sorted(
         p for c in _CODE_PATHS for p in root.glob(f"{c}/**/*") if p.is_file()
     ) + [root / "Dockerfile"]:
-        if path.is_file():
+        if path.is_file() and path.resolve().is_relative_to(inside):
             texts[str(path.relative_to(root))] = path.read_text(
                 encoding="utf-8", errors="replace"
             )
+    results = (root / RESULTS_DIR).resolve()
     for run in record.run_index().values():
         observed = root / RESULTS_DIR / run.run_id / OBSERVED_FILENAME
-        if run.results and observed.is_file():
+        if (
+            run.results
+            and observed.is_file()
+            and observed.resolve().is_relative_to(results)
+        ):
             texts[str(observed.relative_to(root))] = observed.read_text(
                 encoding="utf-8"
             )
@@ -168,7 +174,9 @@ async def open_github_issues_for_verifiability(
     ):
         raise ValueError(f"origin is not a GitHub repository: {repo_url!r}")
 
-    commit = head_commit(root) or ""
+    commit = head_commit(root)
+    if not commit:
+        raise ValueError(f"{root} has no HEAD commit to link the issues to")
     open_titles = set(await github_client.alist_open_issue_titles(owner, name))
     urls: list[str] = []
     for proposal in verifiable:

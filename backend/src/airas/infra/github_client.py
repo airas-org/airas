@@ -1255,13 +1255,21 @@ class GithubClient(BaseHTTPClient):
         self, github_owner: str, repository_name: str
     ) -> list[str]:
         path = f"/repos/{github_owner}/{repository_name}/issues"
-        response = await self.aget(path=path, params={"state": "open", "per_page": 100})
-        if response.status_code != 200:
-            raise GithubClientError(
-                f"listing issues failed ({response.status_code}): {path}"
+        titles: list[str] = []
+        for page in range(1, 100):
+            response = await self.aget(
+                path=path, params={"state": "open", "per_page": 100, "page": page}
             )
-        # The endpoint lists pull requests as issues too.
-        return [i["title"] for i in response.json() if "pull_request" not in i]
+            if response.status_code != 200:
+                raise GithubClientError(
+                    f"listing issues failed ({response.status_code}): {path}"
+                )
+            issues = response.json()
+            # The endpoint lists pull requests as issues too.
+            titles += [i["title"] for i in issues if "pull_request" not in i]
+            if len(issues) < 100:
+                break
+        return titles
 
     async def acreate_issue(
         self, github_owner: str, repository_name: str, title: str, body: str

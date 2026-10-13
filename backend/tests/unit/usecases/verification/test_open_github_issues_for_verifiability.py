@@ -7,6 +7,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import (
     Criterion,
@@ -15,12 +17,15 @@ from airas.core.types.research_record import (
     ResearchRecord,
     SeyvalClaim,
     SeyvalDesign,
+    SeyvalResult,
     SeyvalRun,
     SeyvalVerifier,
     VerifierKind,
 )
 from airas.usecases.verification.open_github_issues_for_verifiability import (
+    _DOCUMENT_BYTES,
     VerifiabilityProposal,
+    _document,
     open_github_issues_for_verifiability,
 )
 
@@ -52,21 +57,27 @@ class _GitHub:
         return f"https://github.com/{owner}/{name}/issues/{len(self.created)}"
 
 
-def _repo(tmp_path: Path) -> Path:
+def _repo(tmp_path: Path, run_id: str = "proposed") -> Path:
     claim = SeyvalClaim(
         id="c1",
         statement="proposed beats baseline",
         rationale="the direct comparison",
         verifier=SeyvalVerifier(kind=VerifierKind.SEYVAL),
         criterion=Criterion(
-            metric="acc", subject="proposed", reference="baseline", op=">="
+            metric="acc", subject=run_id, reference="baseline", op=">="
         ),
         prediction=Prediction(low=0.01, high=0.05, basis="prior work"),
         designs=[
             SeyvalDesign(
                 id="d1",
                 summary="rate laws limited to three kinds",
-                runs=[SeyvalRun(run_id="proposed"), SeyvalRun(run_id="baseline")],
+                runs=[
+                    SeyvalRun(
+                        run_id=run_id,
+                        results=[SeyvalResult(verifier="seyval", id="x", metrics={})],
+                    ),
+                    SeyvalRun(run_id="baseline"),
+                ],
             )
         ],
     )
@@ -77,18 +88,14 @@ def _repo(tmp_path: Path) -> Path:
     ).save(str(tmp_path))
     (tmp_path / "src").mkdir()
     (tmp_path / "src/adapter.py").write_text("KINDS = ['mass_action', 'hill']\n")
-    subprocess.run(["git", "-C", str(tmp_path), "init", "-q"], check=True)
+    git = ["git", "-C", str(tmp_path)]
+    subprocess.run([*git, "init", "-q"], check=True)
+    subprocess.run([*git, "config", "user.email", "t@example.com"], check=True)
+    subprocess.run([*git, "config", "user.name", "t"], check=True)
+    subprocess.run([*git, "add", "."], check=True)
+    subprocess.run([*git, "commit", "-q", "-m", "record"], check=True)
     subprocess.run(
-        [
-            "git",
-            "-C",
-            str(tmp_path),
-            "remote",
-            "add",
-            "origin",
-            "git@github.com:o/r.git",
-        ],
-        check=True,
+        [*git, "remote", "add", "origin", "git@github.com:o/r.git"], check=True
     )
     return tmp_path
 
@@ -155,3 +162,53 @@ def test_only_verifiable_proposals_become_issues_at_most_five_and_never_twice(
     ]
     assert len(urls) == 5 and all(u.startswith("https://github.com/o/r/") for u in urls)
     assert github.created[0][3].startswith("change 1")
+
+
+def test_nothing_outside_the_checkout_is_read(tmp_path: Path) -> None:
+    secret = tmp_path / "secret.txt"
+    secret.write_text("SECRET-OUTSIDE")
+    root = _repo(tmp_path / "repo", run_id="../../../outside")
+    (root / "src/link.py").symlink_to(secret)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "observed.json").write_text("SECRET-OBSERVED")
+    model = _Model([])
+    asyncio.run(
+        open_github_issues_for_verifiability(
+            str(root),
+            _verification(),
+            model="judge-1",
+            litellm_client=model,
+            github_client=_GitHub([]),
+        )
+    )
+    assert "SECRET" not in model.messages[0]
+
+
+def test_a_document_is_cut_at_the_byte_limit_not_the_character_count() -> None:
+    cut = _document("あ" * _DOCUMENT_BYTES)
+    assert cut.endswith("(truncated)")
+    assert len(cut.encode("utf-8")) <= _DOCUMENT_BYTES + len("\n(truncated)")
+
+
+def test_issues_need_a_head_commit_to_link_to(tmp_path: Path) -> None:
+    root = _repo(tmp_path)
+    subprocess.run(
+        ["git", "-C", str(root), "update-ref", "-d", "refs/heads/master"],
+        check=False,
+    )
+    subprocess.run(
+        ["git", "-C", str(root), "update-ref", "-d", "refs/heads/main"], check=False
+    )
+    github = _GitHub([])
+    with pytest.raises(ValueError, match="no HEAD commit"):
+        asyncio.run(
+            open_github_issues_for_verifiability(
+                str(root),
+                _verification(),
+                model="judge-1",
+                litellm_client=_Model([_proposal(1)]),
+                github_client=github,
+            )
+        )
+    assert github.created == []
