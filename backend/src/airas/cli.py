@@ -135,13 +135,13 @@ def _run_verify_record(args: argparse.Namespace) -> None:
         )
     )
     root = repo_root(args.local_path)
-    record_file = root / RECORD_PATH
-
+    try:
+        record_data = json.loads((root / RECORD_PATH).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        record_data = {}  # the verification itself reports the unreadable record
     markdown = render_verification_md(
         verification,
-        json.loads(record_file.read_text(encoding="utf-8"))
-        if record_file.is_file()
-        else {},
+        record_data,
         normalize_git_url(remote_origin_url(root) or ""),
         head_commit(root) or "",
     )

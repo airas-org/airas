@@ -37,6 +37,8 @@ def _snapshot_text(
     what = field.removesuffix("/snapshot")
     if ref is None or ref.path != relpath:
         problem = f"{what} snapshot must be {relpath} (preregister_record writes it)"
+    elif not (root / relpath).resolve().is_relative_to(root.resolve()):
+        problem = f"{relpath} resolves outside the repository"
     elif not (root / relpath).is_file():
         problem = f"{relpath} is missing (preregister_record writes it)"
     elif file_sha256(root / relpath) != ref.sha256:

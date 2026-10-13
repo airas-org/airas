@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from airas.core.hashing import text_sha256
 from airas.core.research_paths import (
@@ -113,27 +113,35 @@ def _same_value(declared: Any, item: dict[str, Any]) -> bool | None:
 
 def _argument_status(
     label: str, argument: str, value: Any, bound: dict[str, dict[str, Any]]
-) -> tuple[str, bool]:
-    """(what observed.json holds for the argument, or what is wrong; it matches)."""
+) -> tuple[str, Literal["ok", "mismatch", "skipped"]]:
     fn, _, arg = argument.rpartition(".")
     called = bound.get(fn)
     if called is None:
-        return f"{label}: {fn} (argument {arg}) was never called", False
+        return f"{label}: {fn} (argument {arg}) was never called", "mismatch"
 
     entry = next((a for a in called.get("args", []) if a.get("name") == arg), None)
     if entry is None or entry["calls"] < called["calls"]:
-        return f"{label}: {fn} was called without an argument {arg}", False
+        return f"{label}: {fn} was called without an argument {arg}", "mismatch"
 
+    comparisons = {id(e): _same_value(value, e) for e in entry.get("values", [])}
     other = next(
-        (e for e in entry.get("values", []) if _same_value(value, e) is False), None
+        (e for e in entry.get("values", []) if comparisons[id(e)] is False), None
     )
     if other is not None:
         seen = other.get("value", other)
-        return f"{label}: {argument} was {seen!r}, not the declared {value!r}", False
+        return (
+            f"{label}: {argument} was {seen!r}, not the declared {value!r}",
+            "mismatch",
+        )
+    if all(same is None for same in comparisons.values()):
+        return (
+            f"{label}: {argument} is recorded redacted and cannot be compared",
+            "skipped",
+        )
     seen_values = [e.get("value", e.get("sha256", "redacted")) for e in entry["values"]]
     return (
         f"observed {argument} = {seen_values!r} over {called['calls']} calls in {label}",
-        True,
+        "ok",
     )
 
 
@@ -159,14 +167,15 @@ def _append_run_statuses(
         f"literature[{repository.id.split('.')[0]}]/repositories[{repository.id}]"
     )
     trusted = ", ".join(TRUSTED_PATHS)
-    latest_result_path = f"{run_path}/results[{run.results[-1].id}]"
 
+    # The hook and the trusted files are about observed.json itself, not a
+    # declaration: on a result's path an ok here would cover its leaves.
     if first_commit is None:
         verification.append_declaration_status(
-            latest_result_path,
+            observed_relpath,
             "first commit unavailable: hook and trusted files unchecked",
             "skipped",
-            evidence_path=observed_relpath,
+            evidence_path=MAKEFILE_PATH,
         )
     else:
         trusted_hook = file_bytes_at_commit(root, first_commit, HOOK_PATH) or b""
@@ -175,13 +184,13 @@ def _append_run_statuses(
             == hashlib.sha256(trusted_hook).hexdigest()
         )
         verification.append_declaration_status(
-            latest_result_path,
+            observed_relpath,
             f"observed.json hook sha256 vs {HOOK_PATH} at the first commit"
             if hook_ok
             else f"{label}: observed.json was not written by the {HOOK_PATH} the "
             "repository was created with",
             "ok" if hook_ok else "mismatch",
-            evidence_path=observed_relpath,
+            evidence_path=HOOK_PATH,
         )
         for result in run.results:
             result_path = f"{run_path}/results[{result.id}]/commit"
@@ -269,10 +278,12 @@ def _append_run_statuses(
         "ok" if entry_called else "mismatch",
         evidence_path=observed_relpath,
     )
-    # A fixed value is declared; a varied one is this run's params entry.
+    # A fixed value is declared; a varied one is this run's params entry. The
+    # row sits on the leaf compared, so the argument's reason stays unchecked.
     for setting in integration.arguments:
         argument_path = (
-            f"{design_path}/repository_integration/arguments[{setting.argument}]"
+            f"{design_path}/repository_integration/arguments[{setting.argument}]/"
+            + ("params_key" if setting.params_key else "value")
         )
         if not setting.params_key:
             value = setting.value
@@ -287,12 +298,9 @@ def _append_run_statuses(
                 evidence_path=observed_relpath,
             )
             continue
-        reason, same = _argument_status(label, setting.argument, value, bound)
+        reason, status = _argument_status(label, setting.argument, value, bound)
         verification.append_declaration_status(
-            argument_path,
-            reason,
-            "ok" if same else "mismatch",
-            evidence_path=observed_relpath,
+            argument_path, reason, status, evidence_path=observed_relpath
         )
 
     # The experiment code that ran is the code at the latest result's commit:
@@ -310,16 +318,14 @@ def _append_run_statuses(
                 src_problems.append(
                     f"{label}: {path} that ran differs from commit {latest.commit[:12]}"
                 )
+        src_path = f"{run_path}/results[{latest.id}]/commit"
         for problem in src_problems:
             verification.append_declaration_status(
-                f"{latest_result_path}/commit",
-                problem,
-                "mismatch",
-                evidence_path=observed_relpath,
+                src_path, problem, "mismatch", evidence_path=observed_relpath
             )
         if not src_problems:
             verification.append_declaration_status(
-                f"{latest_result_path}/commit",
+                src_path,
                 f"observed src_modules sha256 of {len(observed.get('src_modules', {}))} "
                 "files vs this commit",
                 "ok",
@@ -328,29 +334,40 @@ def _append_run_statuses(
 
     # Changes to the upstream or any dependency: a name redefined from src/ or
     # by exec, or a src class overriding the upstream's methods, each needs an
-    # extension point.
+    # extension point; a declared point nothing used stays unverified.
     points = integration.extension_points
-    extension_problems = [
-        f"{label}: {name} is defined in {file}, which no extension_point declares"
-        for name, file in observed.get("redefinitions", {}).items()
-        if not _covered(name, points)
-    ]
-    extension_problems += [
-        f"{label}: {cls} overrides {base}.{', '.join(uncovered)}, which no extension_point declares"
-        for cls, base, overrides in _overrides(observed, package)
-        if base not in points
-        and (uncovered := [m for m in overrides if not _covered(f"{base}.{m}", points)])
-    ]
     extension_points_path = f"{design_path}/repository_integration/extension_points"
-    for problem in extension_problems:
-        verification.append_declaration_status(
-            extension_points_path, problem, "mismatch", evidence_path=observed_relpath
+    redefinitions = observed.get("redefinitions", {})
+    overrides = _overrides(observed, package)
+    for name, file in redefinitions.items():
+        if not _covered(name, points):
+            verification.append_declaration_status(
+                extension_points_path,
+                f"{label}: {name} is defined in {file}, which no extension_point declares",
+                "mismatch",
+                evidence_path=observed_relpath,
+            )
+    for cls, base, methods in overrides:
+        uncovered = [m for m in methods if not _covered(f"{base}.{m}", points)]
+        if base not in points and uncovered:
+            verification.append_declaration_status(
+                extension_points_path,
+                f"{label}: {cls} overrides {base}.{', '.join(uncovered)}, "
+                "which no extension_point declares",
+                "mismatch",
+                evidence_path=observed_relpath,
+            )
+    for point in points:
+        used = any(_covered(name, [point]) for name in redefinitions) or any(
+            base == point or any(_covered(f"{base}.{m}", [point]) for m in methods)
+            for _, base, methods in overrides
         )
-    if not extension_problems:
         verification.append_declaration_status(
             extension_points_path,
-            f"observed redefinitions and overridden {package} methods in {label}",
-            "ok",
+            f"{point}: observed as a redefinition or an override in {label}"
+            if used
+            else f"{point}: declared, but nothing in {label} redefined or overrode it",
+            "ok" if used else "skipped",
             evidence_path=observed_relpath,
         )
 
@@ -382,16 +399,15 @@ def verify_run_observations(
             f"hypotheses[{hypothesis.id}]/claims[{claim.id}]/designs[{design.id}]"
         )
         run_path = f"{design_path}/runs[{run.run_id}]"
-        latest_result_path = f"{run_path}/results[{run.results[-1].id}]"
         observed_relpath = f"{RESULTS_DIR}/{run.run_id}/{OBSERVED_FILENAME}"
         observed_path = root / observed_relpath
         if not observed_path.is_file():
             verification.append_declaration_status(
-                latest_result_path,
+                observed_relpath,
                 f"run '{run.run_id}': no {OBSERVED_FILENAME} among its outputs "
                 "(the Makefile writes it)",
                 "mismatch",
-                evidence_path=observed_relpath,
+                evidence_path=MAKEFILE_PATH,
             )
             continue
 
@@ -402,11 +418,11 @@ def verify_run_observations(
         observed = json.loads(observed_path.read_text(encoding="utf-8"))
         if observed.get("version") != 3:
             verification.append_declaration_status(
-                latest_result_path,
+                observed_relpath,
                 f"run '{run.run_id}': {OBSERVED_FILENAME} is version "
                 f"{observed.get('version')}, written by an older hook; the gate reads version 3",
                 "mismatch",
-                evidence_path=observed_relpath,
+                evidence_path=HOOK_PATH,
             )
             continue
         snapshot = root / repository_snapshot_relpath(repository.id)

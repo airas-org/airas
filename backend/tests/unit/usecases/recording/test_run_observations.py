@@ -508,3 +508,54 @@ def test_a_hashed_or_redacted_value_is_compared_through_its_recording(
     assert len(problems) == len(expected) and all(
         e in p for e, p in zip(expected, problems, strict=True)
     ), problems
+
+
+def _statuses(tmp_path: Path, record: ResearchRecord, path_suffix: str) -> list[str]:
+    verification = RecordVerification()
+    verify_run_observations(tmp_path, record, verification)
+    return [
+        f"{s.status}: {s.reason}"
+        for s in verification.declaration_statuses
+        if s.path.endswith(path_suffix)
+    ]
+
+
+def test_a_redacted_value_is_skipped_not_covered(tmp_path: Path) -> None:
+    record = _record(tmp_path, _template_import(tmp_path))
+    record.hypotheses[0].claims[0].designs[0].repository_integration.arguments = [
+        ArgumentValue(argument="pkg.runner.Runner.__init__.n", value=20)
+    ]
+    observed = _observed(tmp_path)
+    _redacted(observed)
+    _write(tmp_path, observed)
+    rows = _statuses(tmp_path, record, "arguments[pkg.runner.Runner.__init__.n]/value")
+    assert len(rows) == 1 and rows[0].startswith("skipped: ")
+
+
+def test_a_declared_extension_point_nothing_used_stays_unverified(
+    tmp_path: Path,
+) -> None:
+    record = _record(tmp_path, _template_import(tmp_path))
+    record.hypotheses[0].claims[0].designs[
+        0
+    ].repository_integration.extension_points = [
+        "pkg.model.Model",
+        "pkg.model.Trainer",
+    ]
+    _write(tmp_path, _observed(tmp_path))
+    rows = _statuses(tmp_path, record, "/extension_points")
+    assert rows == [
+        "ok: pkg.model.Model: observed as a redefinition or an override in run 'run-1'",
+        "skipped: pkg.model.Trainer: declared, but nothing in run 'run-1' redefined or overrode it",
+    ]
+
+
+def test_the_hook_check_sits_on_observed_json_not_on_the_result(tmp_path: Path) -> None:
+    record = _record(tmp_path, _template_import(tmp_path))
+    _write(tmp_path, _observed(tmp_path))
+    verification = RecordVerification()
+    verify_run_observations(tmp_path, record, verification)
+    hook_rows = [
+        s for s in verification.declaration_statuses if "hook sha256" in s.reason
+    ]
+    assert [s.path for s in hook_rows] == [".research/results/run-1/observed.json"]
