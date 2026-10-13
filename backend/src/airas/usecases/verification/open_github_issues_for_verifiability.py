@@ -130,6 +130,7 @@ def _inputs(
             run.results
             and observed.is_file()
             and observed.resolve().is_relative_to(results)
+            and observed.resolve().is_relative_to(inside)
         ):
             texts[str(observed.relative_to(root))] = observed.read_text(
                 encoding="utf-8"

@@ -1256,7 +1256,8 @@ class GithubClient(BaseHTTPClient):
     ) -> list[str]:
         path = f"/repos/{github_owner}/{repository_name}/issues"
         titles: list[str] = []
-        for page in range(1, 100):
+        page = 1
+        while True:
             response = await self.aget(
                 path=path, params={"state": "open", "per_page": 100, "page": page}
             )
@@ -1268,8 +1269,8 @@ class GithubClient(BaseHTTPClient):
             # The endpoint lists pull requests as issues too.
             titles += [i["title"] for i in issues if "pull_request" not in i]
             if len(issues) < 100:
-                break
-        return titles
+                return titles
+            page += 1
 
     async def acreate_issue(
         self, github_owner: str, repository_name: str, title: str, body: str
