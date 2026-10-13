@@ -79,7 +79,6 @@ def render_verification_md(
 
 
 def write_verification_md(root: Path, verification: RecordVerification) -> str:
-    """Write the report next to the record, linked to the commit at HEAD."""
     try:
         record = json.loads((root / RECORD_PATH).read_text(encoding="utf-8"))
     except (OSError, ValueError):

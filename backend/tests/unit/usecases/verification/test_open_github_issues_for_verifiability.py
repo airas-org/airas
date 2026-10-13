@@ -116,7 +116,6 @@ def test_the_model_reads_the_unverified_rows_the_record_and_the_code(
             model="judge-1",
             litellm_client=model,
             github_client=_GitHub([]),
-            store_factory=lambda backend, url: pytest.fail("no store in this test"),
         )
     )
     assert proposals == [] and urls == []
@@ -139,7 +138,6 @@ def test_only_verifiable_proposals_become_issues_at_most_five_and_never_twice(
             model="judge-1",
             litellm_client=_Model(proposals),
             github_client=github,
-            store_factory=lambda backend, url: pytest.fail("no store in this test"),
         )
     )
     assert returned == proposals
@@ -165,7 +163,6 @@ def test_nothing_outside_the_checkout_is_read(tmp_path: Path) -> None:
             model="judge-1",
             litellm_client=model,
             github_client=_GitHub([]),
-            store_factory=lambda backend, url: pytest.fail("no store in this test"),
         )
     )
     assert "SECRET" not in model.messages[0]
@@ -194,7 +191,6 @@ def test_issues_need_a_head_commit_to_link_to(tmp_path: Path) -> None:
                 model="judge-1",
                 litellm_client=_Model([_proposal(1)]),
                 github_client=github,
-                store_factory=lambda backend, url: pytest.fail("no store in this test"),
             )
         )
     assert github.created == []
