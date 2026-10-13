@@ -90,15 +90,9 @@ def _run_verify_paper(args: argparse.Namespace) -> None:
             verify_paper(
                 args.local_path,
                 template,
-                check_provenance=not args.no_provenance,
-                require_provenance=not (
-                    args.no_provenance or args.allow_unavailable_provenance
-                ),
-                require_history=not args.allow_unavailable_history,
                 citation_verifier_model=args.citation_verifier_model,
-                implementation_verifier_model=args.implementation_verifier_model,
                 litellm_client=LiteLLMClient()
-                if args.citation_verifier_model or args.implementation_verifier_model
+                if args.citation_verifier_model
                 else None,
             )
         )
@@ -132,6 +126,10 @@ def _run_verify_record(args: argparse.Namespace) -> None:
                 args.no_provenance or args.allow_unavailable_provenance
             ),
             require_history=not args.allow_unavailable_history,
+            implementation_verifier_model=args.implementation_verifier_model,
+            litellm_client=LiteLLMClient()
+            if args.implementation_verifier_model
+            else None,
         )
     )
     root = repo_root(args.local_path)
@@ -318,7 +316,7 @@ def main() -> None:
     verify = subparsers.add_parser(
         "verify-paper",
         help=(
-            "Verify a paper's values and provenance against the record — no "
+            "Verify a paper's values and citations against the record — no "
             "PDF build. Meant to be the required check on the protected branch"
         ),
     )
@@ -343,35 +341,6 @@ def main() -> None:
             "check, and write the judgments into record.json"
         ),
     )
-    verify.add_argument(
-        "--implementation-verifier-model",
-        help=(
-            "Have this model read each design's code and runs against the design "
-            "before the check, and write the review into record.json"
-        ),
-    )
-    verify.add_argument(
-        "--no-provenance",
-        action="store_true",
-        help="Skip the provenance cross-check against the execution backend",
-    )
-    verify.add_argument(
-        "--allow-unavailable-provenance",
-        action="store_true",
-        help=(
-            "Do not fail when the provenance check cannot reach the execution backend "
-            "(a real mismatch still fails); CI should not pass this"
-        ),
-    )
-    verify.add_argument(
-        "--allow-unavailable-history",
-        action="store_true",
-        help=(
-            "Do not fail when record.json's append-only git history cannot "
-            "be checked (shallow clone); CI should not pass this"
-        ),
-    )
-
     record = subparsers.add_parser(
         "verify-record",
         help=(
@@ -384,6 +353,13 @@ def main() -> None:
         "--local-path",
         default=".",
         help="Experiment repository checkout to verify (default: .)",
+    )
+    record.add_argument(
+        "--implementation-verifier-model",
+        help=(
+            "Have this model read each design's code and runs against the design "
+            "before the check, and write the review into record.json"
+        ),
     )
     record.add_argument(
         "--no-provenance",

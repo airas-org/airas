@@ -20,7 +20,6 @@ from airas.core.types.research_record import (
     VerifierKind,
 )
 from airas.mcp.tools import record as record_tools
-from airas.research_record.read.load_record import load_record
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -81,7 +80,7 @@ async def test_the_shipped_empty_record_is_initialised_in_place(tmp_path: Path) 
     result = await record_tools.preregister_record(str(repo), _hypotheses(), "mdpi")
 
     assert result["record_path"] == str(repo / RECORD_PATH)
-    assert [h.id for h in load_record(str(repo)).hypotheses] == ["h1"]
+    assert [h.id for h in ResearchRecord.load(str(repo)).hypotheses] == ["h1"]
     assert _git(repo, "rev-list", "--count", "HEAD") == "2"  # the freeze commit
 
 

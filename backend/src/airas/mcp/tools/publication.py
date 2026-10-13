@@ -1,6 +1,5 @@
-"""Paper writing and publication."""
-
 import asyncio
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
 
@@ -19,7 +18,8 @@ from airas.mcp.context import (
     _litellm_client,
     _output_store,
 )
-from airas.research_record.verify.verify_paper import PaperVerification, verify_paper
+from airas.research_record.verify.verify_paper import verify_paper
+from airas.research_record.verify.verify_record import verify_record
 from airas.usecases.publication.build_paper import build_paper
 from airas.usecases.publication.nodes.collect_latex_project_files import (
     collect_latex_project_files,
@@ -75,10 +75,9 @@ async def verify_latex(
 
     A local clone must hold `.research/record.json` (every AIRAS
     repository ships one; `preregister_record` fills it) — a missing
-    record fails the check. The record is verified too — the same checks as
-    `verify_paper_values`: declarations, append-only history, value/
-    table/chart recomputation, claim flags, and (unless
-    `check_provenance=False`) the Seyval provenance cross-check. The
+    record fails the check. Runs both `verify_record` and
+    `verify_paper_values` checks before handing out a PDF, including the
+    provenance cross-check unless `check_provenance=False`. The
     record's verification lands under `record` (every failure is a line
     in its `problems`) and the build under `build`. On failure `ok`
     is false and no PDF is written to `output_path` — so a PDF this tool
@@ -87,10 +86,33 @@ async def verify_latex(
     refresh_environment()
 
     if local_path:
-        verification = await _verify_paper(
-            local_path, latex_template_name, output_path, check_provenance
+        record = await verify_record(
+            local_path,
+            check_provenance=check_provenance,
+            require_provenance=False,
+            require_history=False,
+            store_factory=_output_store,
         )
-        return verification.model_dump()
+        paper = await verify_paper(local_path, latex_template_name)
+        build = await asyncio.to_thread(
+            build_paper,
+            local_path,
+            latex_template_name,
+            output_path if record.ok and paper.ok else None,
+        )
+        ok = record.ok and paper.ok and build.ok
+        if output_path and not ok:
+            Path(output_path).unlink(missing_ok=True)
+            build = build.model_copy(update={"pdf_path": None})
+        return {
+            **paper.model_dump(),
+            "ok": ok,
+            "record": record.model_dump(),
+            "build": build.model_dump(),
+            "pdf": build.pdf_path if ok else None,
+            "problems": paper.problems
+            + (["the LaTeX build failed (see build)"] if not build.ok else []),
+        }
     else:
         if not (github_owner and repository_name and branch_name):
             raise ValueError(
@@ -114,111 +136,33 @@ async def verify_latex(
     return report.model_dump()
 
 
-async def _verify_paper(
-    local_path: str,
-    latex_template_name: LATEX_TEMPLATE_NAME,
-    pdf_path: str | None,
-    check_provenance: bool,
-    citation_verifier_model: str | None = None,
-    implementation_verifier_model: str | None = None,
-) -> PaperVerification:
-    # The same verification CI runs, with this server's clients.
-    # Unavailable provenance or history is surfaced here, not failed: only
-    # CI requires the guarantee.
-    return await verify_paper(
-        local_path,
-        latex_template_name,
-        pdf_path=pdf_path,
-        build=build_paper,
-        check_provenance=check_provenance,
-        require_provenance=False,
-        require_history=False,
-        store_factory=_output_store,
-        citation_verifier_model=citation_verifier_model,
-        implementation_verifier_model=implementation_verifier_model,
-        litellm_client=_litellm_client()
-        if citation_verifier_model or implementation_verifier_model
-        else None,
-    )
-
-
 @mcp.tool()
 async def verify_paper_values(
     local_path: str,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
-    check_provenance: bool = True,
     citation_verifier_model: str | None = None,
-    implementation_verifier_model: str | None = None,
 ) -> dict[str, Any]:
-    """Check that everything the paper states is what was declared and measured.
+    """Check the paper's values, claims, tables, charts and citations.
 
-    Verifies the canonical record `.research/record.json` end to end. At
-    the prereg stage (no run outputs yet) it checks the declarations'
-    internal consistency, that nothing realized exists prematurely, and
-    the append-only history. Once results exist, the deterministic checks
-    that decide `ok`: every declared value is recomputed from the run
-    outputs under `.research/results/` and compared to the record's
-    stored results (a tampered record surfaces as a mismatch),
-    `values.tex` and `claims.tex` are regenerated and diffed byte-for-byte
-    (`claims.tex` at the prereg stage too), every `\\airasval` key
-    main.tex references must be
-    declared, every table
-    under `tables/` and every chart under `.research/results/chart/`
-    must match a regeneration of its declaration (undeclared files fail),
-    every results directory must belong to a declared run, the record's
-    git history must be pure appends to the declaration section, and each
-    claim's stored verified flag must be borne out by the recomputation:
-    verified means every run under the claim (and any run its criterion references) has results. A claim that is
-    merely not yet verified does not fail the check — only a stored flag
-    the recomputation contradicts does.
+    Generated files must match their regeneration from the record and run
+    outputs. Every cited key and passage must belong to a registered source.
+    `unverified`, `uncited_sources` and `unsupported_citations` are review
+    items; citations without a current judgment fail the check.
 
-    Unless `check_provenance=False`, the local metrics files are also
-    cross-checked against the execution platform's stored run outputs
-    (currently Seyval): each referenced results directory must be
-    byte-identical to what the run *declared* for it in
-    `.research/results/.provenance.json` (written by `import_run_outputs`)
-    actually produced, that run must be completed, and its commit must be
-    an ancestor of the local HEAD. Each check lists the other completed
-    runs of the same commit; review them — repeated executions mean the
-    reported run was a choice. Each directory's outcome is a row of
-    `record.declaration_statuses` on the result it backs; an unreachable
-    store leaves those rows `skipped` without failing the local checks.
+    With `citation_verifier_model`, judge unjudged passage citations first
+    and commit their judgments. Rewriting citing text requires a new
+    judgment. Requires an LLM provider key when a model is given.
 
-    `record.declaration_statuses` lists every live declaration of the
-    record once at least: `ok` / `mismatch` rows say what the gate compared
-    it with, `skipped` rows (`reason` says why, or `no check`) are what
-    no deterministic check covers — the record minus the gate's coverage, which
-    is what a reviewer or a judge still has to read.
-
-    `unverified` lists every `\\unverified{...}` the author marked —
-    review input, not a failure. Run this after any step that may edit
-    main.tex (including compile agents), and treat the list as mandatory
-    review items before publishing. `unsupported_citations` is the same
-    kind of item: what the judge did not find borne out by the passage.
-    `unjudged_citations` — citations no judgment covers as the text now
-    stands — fail the check. Pass `citation_verifier_model` to have that
-    model read each unjudged citation against its passage first; the
-    judgments are written into the record and committed, so the same call
-    then reports only what the model found unsupported. Re-run with it
-    after rewriting a sentence that cites a passage.
-    `implementation_verifier_model` likewise reads each design's code and
-    runs against the design (once per state of declaration, code and runs;
-    the review is written into the record). A design with no such review
-    fails; the findings themselves (`undeclared`, `unverified`,
-    `contradiction`) do not — they are the judge's reading, kept on the
-    design's `reviews[]` for the reviewer, and the row for the design's
-    `reviews` in `record.declaration_statuses` counts them. Both names are
-    written into the record, so keep them the same across a user's studies.
-    Requires an LLM provider key when either is given.
+    Use `verify_record` separately for declaration consistency, run outputs,
+    git history, provenance and implementation reviews. Both checks must
+    pass before publication. This tool does not build a PDF.
     """
     refresh_environment()
-    verification = await _verify_paper(
+    verification = await verify_paper(
         local_path,
         latex_template_name,
-        None,
-        check_provenance,
-        citation_verifier_model,
-        implementation_verifier_model,
+        citation_verifier_model=citation_verifier_model,
+        litellm_client=_litellm_client() if citation_verifier_model else None,
     )
     return verification.model_dump()
 

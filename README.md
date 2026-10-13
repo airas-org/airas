@@ -142,7 +142,7 @@ The `auto-research` flow uses the following tools; the skills above are thin con
 | `write-experiment-code` | `get_prompts`, `get_library_docs` |
 | `run-experiments` | `dispatch_experiment`, `get_experiment_run_status`, `import_run_outputs`, `fetch_experiment_results` |
 | `analyze-results` | `fetch_experiment_results`, `analyze_experiment` / `get_prompts`, `render_chart`, `render_diagram`, `append_to_record`, `update_record` |
-| `publish-paper` | `verify_latex`, `verify_paper_values`, `open_in_overleaf`, `get_workflow_runs` |
+| `publish-paper` | `verify_record`, `verify_paper_values`, `verify_latex`, `open_in_overleaf`, `get_workflow_runs` |
 
 See the [MCP documentation](docs/development/MCP.mdx) for descriptions, credentials per tool, and configuration options.
 
@@ -151,12 +151,13 @@ See the [MCP documentation](docs/development/MCP.mdx) for descriptions, credenti
 ```bash
 uvx airas                 # MCP server on stdio (default)
 uvx airas verify-record   # check .research/record.json against run outputs, git history, and the platform
-uvx airas verify-paper    # verify the paper's values and provenance against the record — no PDF build (the CI gate)
-uvx airas verify-paper --model <name>   # the same, judging every unjudged citation against its passage first and writing the judgments into the record
+uvx airas verify-paper    # check paper values and citations against the record and run outputs — no PDF build
+uvx airas verify-record --implementation-verifier-model <name>   # review implementation against declared designs
+uvx airas verify-paper --citation-verifier-model <name>   # judge unjudged passage citations
 uvx airas publish-paper   # build the paper's PDF for publishing (values already verified by the gate)
 ```
 
-`verify-record` and `verify-paper` are the two required checks the experiment repository's CI runs on the protected branch; `publish-paper` builds the PDF in the separate, non-required publish workflow.
+`verify-record` checks declarations and execution evidence; `verify-paper` independently checks the paper against them. They are the two required checks the experiment repository's CI runs on the protected branch; `publish-paper` builds the PDF in the separate, non-required publish workflow.
 
 ## Development
 

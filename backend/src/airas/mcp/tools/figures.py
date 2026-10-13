@@ -12,6 +12,7 @@ from airas.core.research_paths import (
 from airas.core.types.research_record import (
     ChartDeclaration,
     RenderedChart,
+    ResearchRecord,
     latest,
 )
 from airas.infra.local_git import commit_paths
@@ -20,7 +21,6 @@ from airas.mcp.context import (
     _kroki_client,
 )
 from airas.research_record.read.find_by_id import find_hypothesis
-from airas.research_record.read.load_record import load_record
 from airas.research_record.read.read_run_outputs import load_metrics_data
 from airas.research_record.render.render_charts import (
     CHART_DIR,
@@ -88,7 +88,7 @@ async def render_chart(
     def _run() -> dict[str, Any]:
         # Declared as clipped: bars drawn from zero overrun a bounded axis.
         spec = clip_zero_based_marks(vega_lite_spec)
-        record = load_record(local_path)
+        record = ResearchRecord.load(local_path)
         target = find_hypothesis(record, hypothesis_id)
         metrics_data = load_metrics_data(local_path)
         resolved, _ = substitute_chart_refs(spec, metrics_data)

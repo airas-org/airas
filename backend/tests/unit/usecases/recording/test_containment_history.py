@@ -34,7 +34,6 @@ from airas.core.types.run_provenance import (
 )
 from airas.infra.local_git import commit_paths
 from airas.research_record.read.derive_results import compute_claim_statuses
-from airas.research_record.read.load_record import load_record
 from airas.research_record.verify._verify_record_git_history import (
     verify_record_git_history,
 )
@@ -150,7 +149,7 @@ def test_a_claim_whose_runs_all_have_results_is_verified(tmp_path: Path) -> None
     _write_results(tmp_path, freeze)
     _commit_all(tmp_path, "results")
 
-    record = load_record(str(tmp_path))
+    record = ResearchRecord.load(str(tmp_path))
     assert [s.verified for s in _status(record)] == [True]
     assert _problems(tmp_path, record, require_history=True) == []
 
@@ -176,7 +175,7 @@ def test_appending_a_claim_after_results_is_allowed(tmp_path: Path) -> None:
     _write_results(tmp_path, freeze)
     _commit_all(tmp_path, "results")
 
-    record = load_record(str(tmp_path))
+    record = ResearchRecord.load(str(tmp_path))
     record.hypotheses[0].claims.append(_claim())
     record.save(str(tmp_path))
     _commit_all(tmp_path, "claim added afterwards")
@@ -188,7 +187,7 @@ def test_a_reworded_claim_violates_containment(tmp_path: Path) -> None:
     _record(_claim()).save(str(tmp_path))
     _commit_all(tmp_path, "prereg")
 
-    record = load_record(str(tmp_path))
+    record = ResearchRecord.load(str(tmp_path))
     _c1(record).statement = "Proposed is competitive with baseline."  # softened
     record.save(str(tmp_path))
 
@@ -201,7 +200,7 @@ def test_changed_run_conditions_violate_containment(tmp_path: Path) -> None:
     _record(_claim()).save(str(tmp_path))
     _commit_all(tmp_path, "prereg")
 
-    record = load_record(str(tmp_path))
+    record = ResearchRecord.load(str(tmp_path))
     _c1(record).designs[0].runs[0].params = {"mode": "pilot"}
     problems = _problems(tmp_path, record, require_history=True)
     assert any("params" in p for p in problems)
@@ -214,7 +213,7 @@ def test_legitimate_append_keeps_earlier_claims_verified(tmp_path: Path) -> None
     _write_results(tmp_path, freeze)
     _commit_all(tmp_path, "results")
 
-    record = load_record(str(tmp_path))
+    record = ResearchRecord.load(str(tmp_path))
     record.hypotheses[0].claims.append(_claim("c2", run_id="ablation"))
     record.save(str(tmp_path))
     _commit_all(tmp_path, "append exploratory claim")
@@ -230,7 +229,7 @@ def test_verified_true_then_false_is_a_violation(tmp_path: Path) -> None:
     record.save(str(tmp_path))
     _commit_all(tmp_path, "verified")
 
-    record = load_record(str(tmp_path))
+    record = ResearchRecord.load(str(tmp_path))
     _c1(record).verified = False
     problems = _problems(tmp_path, record, require_history=True)
     assert any("verified" in p for p in problems)
@@ -241,7 +240,7 @@ def test_verified_true_then_false_is_a_violation(tmp_path: Path) -> None:
 
 def test_no_git_repo_reports_unavailable(tmp_path: Path) -> None:
     _record(_claim()).save(str(tmp_path))
-    record = load_record(str(tmp_path))
+    record = ResearchRecord.load(str(tmp_path))
     problems = _problems(tmp_path, record, require_history=True)
     assert any("could not be checked" in p for p in problems)
     assert _problems(tmp_path, record, require_history=False) == []
@@ -262,7 +261,7 @@ def test_shallow_clone_reports_unavailable(tmp_path: Path) -> None:
         check=True,
         capture_output=True,
     )
-    record = load_record(str(clone))
+    record = ResearchRecord.load(str(clone))
     problems = _problems(clone, record, require_history=True)
     assert any("could not be checked" in p for p in problems)
     assert _problems(clone, record, require_history=False) == []
@@ -276,6 +275,6 @@ def test_unparseable_committed_record_is_a_violation(tmp_path: Path) -> None:
     _record(_claim()).save(str(tmp_path))
     _commit_all(tmp_path, "fixed record")
 
-    record = load_record(str(tmp_path))
+    record = ResearchRecord.load(str(tmp_path))
     problems = _problems(tmp_path, record, require_history=True)
     assert any("not a valid record" in p for p in problems)

@@ -33,7 +33,6 @@ from airas.research_record.read.derive_results import (
     derive_result,
 )
 from airas.research_record.read.find_by_id import find_hypothesis, find_source
-from airas.research_record.read.load_record import load_record
 from airas.research_record.read.read_run_outputs import (
     load_metrics_data,
     load_provenance_manifest,
@@ -182,7 +181,7 @@ async def append_to_record(
         raise ValueError("passages append under a source — pass source_id")
 
     def _run() -> dict[str, Any]:
-        record = load_record(local_path)
+        record = ResearchRecord.load(local_path)
         root = repo_root(local_path)
         snapshots: list[str] = []
         try:

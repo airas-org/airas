@@ -20,6 +20,7 @@ from typing import (
 from pydantic import BaseModel, Discriminator, Field, Tag, model_validator
 
 from airas.core.research_paths import (
+    RECORD_PATH,
     fulltext_relpath,
     record_path,
     repository_snapshot_relpath,
@@ -588,6 +589,13 @@ class Hypothesis(BaseModel):
 class ResearchRecord(BaseModel):
     literature: list[LiteratureSource] = Field(default_factory=list)
     hypotheses: list[Hypothesis] = Field(default_factory=list)
+
+    @classmethod
+    def load(cls, local_repo_path: str) -> ResearchRecord:
+        path = record_path(local_repo_path)
+        if not path.is_file():
+            raise ValueError(f"{RECORD_PATH} not found under {path.parents[1]}")
+        return cls.model_validate_json(path.read_text(encoding="utf-8"))
 
     def save(self, local_repo_path: str) -> Path:
         path = record_path(local_repo_path)
