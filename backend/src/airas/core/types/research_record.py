@@ -580,7 +580,7 @@ class Hypothesis(BaseModel):
         description="Passage ids that motivated the hypothesis — the gap it "
         "answers, in the prior work's own words",
     )
-    claims: list[ClaimDeclaration] = Field(default_factory=list)
+    claims: list[ClaimDeclaration] = Field(min_length=1)
     tables: list[TableSpec] = Field(default_factory=list)
     charts: list[ChartDeclaration] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
