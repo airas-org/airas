@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
 from airas.core.research_paths import RECORD_PATH
 from airas.core.types.research_record import (
@@ -94,3 +95,13 @@ async def test_a_record_that_already_declares_is_not_overwritten(
 
     with pytest.raises(ValueError, match="already holds declarations"):
         await record_tools.preregister_record(str(repo), _hypotheses(), "mdpi")
+
+
+async def test_a_hypothesis_without_claims_is_rejected(tmp_path: Path) -> None:
+    repo = _repo_with_record(tmp_path, "{}")
+    no_claims = [{**_hypotheses()[0], "claims": []}]
+
+    with pytest.raises(ValidationError, match="at least 1 item"):
+        await record_tools.preregister_record(str(repo), no_claims, "mdpi")
+
+    assert ResearchRecord.load(str(repo)).hypotheses == []

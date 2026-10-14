@@ -115,7 +115,11 @@ def test_appending_claims_hypotheses_and_notes_is_allowed() -> None:
     older, newer = _record(), _record()
     newer.hypotheses[0].claims.append(_claim())
     newer.hypotheses[0].notes.append("exploratory extension")
-    newer.hypotheses.append(Hypothesis(id="h2", statement="A second hypothesis."))
+    newer.hypotheses.append(
+        Hypothesis(
+            id="h2", statement="A second hypothesis.", claims=[_claim("c3", "h2")]
+        )
+    )
     assert record_append_violations(older, newer) == []
 
 
