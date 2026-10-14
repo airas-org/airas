@@ -13,7 +13,6 @@ _ENTRY_ID_KEYS = {
     "claims": "id",
     "designs": "id",
     "runs": "run_id",
-    "arguments": "argument",
     "results": "id",
     "tables": "key",
     "charts": "path",
@@ -31,6 +30,7 @@ _COMPARED_AS_ONE_VALUE = frozenset(
         "spec",
         "quoted_passage_ids",
         "extension_points",
+        "arguments",
     }
 )
 _WRITTEN_BY_JUDGES = frozenset({"reviews", "judgments"})

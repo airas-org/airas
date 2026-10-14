@@ -56,7 +56,10 @@ def verify_run_results(
             f"/runs[{run.run_id}]"
         )
         if isinstance(claim, SeyvalClaim):
-            _append_params_statuses(run, manifest, run_path, verification)
+            # 上流引数と同じキーは observed との照合（_verify_run_observations）が書く
+            integration = getattr(design, "repository_integration", None)
+            upstream = set(integration.arguments) if integration else set()
+            _append_params_statuses(run, upstream, manifest, run_path, verification)
         _append_result_statuses(
             root, claim, run, metrics_data, manifest, run_path, verification
         )
@@ -76,15 +79,18 @@ def verify_run_results(
 
 def _append_params_statuses(
     run: AnyRun,
+    upstream: set[str],
     manifest: RunProvenanceManifest | None,
     run_path: str,
     verification: RecordVerification,
 ) -> None:
     declared = manifest.dirs.get(run.run_id) if manifest else None
-    if not run.params:
+    params = {k: v for k, v in run.params.items() if k not in upstream}
+    if not params:
         return
+
     if declared is None:
-        for key in run.params:
+        for key in params:
             verification.append_declaration_status(
                 f"{run_path}/params/{key}",
                 f"no {PROVENANCE_MANIFEST_PATH} entry for the run",
@@ -92,12 +98,13 @@ def _append_params_statuses(
                 evidence_path=PROVENANCE_MANIFEST_PATH,
             )
         return
+
     resolved = declared.parameters or {
         k.lower(): v for k, v in declared.overrides.items()
     }
     complete = bool(declared.parameters)
     source = "parameters" if complete else "overrides"
-    for key, wanted in run.params.items():
+    for key, wanted in params.items():
         path = f"{run_path}/params/{key}"
         if key not in resolved:
             if complete:
@@ -114,6 +121,7 @@ def _append_params_statuses(
                     "unverified",
                 )
             continue
+
         same = str(resolved[key]) == str(wanted)
         verification.append_declaration_status(
             path,

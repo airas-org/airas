@@ -30,7 +30,12 @@ class RecordVerification(BaseModel):
     @computed_field
     @property
     def problems(self) -> list[str]:
-        return [s.reason for s in self.declaration_statuses if s.status == "mismatch"]
+        # 同じ理由が複数の宣言の行に付くことがある（上流引数は argument と params の両方）。問題としては 1 件
+        return list(
+            dict.fromkeys(
+                s.reason for s in self.declaration_statuses if s.status == "mismatch"
+            )
+        )
 
     @computed_field
     @property

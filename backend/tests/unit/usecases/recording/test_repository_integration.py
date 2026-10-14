@@ -5,7 +5,6 @@ from pydantic import ValidationError
 
 from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import (
-    ArgumentValue,
     Criterion,
     Hypothesis,
     LiteratureSource,
@@ -82,7 +81,11 @@ def _record(
                             SeyvalDesign(
                                 id="d1",
                                 repository_integration=integration,
-                                runs=[SeyvalRun(run_id="run-1")],
+                                runs=[
+                                    SeyvalRun(
+                                        run_id="run-1", params={MAX_ITERATIONS: 20}
+                                    )
+                                ],
                             )
                         ],
                     )
@@ -94,8 +97,8 @@ def _record(
 
 INTEGRATION = RepositoryIntegration(
     repository_id="s1.r1",
+    arguments=[MAX_ITERATIONS],
     extension_points=["scigym.api.LLM"],
-    arguments=[ArgumentValue(argument=MAX_ITERATIONS, value=20)],
 )
 
 
@@ -122,7 +125,9 @@ def test_repository_ids_are_unique_within_a_source() -> None:
         )
 
 
-def test_an_argument_set_to_none_reads_back_as_none() -> None:
-    setting = ArgumentValue(argument=MAX_ITERATIONS, value=None)
-    saved = setting.model_dump(exclude_defaults=True)
-    assert ArgumentValue.model_validate(saved).value is None
+def test_every_run_declares_a_params_key_for_each_argument() -> None:
+    record = _record(INTEGRATION)
+    record.hypotheses[0].claims[0].designs[0].runs[0].params = {}
+    assert _problems(record) == [
+        f"design d1: run 'run-1' has no params key '{MAX_ITERATIONS}'"
+    ]

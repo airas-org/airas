@@ -51,12 +51,11 @@ refine until the hypothesis rests on passages you have actually read.
    (`repository_id`, `extension_points` = upstream names your adapter
    subclasses, overrides or replaces, written as the defining module's
    `module.Class` — `scigym.api.api.LLM`, not the re-export
-   `scigym.api.LLM` — `arguments` = one entry per knob:
-   `argument` as `module.Class.method.arg`, then `value` for a knob you
-   fix or keep, or `params_key` — the `params` key holding its value in
-   each run — for a knob on the grid, and `reason`). The run hook
-   records what the upstream was called with, and the gate compares it
-   with these.
+   `scigym.api.LLM` — `arguments` = one `module.Class.method.arg` per
+   knob you set, fixed or on the grid alike; each is a key of every
+   run's `params` holding the value passed). The run hook records what
+   the upstream was called with, and the gate compares each run's
+   `params` with it.
 4. **Author the hypothesis and the design** against the guide
    `get_prompts(step="hypothesis_and_design")` returns: it states what a hypothesis, a claim (statement, rationale,
    criterion, predicted interval, cited passages), a design and a run

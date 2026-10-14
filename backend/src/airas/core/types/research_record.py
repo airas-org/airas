@@ -301,31 +301,24 @@ class SeyvalRun(Run[dict[str, Any], SeyvalResult]):
     )
 
 
-class ArgumentValue(BaseModel):
-    argument: str = Field(description="module.Class.method.arg of the upstream")
-    value: Any = Field(default=None, description="The value passed, when fixed")
-    params_key: str = Field(
-        default="",
-        description="When varied over the design's runs: the key of each run's "
-        "params holding the value; value is then not used",
-    )
-    reason: str = ""
-
-
 class RepositoryIntegration(BaseModel):
     """How the design runs the method a source's repository holds: the
-    upstream names it extends and the arguments it sets. The upstream files
-    themselves are not modified."""
+    upstream arguments it sets and the upstream names it extends. The
+    upstream files themselves are not modified."""
 
     repository_id: str = Field(
         pattern=REPOSITORY_ID_PATTERN,
         description="Repository whose method_entry this design runs, e.g. 's1.r1'",
     )
+    arguments: list[str] = Field(
+        default_factory=list,
+        description="Upstream arguments the adapter sets, as module.Class.method.arg; "
+        "each is a key of every run's params holding the value passed",
+    )
     extension_points: list[str] = Field(
         default_factory=list,
         description="Upstream names the adapter may subclass, override or replace",
     )
-    arguments: list[ArgumentValue] = Field(default_factory=list)
 
 
 class ReviewFinding(BaseModel):

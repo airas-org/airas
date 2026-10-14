@@ -278,30 +278,22 @@ def _append_run_statuses(
         "verified" if entry_called else "mismatch",
         evidence_path=observed_relpath,
     )
-    # A fixed value is declared; a varied one is this run's params entry. The
-    # row sits on the leaf compared, so the argument's reason stays unchecked.
-    for setting in integration.arguments:
-        argument_path = (
-            f"{design_path}/repository_integration/arguments[{setting.argument}]/"
-            + ("params_key" if setting.params_key else "value")
-        )
-        if not setting.params_key:
-            value = setting.value
-        elif setting.params_key in run.params:
-            value = run.params[setting.params_key]
-        else:
-            verification.append_declaration_status(
-                argument_path,
-                f"{label}: {setting.argument} reads params[{setting.params_key!r}], "
-                "which the run does not declare",
-                "mismatch",
-                evidence_path=observed_relpath,
+    # 宣言した上流引数の値は同じキーで各 run の params にある。行は argument と params の両方に書く
+    for argument in integration.arguments:
+        status: Literal["verified", "mismatch", "unverified"]
+        if argument in run.params:
+            reason, status = _argument_status(
+                label, argument, run.params[argument], bound
             )
-            continue
-        reason, status = _argument_status(label, setting.argument, value, bound)
-        verification.append_declaration_status(
-            argument_path, reason, status, evidence_path=observed_relpath
-        )
+        else:
+            reason, status = f"{label}: params has no key {argument!r}", "mismatch"
+        for path in (
+            f"{design_path}/repository_integration/arguments",
+            f"{run_path}/params/{argument}",
+        ):
+            verification.append_declaration_status(
+                path, reason, status, evidence_path=observed_relpath
+            )
 
     # The experiment code that ran is the code at the latest result's commit:
     # observed.json is the latest run's, earlier results keep their own commits.
