@@ -5,7 +5,6 @@ from pydantic import ValidationError
 
 from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import (
-    ArgumentValue,
     Criterion,
     Hypothesis,
     LiteratureSource,
@@ -20,8 +19,15 @@ from airas.core.types.research_record import (
     SeyvalVerifier,
     VerifierKind,
 )
+from airas.core.types.run_provenance import (
+    ResultsDirProvenance,
+    RunProvenanceManifest,
+)
 from airas.research_record.verify._verify_record_in_itself import (
     verify_record_in_itself,
+)
+from airas.research_record.verify._verify_run_results import (
+    _append_params_statuses,
 )
 
 ENTRY = "scigym.controller.Controller.run_benchmark"
@@ -82,7 +88,11 @@ def _record(
                             SeyvalDesign(
                                 id="d1",
                                 repository_integration=integration,
-                                runs=[SeyvalRun(run_id="run-1")],
+                                runs=[
+                                    SeyvalRun(
+                                        run_id="run-1", params={MAX_ITERATIONS: 20}
+                                    )
+                                ],
                             )
                         ],
                     )
@@ -94,8 +104,8 @@ def _record(
 
 INTEGRATION = RepositoryIntegration(
     repository_id="s1.r1",
+    arguments=[MAX_ITERATIONS],
     extension_points=["scigym.api.LLM"],
-    arguments=[ArgumentValue(argument=MAX_ITERATIONS, value=20)],
 )
 
 
@@ -122,7 +132,30 @@ def test_repository_ids_are_unique_within_a_source() -> None:
         )
 
 
-def test_an_argument_set_to_none_reads_back_as_none() -> None:
-    setting = ArgumentValue(argument=MAX_ITERATIONS, value=None)
-    saved = setting.model_dump(exclude_defaults=True)
-    assert ArgumentValue.model_validate(saved).value is None
+def test_every_run_declares_a_params_key_for_each_argument() -> None:
+    record = _record(INTEGRATION)
+    record.hypotheses[0].claims[0].designs[0].runs[0].params = {}
+    assert _problems(record) == [
+        f"design d1: run 'run-1' has no params key '{MAX_ITERATIONS}'"
+    ]
+
+
+def test_an_upstream_argument_key_is_left_to_the_observation_not_the_provenance() -> (
+    None
+):
+    run = SeyvalRun(run_id="run-1", params={"mode": "full", MAX_ITERATIONS: 20})
+    manifest = RunProvenanceManifest(
+        dirs={
+            "run-1": ResultsDirProvenance(
+                execution_id="e1",
+                commit_hash="8" * 40,
+                overrides={"mode": "full", MAX_ITERATIONS: "7"},  # 上流側は食い違う
+            )
+        }
+    )
+    verification = RecordVerification()
+    _append_params_statuses(
+        run, {MAX_ITERATIONS}, manifest, "runs[run-1]", verification
+    )
+    rows = {s.path: s.status for s in verification.declaration_statuses}
+    assert rows == {"runs[run-1]/params/mode": "verified"}

@@ -11,7 +11,6 @@ import pytest
 from airas.core.hashing import file_sha256, text_sha256
 from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import (
-    ArgumentValue,
     Criterion,
     Hypothesis,
     InputRef,
@@ -32,6 +31,7 @@ from airas.research_record.verify._verify_run_observations import (
 )
 
 ENTRY = "pkg.runner.Runner.run"
+N_ARG = "pkg.runner.Runner.__init__.n"
 RUNNER_PY = "class Runner:\n    def __init__(self, n=5): ...\n    def run(self): ...\n"
 SNAPSHOT = f"==> pkg/runner.py <==\n{RUNNER_PY}"
 ADAPTER_PY = "import pkg\nclass MyModel(pkg.model.Model):\n    def predict(self): ...\n"
@@ -115,16 +115,12 @@ def _record(root: Path, run_commit: str) -> ResearchRecord:
                                 repository_integration=RepositoryIntegration(
                                     repository_id="s1.r1",
                                     extension_points=["pkg.model.Model"],
-                                    arguments=[
-                                        ArgumentValue(
-                                            argument="pkg.runner.Runner.__init__.n",
-                                            value=20,
-                                        )
-                                    ],
+                                    arguments=[N_ARG],
                                 ),
                                 runs=[
                                     SeyvalRun(
                                         run_id="run-1",
+                                        params={N_ARG: 20},
                                         results=[
                                             SeyvalResult(
                                                 verifier="seyval",
@@ -341,23 +337,18 @@ def test_a_workflow_edited_after_the_import_is_reported(tmp_path: Path) -> None:
     ), problems
 
 
-def test_a_knob_varied_over_runs_is_read_from_each_runs_params(tmp_path: Path) -> None:
+def test_an_argument_value_is_read_from_the_runs_params(tmp_path: Path) -> None:
     record = _record(tmp_path, _template_import(tmp_path))
     design = record.hypotheses[0].claims[0].designs[0]
-    design.repository_integration.arguments = [
-        ArgumentValue(argument="pkg.runner.Runner.__init__.n", params_key="n")
-    ]
-    design.runs[0].params = {"n": 20}
     _write(tmp_path, _observed(tmp_path))
     assert _problems(tmp_path, record) == []
-    design.runs[0].params = {"n": 7}
+    design.runs[0].params = {N_ARG: 7}
     assert _problems(tmp_path, record) == [
         "run 'run-1': pkg.runner.Runner.__init__.n was 20, not the declared 7"
     ]
     design.runs[0].params = {}
     assert _problems(tmp_path, record) == [
-        "run 'run-1': pkg.runner.Runner.__init__.n reads params['n'], which the run "
-        "does not declare"
+        "run 'run-1': params has no key 'pkg.runner.Runner.__init__.n'"
     ]
 
 
@@ -410,10 +401,9 @@ def test_a_long_or_structured_value_is_compared_through_its_recording(
     tmp_path: Path,
 ) -> None:
     record = _record(tmp_path, _template_import(tmp_path))
-    record.hypotheses[0].claims[0].designs[0].repository_integration.arguments = [
-        ArgumentValue(argument="pkg.runner.Runner.__init__.n", value=[1, 2]),
-        ArgumentValue(argument="pkg.runner.Runner.__init__.key", value="k" * 300),
-    ]
+    design = record.hypotheses[0].claims[0].designs[0]
+    design.repository_integration.arguments = [N_ARG, "pkg.runner.Runner.__init__.key"]
+    design.runs[0].params = {N_ARG: [1, 2], "pkg.runner.Runner.__init__.key": "k" * 300}
     observed = _observed(tmp_path)
     observed["calls"]["pkg.runner.Runner.__init__"]["args"] = [
         _arg("n", [1, 2]),  # a small container is kept as a value
@@ -498,9 +488,7 @@ def test_a_hashed_or_redacted_value_is_compared_through_its_recording(
     expected: list[str],
 ) -> None:
     record = _record(tmp_path, _template_import(tmp_path))
-    record.hypotheses[0].claims[0].designs[0].repository_integration.arguments = [
-        ArgumentValue(argument="pkg.runner.Runner.__init__.n", value=declared)
-    ]
+    record.hypotheses[0].claims[0].designs[0].runs[0].params = {N_ARG: declared}
     observed = _observed(tmp_path)
     mutate(observed)
     _write(tmp_path, observed)
@@ -522,13 +510,10 @@ def _statuses(tmp_path: Path, record: ResearchRecord, path_suffix: str) -> list[
 
 def test_a_redacted_value_is_unverified_not_covered(tmp_path: Path) -> None:
     record = _record(tmp_path, _template_import(tmp_path))
-    record.hypotheses[0].claims[0].designs[0].repository_integration.arguments = [
-        ArgumentValue(argument="pkg.runner.Runner.__init__.n", value=20)
-    ]
     observed = _observed(tmp_path)
     _redacted(observed)
     _write(tmp_path, observed)
-    rows = _statuses(tmp_path, record, "arguments[pkg.runner.Runner.__init__.n]/value")
+    rows = _statuses(tmp_path, record, "/repository_integration/arguments")
     assert len(rows) == 1 and rows[0].startswith("unverified: ")
 
 

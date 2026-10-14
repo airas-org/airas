@@ -94,13 +94,12 @@ are stated.
        "designs": [{
          "id": "d1", "summary": "...",
          "repository_integration": {           // when the design runs a source's code
-           "repository_id": "s2.r1", "extension_points": ["pkg.Model"],
-           "arguments": [{"argument": "pkg.Runner.__init__.n_basis", "value": 20,
-                          "reason": "as in the paper's main setting"},
-                         {"argument": "pkg.Runner.__init__.seed", "params_key": "seed",
-                          "reason": "varied over the runs"}]},
+           "repository_id": "s2.r1",
+           "arguments": ["pkg.Runner.__init__.n_basis", "pkg.Runner.__init__.seed"],
+           "extension_points": ["pkg.Model"]},
          "runs": [{"run_id": "proposed-...", "description": "...",
-                   "params": {"mode": "full", "seed": 0}}]
+                   "params": {"mode": "full", "pkg.Runner.__init__.n_basis": 20,
+                              "pkg.Runner.__init__.seed": 0}}]
        }]
      }],
      "tables": [...], "notes": [...]

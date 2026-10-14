@@ -216,20 +216,21 @@ def _verify_passage_references(
 def _verify_repository_integrations(
     record: ResearchRecord, verification: RecordVerification
 ) -> None:
-    """A design that runs a source's code names a repository of this record
-    that declares the method's entry."""
     repositories = {
         repository.id: repository
         for source in record.latest_literature()
         for repository in source.repositories
     }
+
     for hypothesis, claim in record.latest_claims():
         if not isinstance(claim, SeyvalClaim):
             continue
+
         for design in latest(claim.designs, "id"):
             integration = design.repository_integration
             if integration is None:
                 continue
+
             repository = repositories.get(integration.repository_id)
             declared = repository is not None and bool(repository.method_entry)
             verification.append_declaration_status(
@@ -241,6 +242,26 @@ def _verify_repository_integrations(
                 f"'{integration.repository_id}' is not a repository of this "
                 "record that declares a method_entry",
                 "verified" if declared else "mismatch",
+                evidence_path=RECORD_PATH,
+            )
+            if not integration.arguments:
+                continue
+
+            # 上流引数の値は各 run の params に同じキーで置く。無ければ gate は比べられない
+            missing = [
+                f"run '{run.run_id}' has no params key {argument!r}"
+                for run in latest(design.runs, "run_id")
+                for argument in integration.arguments
+                if argument not in run.params
+            ]
+            verification.append_declaration_status(
+                f"{_claim_path(hypothesis.id, claim.id)}/designs[{design.id}]"
+                "/repository_integration/arguments",
+                f"design {design.id}: " + "; ".join(missing)
+                if missing
+                else f"every run of design {design.id} holds a params key for each "
+                f"of its {len(integration.arguments)} arguments",
+                "mismatch" if missing else "verified",
                 evidence_path=RECORD_PATH,
             )
 

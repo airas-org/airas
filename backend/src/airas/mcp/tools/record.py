@@ -147,10 +147,10 @@ async def preregister_record(
           "designs": [{
             "id": "d1", "summary": "...",
             "repository_integration": {
-              "repository_id": "s2.r1", "extension_points": ["pkg.Model"],
-              "arguments": [{"argument": "pkg.Runner.__init__.n_basis", "value": 20}]},
+              "repository_id": "s2.r1", "arguments": ["pkg.Runner.__init__.n_basis"],
+              "extension_points": ["pkg.Model"]},
             "runs": [{"run_id": "proposed-...", "description": "...",
-                      "params": {"mode": "full", "epochs": 10, "seed": 0}}]
+                      "params": {"mode": "full", "pkg.Runner.__init__.n_basis": 20, "seed": 0}}]
           }]
         }],
         "tables": [...], "charts": [...], "notes": [...]

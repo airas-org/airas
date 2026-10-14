@@ -56,8 +56,9 @@ results[] entry's id / commit / metrics / eval_inputs / eval_report is a copy of
 results directory; verified / verdict match their recomputation; the results \
 directory is byte-identical to what the execution backend (Seyval) stored
 - observation (observed.json): the hook is the template's; upstream module hashes \
-match the snapshot; method_entry was called; each arguments[] value equals the \
-observed argument; the src that ran is the result's commit; every redefinition \
+match the snapshot; method_entry was called; for each arguments[] entry the \
+observed argument equals run.params[<that argument>]; the src that ran is the \
+result's commit; every redefinition \
 and override is in extension_points
 - paper: values.tex / claims.tex / tables / bib equal their regeneration from the \
 record; every \\cite names a registered source and passage
