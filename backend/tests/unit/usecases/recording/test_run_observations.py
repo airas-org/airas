@@ -337,7 +337,7 @@ def test_a_workflow_edited_after_the_import_is_reported(tmp_path: Path) -> None:
     ), problems
 
 
-def test_an_arguments_value_is_read_from_each_runs_params(tmp_path: Path) -> None:
+def test_an_argument_value_is_read_from_the_runs_params(tmp_path: Path) -> None:
     record = _record(tmp_path, _template_import(tmp_path))
     design = record.hypotheses[0].claims[0].designs[0]
     _write(tmp_path, _observed(tmp_path))

@@ -278,7 +278,7 @@ def _append_run_statuses(
         "verified" if entry_called else "mismatch",
         evidence_path=observed_relpath,
     )
-    # 宣言した上流引数の値は同じキーで各 run の params にある。行は argument と params の両方に書く
+    # params の行もここで書く。provenance 側（_verify_run_results）は上流引数のキーを飛ばす
     for argument in integration.arguments:
         status: Literal["verified", "mismatch", "unverified"]
         if argument in run.params:

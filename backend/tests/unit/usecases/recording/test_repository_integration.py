@@ -19,8 +19,15 @@ from airas.core.types.research_record import (
     SeyvalVerifier,
     VerifierKind,
 )
+from airas.core.types.run_provenance import (
+    ResultsDirProvenance,
+    RunProvenanceManifest,
+)
 from airas.research_record.verify._verify_record_in_itself import (
     verify_record_in_itself,
+)
+from airas.research_record.verify._verify_run_results import (
+    _append_params_statuses,
 )
 
 ENTRY = "scigym.controller.Controller.run_benchmark"
@@ -131,3 +138,24 @@ def test_every_run_declares_a_params_key_for_each_argument() -> None:
     assert _problems(record) == [
         f"design d1: run 'run-1' has no params key '{MAX_ITERATIONS}'"
     ]
+
+
+def test_an_upstream_argument_key_is_left_to_the_observation_not_the_provenance() -> (
+    None
+):
+    run = SeyvalRun(run_id="run-1", params={"mode": "full", MAX_ITERATIONS: 20})
+    manifest = RunProvenanceManifest(
+        dirs={
+            "run-1": ResultsDirProvenance(
+                execution_id="e1",
+                commit_hash="8" * 40,
+                overrides={"mode": "full", MAX_ITERATIONS: "7"},  # 上流側は食い違う
+            )
+        }
+    )
+    verification = RecordVerification()
+    _append_params_statuses(
+        run, {MAX_ITERATIONS}, manifest, "runs[run-1]", verification
+    )
+    rows = {s.path: s.status for s in verification.declaration_statuses}
+    assert rows == {"runs[run-1]/params/mode": "verified"}
