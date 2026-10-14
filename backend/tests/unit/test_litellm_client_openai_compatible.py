@@ -6,14 +6,17 @@ These tests pin that mapping, since getting it wrong sends research traffic
 to the wrong host — or to a vendor default with the wrong key.
 """
 
+from types import SimpleNamespace
+
+import litellm
 import pytest
+from pydantic import BaseModel
 
 from airas.infra.litellm_client import (
     DEFAULT_LLM_TIMEOUT_SECONDS,
     LITELLM_OPENAI_COMPATIBLE_PREFIX,
     LLM_TIMEOUT_ENV,
     LiteLLMClient,
-    _max_output_tokens_param,
     resolve_llm_timeout,
 )
 from airas.infra.llm_provider_resolver import (
@@ -101,13 +104,62 @@ class TestLLMTimeout:
         assert resolve_llm_timeout() == DEFAULT_LLM_TIMEOUT_SECONDS
 
 
-class TestMaxOutputTokensParam:
-    @pytest.mark.parametrize("model", ["gpt-6.1-sol", "gpt-6-luna", "gpt-4.1"])
-    def test_openai_models_take_max_completion_tokens(self, model):
-        assert _max_output_tokens_param(model) == "max_completion_tokens"
+class Word(BaseModel):
+    word: str
 
-    @pytest.mark.parametrize(
-        "model", ["claude-sonnet-5-5", "gemini/gemini-3.5-flash", "rikyu/kimi-k3"]
+
+@pytest.fixture
+def sent_kwargs(monkeypatch) -> dict:
+    """acompletion に渡った kwargs を捕まえる。モデルの catalog には依存しない"""
+    sent: dict = {}
+
+    async def fake_acompletion(**kwargs):
+        sent.update(kwargs)
+        message = SimpleNamespace(content='{"word": "ok"}')
+        return SimpleNamespace(choices=[SimpleNamespace(message=message)])
+
+    monkeypatch.setattr(litellm, "acompletion", fake_acompletion)
+    monkeypatch.setattr(
+        LiteLLMClient,
+        "get_model_info",
+        staticmethod(lambda _: {"max_output_tokens": 123}),
     )
-    def test_other_providers_keep_max_tokens(self, model):
-        assert _max_output_tokens_param(model) == "max_tokens"
+    monkeypatch.setattr(
+        LiteLLMClient, "supports_structured_output", staticmethod(lambda _: True)
+    )
+    return sent
+
+
+LIMIT_NAME_BY_MODEL = [
+    ("gpt-6.1-sol", "max_completion_tokens"),
+    ("gpt-4.1", "max_completion_tokens"),
+    ("claude-sonnet-5-5", "max_tokens"),
+    ("vercel_ai_gateway/openai/gpt-4.1", "max_tokens"),
+    ("rikyu/kimi-k3", "max_tokens"),
+]
+# 呼び出し側が両方の別名で渡しても、送るのは provider に合う片方だけ
+CALLER_LIMITS = {"max_tokens": 5, "max_completion_tokens": 5}
+
+
+class TestOutputTokenLimit:
+    @pytest.mark.parametrize(("model", "name"), LIMIT_NAME_BY_MODEL)
+    async def test_generate_sends_the_limit_under_one_name(
+        self, model, name, sent_kwargs
+    ) -> None:
+        client = LiteLLMClient(available_providers=set())
+
+        await client.generate("hi", model, params=dict(CALLER_LIMITS))
+
+        limits = {k: v for k, v in sent_kwargs.items() if k in CALLER_LIMITS}
+        assert limits == {name: 123}
+
+    @pytest.mark.parametrize(("model", "name"), LIMIT_NAME_BY_MODEL)
+    async def test_structured_output_sends_the_limit_under_one_name(
+        self, model, name, sent_kwargs
+    ) -> None:
+        client = LiteLLMClient(available_providers=set())
+
+        await client.structured_output(model, "hi", Word, params=dict(CALLER_LIMITS))
+
+        limits = {k: v for k, v in sent_kwargs.items() if k in CALLER_LIMITS}
+        assert limits == {name: 123}
