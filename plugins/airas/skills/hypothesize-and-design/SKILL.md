@@ -52,9 +52,12 @@ refine until the hypothesis rests on passages you have actually read.
    subclasses, overrides or replaces, written as the defining module's
    `module.Class` — `scigym.api.api.LLM`, not the re-export
    `scigym.api.LLM` — `arguments` = one `module.Class.method.arg` per
-   knob you set, fixed or on the grid alike; each is a key of every
-   run's `params` holding the value passed). The run hook records what
-   the upstream was called with, and the gate compares each run's
+   knob you set, fixed or on the grid alike: the argument of the
+   function that consumes the value — the upstream's, or a `src/`
+   function's for an own knob (seed, workers, a threshold); each is a
+   key of every run's `params` holding the value that reaches the
+   argument unchanged). The run hook records what every `src/` function
+   and the upstream were called with, and the gate compares each run's
    `params` with it.
 4. **Author the hypothesis and the design** against the guide
    `get_prompts(step="hypothesis_and_design")` returns: it states what a hypothesis, a claim (statement, rationale,
