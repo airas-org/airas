@@ -57,6 +57,20 @@ contract in `_shared/references/lean.md`; both kinds start through the same
    files opened, the hosts reached and the child processes. Fix the code
    or the design and repeat until the sanity run touches nothing
    undeclared.
+   Name the settings so the gate can compare them: a run yaml key is
+   the `module.Class.method.arg` of the function that consumes the
+   value — the upstream's, or a `src/` function's for an own knob
+   (seed, workers, timeouts, thresholds) — and the value reaches that
+   argument unchanged. So: put the consuming function in an imported
+   `src/` module, not the entry module (its functions are recorded as
+   `__main__.*`); convert inside the function, not before it (pass
+   `seed` to a `make_rng(seed)` that calls `default_rng`; pass the raw
+   `sim_timeout` and compute the deadline inside); never declare a
+   value derived per call (`seed + i`, a remaining budget) or one that
+   varies within a run; keep values JSON-like (scalars, strings, small
+   lists, floats written as floats); when two arguments take the same
+   value write both keys with a YAML anchor; run child processes as
+   imported modules (`python -m src.worker`), not as scripts.
    Then put the upstream / own-code boundary in the hypothesis's
    `notes` in numbers: the upstream calls and loaded files from
    `observed.json`, the `src/` lines that implement method steps, and

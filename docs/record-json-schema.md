@@ -330,7 +330,7 @@ classDiagram
         - `repository_integration` 文献のリポジトリが持つ手法をこの design がどう走らせるか（省略可）。上流のファイルは改変しない前提。結果のある run の `observed.json` と照合される（上の「観測」）
           - `repository_id` 走らせるリポジトリ（`"s1.r1"`）。その `method_entry` が手法の入口
           - `extension_points[]` adapter が継承・override・差し替えしてよい上流の名前
-          - `arguments[]` こちらが値を決めて渡す上流の引数の名前 `module.Class.method.arg`。固定の値も run ごとに振る値も、各 run の `params` に同じキーで値を置く。フックは `method_entry` と各引数の関数を観測し、gate は観測された束縛引数を各 run の `params[<同じキー>]` と照合して、argument の行と params の行の両方に書く
+          - `arguments[]` こちらが値を決めて渡す引数の名前 `module.Class.method.arg`。値を消費する関数の引数で、上流の関数でも、上流に渡らないノブ（seed、workers、閾値）を消費する src/ の関数でもよい。値は変換せずにその引数へ届ける。固定の値も run ごとに振る値も、各 run の `params` に同じキーで値を置く。フックは `method_entry` と各引数の関数を観測し、gate は観測された束縛引数を各 run の `params[<同じキー>]` と照合して、argument の行と params の行の両方に書く
         - **runs[]** 実行単位。`.research/results/<run_id>/` を生む
           - `run_id` / `description`
           - `params` 結果に効く全条件。dispatch 条件（`mode`）と `config/config.yaml ⊕ config/run/<run_id>.yaml` の全キー（例 `{"mode": "full", "epochs": 10}`）。run commit 時点の config と基盤の記録に照合される

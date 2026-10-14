@@ -303,8 +303,8 @@ class SeyvalRun(Run[dict[str, Any], SeyvalResult]):
 
 class RepositoryIntegration(BaseModel):
     """How the design runs the method a source's repository holds: the
-    upstream arguments it sets and the upstream names it extends. The
-    upstream files themselves are not modified."""
+    arguments it sets and the upstream names it extends. The upstream
+    files themselves are not modified."""
 
     repository_id: str = Field(
         pattern=REPOSITORY_ID_PATTERN,
@@ -312,8 +312,10 @@ class RepositoryIntegration(BaseModel):
     )
     arguments: list[str] = Field(
         default_factory=list,
-        description="Upstream arguments the adapter sets, as module.Class.method.arg; "
-        "each is a key of every run's params holding the value passed",
+        description="Arguments the run sets, as module.Class.method.arg of the "
+        "function that consumes the value: the upstream's, or a src/ function's "
+        "for an own knob (seed, workers, a threshold); each is a key of every "
+        "run's params holding the value that reaches the argument unchanged",
     )
     extension_points: list[str] = Field(
         default_factory=list,

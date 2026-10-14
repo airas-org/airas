@@ -48,9 +48,12 @@ the method) and, on the design, `repository_integration` (`repository_id`, \
 `extension_points` = upstream names the adapter subclasses, overrides or \
 replaces, as the defining module's `module.Class` (`scigym.api.api.LLM`, \
 not the re-export `scigym.api.LLM`), `arguments` = one `module.Class.method.arg` \
-per knob you set, fixed or on the grid alike; each is a key of every run's \
-`params` holding the value passed). The gate compares each run's `params` with \
-what the run's hook observed the upstream being called with.
+per knob you set, fixed or on the grid alike: the argument of the function that \
+consumes the value — the upstream's, or a `src/` function's for an own knob \
+(seed, workers, a threshold); each is a key of every run's `params` holding the \
+value that reaches the argument unchanged). The gate compares each run's \
+`params` with what the run's hook observed every `src/` function and the \
+upstream being called with.
 
 The design's `summary` states every choice that fixes the hypothesis \
 space, what the method gets to see, how it selects and how it is scored, \
