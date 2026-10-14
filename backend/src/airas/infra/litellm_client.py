@@ -95,6 +95,21 @@ def resolve_llm_timeout() -> float:
     return timeout
 
 
+def _set_output_token_limit(
+    litellm_kwargs: dict[str, Any], llm_name: str, max_output_tokens: int
+) -> str:
+    # OpenAI は gpt-6 系で max_tokens を拒む（max_completion_tokens のみ受ける）。litellm 1.84 は o 系と gpt-5 系しか置き換えないので、OpenAI 向けはここで選ぶ
+    # 呼び出し側が別名で渡していても片方だけ送る。OpenAI は max_tokens が並んでいるだけで拒む
+    litellm_kwargs.pop("max_tokens", None)
+    litellm_kwargs.pop("max_completion_tokens", None)
+    if infer_provider(llm_name) is LLMProvider.OPENAI:
+        name = "max_completion_tokens"
+    else:
+        name = "max_tokens"
+    litellm_kwargs[name] = max_output_tokens
+    return name
+
+
 class LiteLLMClient:
     def __init__(
         self,
@@ -155,11 +170,13 @@ class LiteLLMClient:
         try:
             model_info = self.get_model_info(llm_name)
             max_output_tokens = model_info.get("max_output_tokens", 4096)
-            litellm_kwargs["max_tokens"] = max_output_tokens
+            limit_param = _set_output_token_limit(
+                litellm_kwargs, llm_name, max_output_tokens
+            )
 
             logger.info(
                 f"Generating with model={llm_name}, web_search={web_search}, "
-                f"max_tokens={max_output_tokens}, params={litellm_kwargs}"
+                f"{limit_param}={max_output_tokens}, params={litellm_kwargs}"
             )
         except Exception as e:
             logger.warning(
@@ -250,11 +267,13 @@ class LiteLLMClient:
         try:
             model_info = self.get_model_info(llm_name)
             max_output_tokens = model_info.get("max_output_tokens", 4096)
-            litellm_kwargs["max_tokens"] = max_output_tokens
+            limit_param = _set_output_token_limit(
+                litellm_kwargs, llm_name, max_output_tokens
+            )
 
             logger.info(
                 f"Structured output with model={llm_name}, web_search={web_search}, "
-                f"schema={data_model.__name__}, max_tokens={max_output_tokens}"
+                f"schema={data_model.__name__}, {limit_param}={max_output_tokens}"
             )
         except Exception as e:
             logger.warning(
