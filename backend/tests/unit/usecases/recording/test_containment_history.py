@@ -170,13 +170,13 @@ def test_a_claim_with_two_runs_needs_both(tmp_path: Path) -> None:
 def test_appending_a_claim_after_results_is_allowed(tmp_path: Path) -> None:
     """Containment permits it; whether it counts as preregistered is TODO."""
     _init_repo(tmp_path)
-    _record().save(str(tmp_path))
-    freeze = _commit_all(tmp_path, "prereg without the claim")
+    _record(_claim()).save(str(tmp_path))  # hypothesis は claim を 1 つ以上持つ
+    freeze = _commit_all(tmp_path, "prereg with one claim")
     _write_results(tmp_path, freeze)
     _commit_all(tmp_path, "results")
 
     record = ResearchRecord.load(str(tmp_path))
-    record.hypotheses[0].claims.append(_claim())
+    record.hypotheses[0].claims.append(_claim("c2"))
     record.save(str(tmp_path))
     _commit_all(tmp_path, "claim added afterwards")
     assert _problems(tmp_path, record, require_history=True) == []
