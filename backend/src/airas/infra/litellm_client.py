@@ -95,6 +95,13 @@ def resolve_llm_timeout() -> float:
     return timeout
 
 
+def _max_output_tokens_param(llm_name: str) -> str:
+    # OpenAI は gpt-6 系で max_tokens を拒む（max_completion_tokens のみ受ける）。litellm 1.84 は o 系と gpt-5 系しか置き換えないので、OpenAI 向けはここで選ぶ
+    if infer_provider(llm_name) is LLMProvider.OPENAI:
+        return "max_completion_tokens"
+    return "max_tokens"
+
+
 class LiteLLMClient:
     def __init__(
         self,
@@ -155,11 +162,12 @@ class LiteLLMClient:
         try:
             model_info = self.get_model_info(llm_name)
             max_output_tokens = model_info.get("max_output_tokens", 4096)
-            litellm_kwargs["max_tokens"] = max_output_tokens
+            limit_param = _max_output_tokens_param(llm_name)
+            litellm_kwargs[limit_param] = max_output_tokens
 
             logger.info(
                 f"Generating with model={llm_name}, web_search={web_search}, "
-                f"max_tokens={max_output_tokens}, params={litellm_kwargs}"
+                f"{limit_param}={max_output_tokens}, params={litellm_kwargs}"
             )
         except Exception as e:
             logger.warning(
@@ -250,11 +258,12 @@ class LiteLLMClient:
         try:
             model_info = self.get_model_info(llm_name)
             max_output_tokens = model_info.get("max_output_tokens", 4096)
-            litellm_kwargs["max_tokens"] = max_output_tokens
+            limit_param = _max_output_tokens_param(llm_name)
+            litellm_kwargs[limit_param] = max_output_tokens
 
             logger.info(
                 f"Structured output with model={llm_name}, web_search={web_search}, "
-                f"schema={data_model.__name__}, max_tokens={max_output_tokens}"
+                f"schema={data_model.__name__}, {limit_param}={max_output_tokens}"
             )
         except Exception as e:
             logger.warning(

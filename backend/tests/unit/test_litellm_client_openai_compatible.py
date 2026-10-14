@@ -13,6 +13,7 @@ from airas.infra.litellm_client import (
     LITELLM_OPENAI_COMPATIBLE_PREFIX,
     LLM_TIMEOUT_ENV,
     LiteLLMClient,
+    _max_output_tokens_param,
     resolve_llm_timeout,
 )
 from airas.infra.llm_provider_resolver import (
@@ -98,3 +99,15 @@ class TestLLMTimeout:
         monkeypatch.setenv(LLM_TIMEOUT_ENV, value)
 
         assert resolve_llm_timeout() == DEFAULT_LLM_TIMEOUT_SECONDS
+
+
+class TestMaxOutputTokensParam:
+    @pytest.mark.parametrize("model", ["gpt-6.1-sol", "gpt-6-luna", "gpt-4.1"])
+    def test_openai_models_take_max_completion_tokens(self, model):
+        assert _max_output_tokens_param(model) == "max_completion_tokens"
+
+    @pytest.mark.parametrize(
+        "model", ["claude-sonnet-5-5", "gemini/gemini-3.5-flash", "rikyu/kimi-k3"]
+    )
+    def test_other_providers_keep_max_tokens(self, model):
+        assert _max_output_tokens_param(model) == "max_tokens"
