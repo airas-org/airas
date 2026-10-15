@@ -158,7 +158,7 @@ def test_a_source_changed_after_it_reached_main_fails(tmp_path: Path) -> None:
     _git(repo, "add", "-A")
     statuses = _statuses(repo, _record(_imported("s1", OLD_ROW)), _GitHub())
     assert statuses["literature[s1]"].status == "mismatch"
-    assert "never changed once on main" in statuses["literature[s1]"].reason
+    assert "never changed once merged" in statuses["literature[s1]"].reason
 
 
 def test_a_new_source_edited_after_the_import_fails(tmp_path: Path) -> None:
@@ -168,7 +168,7 @@ def test_a_new_source_edited_after_the_import_fails(tmp_path: Path) -> None:
         "literature[s2]"
     ]
     assert status.status == "mismatch"
-    assert "fulltext.txt differ" in status.reason
+    assert "fulltext.txt differs" in status.reason
 
 
 def test_a_source_the_agent_wrote_fails_even_while_nothing_cites_it(
@@ -204,8 +204,8 @@ def test_an_imported_source_relabelled_as_code_is_still_compared(
         for s in _statuses_all(repo, _record(forged), _GitHub())
         if s.path == "literature[s2]"
     ]
-    assert any("verified_by differ" in r for r in reasons)
-    assert any("fulltext.txt differ" in r for r in reasons)
+    assert any("verified_by differs" in r for r in reasons)
+    assert any("fulltext.txt differs" in r for r in reasons)
 
 
 def _statuses_all(repo: Path, record: ResearchRecord, github: Any) -> list[Any]:
@@ -228,7 +228,7 @@ def test_a_record_field_that_is_not_the_fetched_metadata_fails(
         for s in _statuses_all(repo, record, _GitHub())
         if s.status == "mismatch"
     ]
-    assert any("title differ from .research/sources" in r for r in reasons)
+    assert any("title differs from .research/sources" in r for r in reasons)
 
 
 def test_a_cited_source_with_no_directory_fails(tmp_path: Path) -> None:
@@ -238,7 +238,7 @@ def test_a_cited_source_with_no_directory_fails(tmp_path: Path) -> None:
     ]
     assert (status.status, status.reason) == (
         "mismatch",
-        ".research/sources/s9 does not exist",
+        "the record cites s9, but .research/sources/s9 does not exist",
     )
 
 
@@ -322,7 +322,7 @@ def test_a_source_whose_file_links_elsewhere_fails(tmp_path: Path) -> None:
         for s in _statuses_all(repo, _record(_imported("s1", OLD_ROW)), _GitHub())
         if s.status == "mismatch"
     ]
-    assert any("holds a symlink" in r for r in reasons)
+    assert any("contains a symlink" in r for r in reasons)
 
 
 def test_a_paper_labelled_as_code_is_not_exempt(tmp_path: Path) -> None:

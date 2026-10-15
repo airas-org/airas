@@ -49,7 +49,10 @@ async def download_literature_artifact(
         raise LookupError(f"workflow run {workflow_run_id} has no {name} artifact")
 
     if artifact.get("expired"):
-        raise RunExpired(f"{name} has expired (GitHub's artifact retention)")
+        raise RunExpired(
+            f"{name} has expired (GitHub keeps artifacts 90 days) — fetch it "
+            "again with dispatch_literature_fetch"
+        )
 
     zip_bytes = await github_client.adownload_artifact_archive(
         github_owner, repository_name, int(artifact["id"])
@@ -67,6 +70,10 @@ async def download_literature_artifact(
     return entries
 
 
+class NotALiteratureFetch(LookupError):
+    """The run a source names cannot vouch for it; the message reads after "names"."""
+
+
 def _sha256s(files: dict[str, bytes]) -> dict[str, str]:
     return {
         name: hashlib.sha256(content).hexdigest() for name, content in files.items()
@@ -80,15 +87,16 @@ async def _artifact_entries(
     fetch_literature.yml run: an artifact of any other workflow proves nothing."""
     run = await github_client.aget_workflow_run(owner, repo, int(workflow_run_id))
     if run is None:
-        raise LookupError(f"workflow run {workflow_run_id} does not exist")
+        raise NotALiteratureFetch(f"run {workflow_run_id}, which does not exist")
     if run.get("path") != FETCH_LITERATURE_WORKFLOW_PATH:
-        raise LookupError(
-            f"workflow run {workflow_run_id} is {run.get('path')}, "
+        raise NotALiteratureFetch(
+            f"run {workflow_run_id}, which is {run.get('path')}, "
             f"not {FETCH_LITERATURE_WORKFLOW_PATH}"
         )
     if run.get("conclusion") != "success":
-        raise LookupError(
-            f"workflow run {workflow_run_id} did not succeed ({run.get('conclusion')})"
+        raise NotALiteratureFetch(
+            f"fetch_literature.yml run {workflow_run_id}, which did not succeed "
+            f"({run.get('conclusion')})"
         )
     return await download_literature_artifact(
         github_client, owner, repo, int(workflow_run_id)
@@ -103,17 +111,23 @@ async def _problem(
 ) -> str | None:
     relpath = f"{SOURCES_DIR}/{source_id}"
     if imported is None:
-        return f"{relpath} is not in {SOURCES_PROVENANCE_PATH} (fetch_literature.yml writes it)"
+        return (
+            f"{relpath} has no entry in {SOURCES_PROVENANCE_PATH}, so it was not "
+            "added by fetch_literature.yml — only dispatch_literature_fetch may add "
+            "sources"
+        )
 
+    run = f"fetch_literature.yml run {imported.workflow_run_id}"
     try:
         entries = await artifact_of(imported.workflow_run_id)
+    except NotALiteratureFetch as e:
+        return f"{relpath} names {e}"
+    except RunExpired as e:
+        return f"{relpath} cannot be checked: {e}"
     except Exception as e:
-        return f"{relpath} cannot be compared with its artifact: {e}"
+        return f"{relpath} cannot be checked against its artifact: {e}"
     if imported.entry not in entries:
-        return (
-            f"{relpath}: run {imported.workflow_run_id}'s artifact has no "
-            f"entry {imported.entry}"
-        )
+        return f"{relpath}: {run}'s artifact has no entry {imported.entry}"
 
     on_disk = {
         p.name: p.read_bytes() for p in (root / relpath).iterdir() if p.is_file()
@@ -123,9 +137,10 @@ async def _problem(
         differing = sorted(
             n for n in {*expected, *actual} if expected.get(n) != actual.get(n)
         )
+        verb = "differs" if len(differing) == 1 else "differ"
         return (
-            f"{relpath}: {', '.join(differing)} differ from run "
-            f"{imported.workflow_run_id}'s artifact entry {imported.entry}"
+            f"{relpath}: {', '.join(differing)} {verb} from entry {imported.entry} "
+            f"of {run}'s artifact — changed after the run downloaded it"
         )
     return None
 
@@ -144,9 +159,11 @@ def _bibliography_problem(root: Path, source: LiteratureSource) -> str | None:
     ]
     if not differing:
         return None
+    verb = "differs" if len(differing) == 1 else "differ"
     return (
-        f"literature[{source.id}]: {', '.join(differing)} differ from "
-        f"{SOURCES_DIR}/{source.id}/{SOURCE_METADATA_FILENAME}"
+        f"literature[{source.id}]: {', '.join(differing)} {verb} from "
+        f"{SOURCES_DIR}/{source.id}/{SOURCE_METADATA_FILENAME}, which "
+        "preregister_record copies the record's fields from"
     )
 
 
@@ -197,7 +214,8 @@ async def verify_sources_came_from_artifacts(
         if source_dir.is_symlink() or any(p.is_symlink() for p in source_dir.iterdir()):
             status(
                 directory,
-                f"{SOURCES_DIR}/{directory} is or holds a symlink",
+                f"{SOURCES_DIR}/{directory} is or contains a symlink — sources "
+                "must be regular files",
                 "mismatch",
             )
 
@@ -210,15 +228,20 @@ async def verify_sources_came_from_artifacts(
         if differs_from_commit(root, MAIN_REF, f"{SOURCES_DIR}/{directory}"):
             status(
                 directory,
-                f"{SOURCES_DIR}/{directory} differs from {MAIN_REF}: "
-                "a source is never changed once on main",
+                f"{SOURCES_DIR}/{directory} differs from {MAIN_REF} — a source "
+                "is never changed once merged",
                 "mismatch",
             )
 
     # 記録上は取り込み済みでも、ディレクトリが無ければ照合する artifact も無い
     for source_id in cited:
         if source_id not in code and source_id not in directories:
-            status(source_id, f"{SOURCES_DIR}/{source_id} does not exist", "mismatch")
+            status(
+                source_id,
+                f"the record cites {source_id}, but {SOURCES_DIR}/{source_id} "
+                "does not exist",
+                "mismatch",
+            )
 
     for source_id, source in cited.items():
         if (
@@ -245,7 +268,8 @@ async def verify_sources_came_from_artifacts(
         for directory in new:
             status(
                 directory,
-                f"{SOURCES_DIR}/{directory} cannot be compared with its artifact: {e}",
+                f"{SOURCES_DIR}/{directory} cannot be checked against its "
+                f"artifact: {e}",
                 "mismatch",
             )
         return
@@ -272,8 +296,8 @@ async def verify_sources_came_from_artifacts(
         status(
             directory,
             problem
-            or f"{SOURCES_DIR}/{directory} is run "
-            f"{provenance[directory].workflow_run_id}'s fetch_literature.yml "
-            "artifact, byte for byte",
+            or f"{SOURCES_DIR}/{directory} is byte for byte entry "
+            f"{provenance[directory].entry} of the artifact that fetch_literature.yml "
+            f"run {provenance[directory].workflow_run_id} downloaded",
             "mismatch" if problem else "verified",
         )
