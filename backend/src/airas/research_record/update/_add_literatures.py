@@ -120,7 +120,19 @@ def add_literatures(
     sources: list[LiteratureSource] = []
     snapshots: list[str] = []
     for imported_id, m in materials:
-        source = _existing(record, m)
+        if imported_id is None:
+            source = _existing(record, m)
+        else:
+            source = next(
+                (s for s in record.latest_literature() if s.id == imported_id), None
+            )
+            # DOI と arXiv id は一意: 同じ論文を別の id で二重に引用させない
+            duplicate = None if source else _existing(record, m)
+            if duplicate is not None:
+                raise ValueError(
+                    f"{imported_id} is the paper already cited as {duplicate.id} "
+                    "(same DOI or arXiv id) — cite it as that"
+                )
         if source is None:
             source_id = imported_id or _next_source_id(root, record)
             fulltext = (

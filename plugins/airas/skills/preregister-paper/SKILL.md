@@ -59,12 +59,12 @@ are stated.
    never from you, and every quote is checked against that snapshot.
    `literature` entries are a fetched paper or AIRAS study by its id
    (`{"source_id": "s3"}`; one whose text could not be fetched cannot be
-   cited), optionally with the code it ships as `repositories` (each
-   `url`, a full 40-hex `commit`, `files` — a directory snapshots every
-   text file under it, so give the whole package a design's
-   `repository_integration` runs — and `method_entry`, the
-   `module.Class.method` whose call runs the method), or code with no
-   paper (`repositories` alone, given the next free id), each with
+   cited), or code — the code a paper ships too, as a source of its own —
+   as `repositories` alone, given the next free id (each `url`, a full
+   40-hex `commit`, `files` — a directory snapshots every text file under
+   it, so give the whole package a design's `repository_integration` runs
+   — and `method_entry`, the `module.Class.method` whose call runs the
+   method), each with
    `passages: [{"node_type": ..., "quote": "<verbatim>"}]`.
    A quote that the snapshot does not contain (line breaks, hyphenation
    and ligatures are normalised away; a paraphrase or a quote spanning

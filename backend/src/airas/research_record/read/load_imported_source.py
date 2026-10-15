@@ -18,6 +18,26 @@ def _pages(path: Path) -> list[str]:
     return path.read_text(encoding="utf-8").split(PAGE_SEPARATOR)
 
 
+def imported_bibliography(metadata: dict[str, Any]) -> dict[str, Any]:
+    """The record's fields for an imported source, from its metadata.json —
+    what preregister writes and the gate holds the record to."""
+    published = metadata.get("published_date") or ""
+    return {
+        "title": metadata["title"],
+        "authors": metadata.get("authors") or [],
+        "year": int(published[:4]) if published[:4].isdigit() else None,
+        "venue": metadata.get("venue") or "",
+        "doi": metadata.get("doi"),
+        "arxiv_id": metadata.get("arxiv_id"),
+        "url": metadata.get("url"),
+        "verified_by": metadata["source"],
+        "verified_at": metadata["fetched_at"],
+        "parser": "git show"
+        if metadata["source"] == "airas_records"
+        else (metadata.get("fulltext") or {}).get("parser", ""),
+    }
+
+
 def load_imported_source(
     root: Path, source_id: str, passages: list[dict[str, Any]]
 ) -> LiteratureMaterial:
@@ -33,19 +53,7 @@ def load_imported_source(
         )
 
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-    published = metadata.get("published_date") or ""
-    common: dict[str, Any] = {
-        "title": metadata["title"],
-        "authors": metadata.get("authors") or [],
-        "year": int(published[:4]) if published[:4].isdigit() else None,
-        "venue": metadata.get("venue") or "",
-        "doi": metadata.get("doi"),
-        "arxiv_id": metadata.get("arxiv_id"),
-        "url": metadata.get("url"),
-        "verified_by": metadata["source"],
-        "verified_at": metadata["fetched_at"],
-        "passages": passages,
-    }
+    common = {**imported_bibliography(metadata), "passages": passages}
 
     if metadata["source"] == "airas_records":
         snapshot = metadata.get("snapshot") or {}
@@ -57,7 +65,6 @@ def load_imported_source(
 
         return LiteratureMaterial(
             **common,
-            parser="git show",
             repositories=[
                 RepositoryMaterial(
                     url=snapshot["url"],
@@ -75,8 +82,4 @@ def load_imported_source(
             "cite another source"
         )
 
-    return LiteratureMaterial(
-        **common,
-        parser=fulltext["parser"],
-        pages=_pages(source_dir / FULLTEXT_FILENAME),
-    )
+    return LiteratureMaterial(**common, pages=_pages(source_dir / FULLTEXT_FILENAME))

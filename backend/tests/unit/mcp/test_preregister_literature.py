@@ -340,47 +340,25 @@ async def test_code_with_no_paper_takes_the_next_id_after_the_imported_sources(
     assert (repo / source.repositories[0].snapshot.path).read_text() == REPO_PAGE
 
 
-async def test_an_imported_paper_and_the_code_it_ships_are_one_source(
+async def test_code_is_cited_as_its_own_source_not_inside_a_paper(
     tmp_path: Path,
 ) -> None:
     repo = _repo(tmp_path)
-    literature = [
-        {
-            "source_id": "s1",
-            "repositories": [REPO],
-            "passages": [
-                {"node_type": "method", "quote": "We apply dropout"},
-                {"node_type": "setup", "quote": "lr = 3e-4"},
-            ],
-        }
-    ]
-
-    await _preregister(repo, literature)
-
-    record = ResearchRecord.load(str(repo))
-    assert [s.id for s in record.literature] == ["s1"]
-    source = record.literature[0]
-    assert (source.verified_by, source.repositories[0].id) == ("arxiv", "s1.r1")
-    assert (repo / source.fulltext.path).read_text() == PAGE_SEPARATOR.join(PAGES)
-    assert (repo / source.repositories[0].snapshot.path).read_text() == REPO_PAGE
+    with pytest.raises(ValueError, match="as a source of its own"):
+        await _preregister(repo, [{"source_id": "s1", "repositories": [REPO]}])
+    _untouched(repo)
 
 
-async def test_code_appended_to_a_pinned_paper_joins_it_as_the_next_repository(
-    tmp_path: Path,
-) -> None:
+async def test_a_paper_imported_twice_is_cited_under_one_id(tmp_path: Path) -> None:
     repo = _repo(tmp_path)
+    _import(repo, "s5", PAPER_ROW, {"fulltext.txt": PAGE_SEPARATOR.join(PAGES)})
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "the same search again")
     await _preregister(repo, [{"source_id": "s1"}])
 
-    await record_tools.append_to_record(
-        str(repo), literature=[{"source_id": "s1", "repositories": [REPO]}]
-    )
-
-    record = ResearchRecord.load(str(repo))
-    assert [s.id for s in record.literature] == ["s1"]
-    assert [r.id for r in record.literature[0].repositories] == ["s1.r1"]
-    assert (
-        repo / record.literature[0].repositories[0].snapshot.path
-    ).read_text() == REPO_PAGE
+    with pytest.raises(ValueError, match="already cited as s1"):
+        await record_tools.append_to_record(str(repo), literature=[{"source_id": "s5"}])
+    assert [s.id for s in ResearchRecord.load(str(repo)).literature] == ["s1"]
 
 
 async def test_a_repository_that_cannot_be_fetched_is_refused(tmp_path: Path) -> None:
@@ -513,6 +491,6 @@ async def test_a_failed_commit_leaves_the_clone_as_it_was(
 
     monkeypatch.setattr(prereg, "commit_paths", _boom)
     with pytest.raises(RuntimeError, match="git commit failed"):
-        await _preregister(repo, [{"source_id": "s1", "repositories": [REPO]}])
+        await _preregister(repo, [{"source_id": "s1"}, {"repositories": [REPO]}])
     _untouched(repo)
     assert not (repo / ".research" / "latex").exists()

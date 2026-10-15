@@ -1,11 +1,15 @@
 import hashlib
 import io
+import json
+import re
 import zipfile
 from collections.abc import Awaitable, Callable
 from pathlib import Path
+from typing import Literal
 
 from airas.core.research_paths import (
     FETCH_LITERATURE_WORKFLOW_PATH,
+    SOURCE_METADATA_FILENAME,
     SOURCES_DIR,
     SOURCES_PROVENANCE_PATH,
 )
@@ -19,14 +23,10 @@ from airas.infra.local_git import (
     remote_origin_url,
 )
 from airas.infra.run_output_store import RunExpired, github_owner_and_repository
+from airas.research_record.read.load_imported_source import imported_bibliography
 
 # main にある source は入るときに照合済みなので、artifact の保持期限が過ぎても困らない
 MAIN_REF = "origin/main"
-
-# The verified_by of a source fetch_literature.yml imported: its search source.
-IMPORTED_SOURCE_KINDS = frozenset(
-    {"arxiv", "openalex", "semantic_scholar", "airas_db", "airas_records"}
-)
 
 
 async def download_literature_artifact(
@@ -96,11 +96,11 @@ async def _artifact_entries(
 
 async def _problem(
     root: Path,
-    source: LiteratureSource,
+    source_id: str,
     imported: ImportedSource | None,
     artifact_of: Callable[[str], Awaitable[dict[str, dict[str, bytes]]]],
 ) -> str | None:
-    relpath = f"{SOURCES_DIR}/{source.id}"
+    relpath = f"{SOURCES_DIR}/{source_id}"
     if imported is None:
         return f"{relpath} is not in {SOURCES_PROVENANCE_PATH} (fetch_literature.yml writes it)"
 
@@ -129,29 +129,92 @@ async def _problem(
     return None
 
 
+def _bibliography_problem(root: Path, source: LiteratureSource) -> str | None:
+    """None when the record's fields are what metadata.json says, as preregister wrote them."""
+    metadata = json.loads(
+        (root / SOURCES_DIR / source.id / SOURCE_METADATA_FILENAME).read_text(
+            encoding="utf-8"
+        )
+    )
+    differing = [
+        field
+        for field, value in imported_bibliography(metadata).items()
+        if getattr(source, field) != value
+    ]
+    if not differing:
+        return None
+    return (
+        f"literature[{source.id}]: {', '.join(differing)} differ from "
+        f"{SOURCES_DIR}/{source.id}/{SOURCE_METADATA_FILENAME}"
+    )
+
+
 async def verify_sources_came_from_artifacts(
     root: Path,
     record: ResearchRecord,
     verification: RecordVerification,
     github_client_factory: Callable[[], GithubClient],
 ) -> None:
-    """Every source the record cites that fetch_literature.yml imported is, if new
-    to main, byte for byte its run's artifact entry; once on main, never changed."""
-    sources = [
-        s for s in record.latest_literature() if s.verified_by in IMPORTED_SOURCE_KINDS
-    ]
-    new: list[LiteratureSource] = []
-    for source in sources:
-        relpath = f"{SOURCES_DIR}/{source.id}"
-        if not path_exists_at_commit(root, MAIN_REF, relpath):
-            new.append(source)
-        elif differs_from_commit(root, MAIN_REF, relpath):
-            verification.append_declaration_status(
-                f"literature[{source.id}]",
-                f"{relpath} differs from {MAIN_REF}: a source is never changed once on main",
+    """Every .research/sources/<id>/ new to main, cited or not, is byte for byte
+    its fetch_literature.yml run's artifact entry — whatever the record claims
+    it is — and one on main never changes. Only code the record cites (git)
+    is written by preregister instead. The record's fields for an imported
+    source are its metadata.json's."""
+    sources_dir = root / SOURCES_DIR
+    directories = (
+        sorted(p.name for p in sources_dir.iterdir() if re.fullmatch(r"s\d+", p.name))
+        if sources_dir.is_dir()
+        else []
+    )
+    cited = {s.id: s for s in record.latest_literature()}
+    # preregister が書くのはコードの snapshot だけ。metadata.json があれば CI の取り込み
+    code = {
+        i
+        for i, s in cited.items()
+        if s.verified_by == "git"
+        and not (sources_dir / i / SOURCE_METADATA_FILENAME).is_file()
+    }
+
+    def status(
+        source_id: str, reason: str, verdict: Literal["verified", "mismatch"]
+    ) -> None:
+        verification.append_declaration_status(
+            f"literature[{source_id}]"
+            if source_id in cited
+            else f"{SOURCES_DIR}/{source_id}",
+            reason,
+            verdict,
+            evidence_path=f"{SOURCES_DIR}/{source_id}",
+        )
+
+    on_main = {
+        d
+        for d in directories
+        if path_exists_at_commit(root, MAIN_REF, f"{SOURCES_DIR}/{d}")
+    }
+    for directory in sorted(on_main):
+        if differs_from_commit(root, MAIN_REF, f"{SOURCES_DIR}/{directory}"):
+            status(
+                directory,
+                f"{SOURCES_DIR}/{directory} differs from {MAIN_REF}: "
+                "a source is never changed once on main",
                 "mismatch",
-                evidence_path=relpath,
             )
+
+    # 記録上は取り込み済みでも、ディレクトリが無ければ照合する artifact も無い
+    for source_id in cited:
+        if source_id not in code and source_id not in directories:
+            status(source_id, f"{SOURCES_DIR}/{source_id} does not exist", "mismatch")
+
+    for source_id, source in cited.items():
+        if (
+            source_id in directories
+            and (sources_dir / source_id / SOURCE_METADATA_FILENAME).is_file()
+        ):
+            if problem := _bibliography_problem(root, source):
+                status(source_id, problem, "mismatch")
+
+    new = [d for d in directories if d not in on_main and d not in code]
     if not new:
         return
 
@@ -165,12 +228,11 @@ async def verify_sources_came_from_artifacts(
         github_client = github_client_factory()
         owner, repo = github_owner_and_repository(remote_origin_url(root) or "")
     except Exception as e:
-        for source in new:
-            verification.append_declaration_status(
-                f"literature[{source.id}]",
-                f"{SOURCES_DIR}/{source.id} cannot be compared with its artifact: {e}",
+        for directory in new:
+            status(
+                directory,
+                f"{SOURCES_DIR}/{directory} cannot be compared with its artifact: {e}",
                 "mismatch",
-                evidence_path=f"{SOURCES_DIR}/{source.id}",
             )
         return
 
@@ -189,14 +251,15 @@ async def verify_sources_came_from_artifacts(
             raise result
         return result
 
-    for source in new:
-        relpath = f"{SOURCES_DIR}/{source.id}"
-        problem = await _problem(root, source, provenance.get(source.id), artifact_of)
-        verification.append_declaration_status(
-            f"literature[{source.id}]",
+    for directory in new:
+        problem = await _problem(
+            root, directory, provenance.get(directory), artifact_of
+        )
+        status(
+            directory,
             problem
-            or f"{relpath} is run {provenance[source.id].workflow_run_id}'s "
-            "fetch_literature.yml artifact, byte for byte",
+            or f"{SOURCES_DIR}/{directory} is run "
+            f"{provenance[directory].workflow_run_id}'s fetch_literature.yml "
+            "artifact, byte for byte",
             "mismatch" if problem else "verified",
-            evidence_path=relpath,
         )

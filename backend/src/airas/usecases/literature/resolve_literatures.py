@@ -69,19 +69,23 @@ async def _code(entry: dict[str, Any]) -> LiteratureMaterial:
 async def resolve_literatures(
     root: Path, entries: list[dict[str, Any]]
 ) -> list[tuple[str | None, LiteratureMaterial]]:
-    """`{"source_id", "passages", "repositories"?}` for an imported source,
+    """`{"source_id", "passages"}` for an imported source,
     `{"repositories", "passages"}` for code with no paper (no id yet)."""
     materials: list[tuple[str | None, LiteratureMaterial]] = []
     for entry in entries:
         source_id = entry.get("source_id")
         if source_id:
-            material = load_imported_source(
-                root, source_id, entry.get("passages") or []
+            if entry.get("repositories"):
+                raise ValueError(
+                    f"{source_id}: cite the code a paper ships as a source of its "
+                    "own (repositories alone), not inside the paper's entry"
+                )
+            materials.append(
+                (
+                    source_id,
+                    load_imported_source(root, source_id, entry.get("passages") or []),
+                )
             )
-            material.repositories += [
-                (await _repository(spec))[1] for spec in entry.get("repositories") or []
-            ]
-            materials.append((source_id, material))
         elif entry.get("repositories"):
             materials.append((None, await _code(entry)))
         else:

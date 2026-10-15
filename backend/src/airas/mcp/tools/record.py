@@ -148,9 +148,10 @@ async def preregister_record(
     `dispatch_literature_fetch` imported and pinned in the same commit.
     Each entry is either a source by its id — `{"source_id": "s3"}`, a
     paper or AIRAS study in `.research/sources/s3/`, whose title, authors
-    and text the record takes from there, optionally with the code it ships
-    as `repositories` — or code with no paper (`repositories` alone, given
-    the next free id). Each repository is a `url`, a full 40-hex `commit`,
+    and text the record takes from there — or code (`repositories`, given
+    the next free id; the code a paper ships is cited this way too, as its
+    own source). A paper's DOI or arXiv id is cited under one id only.
+    Each repository is a `url`, a full 40-hex `commit`,
     `files` (a file or a directory snapshotted whole) and, for a method a
     design's `repository_integration` runs, `method_entry`, the
     `module.Class.method` whose call runs it. Each entry carries `passages`:
