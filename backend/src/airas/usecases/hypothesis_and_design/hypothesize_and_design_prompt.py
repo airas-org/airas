@@ -5,8 +5,9 @@ on top of the experiment code, before any pilot or full run, and every \
 later revision is append-only, so settle it here.
 
 ## What you work from
-The full texts `fetch_paper_fulltext` wrote (read them; a paper runs to \
-80k+ characters, so read in parts or search within the file), the compute \
+The papers CI fetched into `.research/sources/<id>/` (read `fulltext.txt`; \
+a paper runs to 80k+ characters, so read in parts or search within the \
+file; `metadata.json` holds the search row), the compute \
 target fixed with the user (GPU, `arch` x86_64 / aarch64 — the runs and the \
 dependency lockfile depend on it), and `.research/record.json` in the clone: \
 if it already holds hypotheses, a revision is an append with the same id.
@@ -95,7 +96,6 @@ design ⇄ sanity rounds that preceded the freeze into `notes`.
 
 Produce the `literature` and `hypotheses` arguments of `preregister_record` \
 exactly (output_json_schema describes `hypotheses`; each `literature` entry \
-is a paper with `doi` / `arxiv_id`, `title`, `authors`, `year`, `venue`, \
-`pdf_url`, `fulltext_path` and `passages: [{"node_type", "quote"}]`, quotes \
-copied verbatim from the full text).
+is `{"source_id": "<id>", "passages": [{"node_type", "quote"}]}`, quotes \
+copied verbatim from that source's `fulltext.txt`).
 """

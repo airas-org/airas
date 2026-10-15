@@ -5,10 +5,11 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 # Sources supported by the multi-source paper search.
+# 重複は先に来たソースの行が残るので、版の確定する arxiv を先頭に置く
 PAPER_SEARCH_SOURCES = (
+    "arxiv",
     "openalex",
     "semantic_scholar",
-    "arxiv",
     "airas_db",
     "airas_records",
 )

@@ -1,11 +1,9 @@
 """A source is pinned by its snapshot; a quote is verbatim in it or it is
-nothing. Existence is asked of the registry behind each identifier, and a
-registry that fails is an error, never a confirmation."""
+nothing."""
 
 import subprocess
 from pathlib import Path
 
-import httpx
 import pytest
 
 from airas.core.research_paths import PAGE_SEPARATOR
@@ -21,9 +19,6 @@ from airas.research_record.verify._verify_quoted_passages import (
 )
 from airas.usecases.literature.nodes.fetch_fulltext_from_repository import (
     fetch_fulltext_from_repository,
-)
-from airas.usecases.literature.resolve_literatures import (
-    _verify_paper_existence as verify_paper_existence,
 )
 
 
@@ -274,75 +269,3 @@ def test_a_directory_stands_for_the_text_files_under_it(tmp_path: Path) -> None:
         "==> src/train.py <==",  # weights.bin is binary and left out
         "==> README.md <==",
     ]
-
-
-# ----------------------------------------------------------- the registries
-
-ATOM = """<?xml version="1.0"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><entry>
-<id>http://arxiv.org/abs/1706.03762v7</id><title>Attention Is All You Need</title>
-</entry></feed>"""
-EMPTY_ATOM = '<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"></feed>'
-
-
-class _Arxiv:
-    def __init__(self, atom: str) -> None:
-        self.atom = atom
-
-    async def aget_paper_by_id(self, arxiv_id: str, **_: object) -> str:
-        return self.atom
-
-
-def _doi_org(status: int) -> httpx.AsyncClient:
-    def handler(request: httpx.Request) -> httpx.Response:
-        assert request.method == "HEAD" and request.url.host == "doi.org"
-        headers = {"location": "https://example.org/paper"} if status == 302 else {}
-        return httpx.Response(status, headers=headers)
-
-    return httpx.AsyncClient(transport=httpx.MockTransport(handler))
-
-
-async def test_each_identifier_is_asked_of_its_own_registry() -> None:
-    registries, at = await verify_paper_existence(
-        doi="10.5555/3295222.3295349",
-        arxiv_id="1706.03762",
-        arxiv=_Arxiv(ATOM),
-        http=_doi_org(302),
-    )
-    assert registries == {"doi.org": "found", "arxiv": "found"}
-    assert at.endswith("+00:00")
-
-
-async def test_an_unknown_identifier_is_not_found_and_an_outage_is_an_error() -> None:
-    def outage(request: httpx.Request) -> httpx.Response:
-        raise httpx.ConnectError("boom")
-
-    registries, _ = await verify_paper_existence(
-        doi="10.1/nope",
-        arxiv_id="0000.00000",
-        arxiv=_Arxiv(EMPTY_ATOM),
-        http=httpx.AsyncClient(transport=httpx.MockTransport(outage)),
-    )
-    assert registries["doi.org"].startswith("error: ")
-    assert registries["arxiv"] == "not_found"
-    assert "found" not in registries.values()
-
-
-async def test_a_doi_answered_with_a_final_page_is_found_too() -> None:
-    registries, _ = await verify_paper_existence(
-        doi="10.5555/3295222.3295349",
-        arxiv_id=None,
-        arxiv=_Arxiv(EMPTY_ATOM),
-        http=_doi_org(200),
-    )
-    assert registries == {"doi.org": "found"}
-
-
-async def test_a_doi_that_does_not_resolve_is_not_found() -> None:
-    registries, _ = await verify_paper_existence(
-        doi="10.1/nope",
-        arxiv_id=None,
-        arxiv=_Arxiv(EMPTY_ATOM),
-        http=_doi_org(404),
-    )
-    assert registries == {"doi.org": "not_found"}

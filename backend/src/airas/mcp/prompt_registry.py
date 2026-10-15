@@ -28,7 +28,7 @@ from airas.usecases.publication.write_paper_prompt import write_paper_prompt
 class _Preregistration(BaseModel):
     literature: list[dict[str, Any]] = Field(
         description="preregister_record's `literature`: the papers the hypothesis "
-        "rests on, each with its identifiers, fulltext_path and verbatim passages"
+        "rests on, each by its .research/sources/ source_id with verbatim passages"
     )
     hypotheses: list[Hypothesis]
 

@@ -38,8 +38,8 @@ are stated.
   `proposed`, `baseline`) and the metrics; if it does not, settle those
   with the user first, because the placeholders below are named after
   them.
-- The papers the hypothesis rests on, each with its identifiers, the
-  `fulltext_path` `fetch_paper_fulltext` wrote, and the passages (page
+- The papers the hypothesis rests on, each by the id of the
+  `.research/sources/<id>/` CI fetched it into, and the passages (page
   and verbatim quote) picked while reading. Nothing is in the record yet.
 - The experiment code is committed and one platform sanity run passed
   (`write-experiment-code`): everything that run read and called is
@@ -54,25 +54,24 @@ are stated.
    together, and delete that draft in the same commit so the record is
    the only copy. This writes
    `.research/record.json` — the machine-readable original the whole
-   verification system keys on — and pins each source: a registry
-   (doi.org, arXiv, git) confirms it exists, its full text is
-   copied to `.research/sources/<id>/fulltext.txt`, and every quote is
-   checked against that snapshot. `literature` entries are papers
-   (`doi` / `arxiv_id` with `title`, `authors`, `year`,
-   `venue`, `pdf_url`, `fulltext_path`), optionally with the code they
-   ship as `repositories` (each `url`, a full 40-hex `commit`, `files` — a
-   directory snapshots every text file under it, so give the whole
-   package a design's `repository_integration` runs — and `method_entry`, the
-   `module.Class.method` whose call runs the method), code with no paper
-   (`repositories` alone), or studies AIRAS produced (`airas_record`),
-   each with `passages: [{"node_type": ..., "quote": "<verbatim>"}]`.
+   verification system keys on — and pins each source from what CI
+   fetched: title, authors and text come from `.research/sources/<id>/`,
+   never from you, and every quote is checked against that snapshot.
+   `literature` entries are a fetched paper or AIRAS study by its id
+   (`{"source_id": "s3"}`; one whose text could not be fetched cannot be
+   cited), optionally with the code it ships as `repositories` (each
+   `url`, a full 40-hex `commit`, `files` — a directory snapshots every
+   text file under it, so give the whole package a design's
+   `repository_integration` runs — and `method_entry`, the
+   `module.Class.method` whose call runs the method), or code with no
+   paper (`repositories` alone, given the next free id), each with
+   `passages: [{"node_type": ..., "quote": "<verbatim>"}]`.
    A quote that the snapshot does not contain (line breaks, hyphenation
    and ligatures are normalised away; a paraphrase or a quote spanning
    two pages is not) makes the call fail and roll back, so nothing is
    frozen until every quote is found — and CI runs the same check on
    the pushed commit.
-   Sources are numbered in the order given (`s1`, `s2`, …) and passages
-   `p1`, `p2`, … within each. The record is a tree, read as
+   Passages are numbered `p1`, `p2`, … within each source. The record is a tree, read as
    "to support this hypothesis, these claims; to verify this claim,
    these designs; a design is these runs":
 

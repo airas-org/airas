@@ -24,7 +24,6 @@ class RecordEntry:
     id: str  # "owner/repo@sha"
     url: str
     commit: str
-    stage: str
     collected_at: str
     title: str
     record: ResearchRecord
@@ -63,14 +62,6 @@ def _identifiers(entry: RecordEntry) -> set[str]:
     }
 
 
-def _matches(entry: RecordEntry, verdict: str | None, stage: str | None) -> bool:
-    if stage is not None and entry.stage != stage:
-        return False
-    return verdict is None or any(
-        c.verdict == verdict for _, c in entry.record.latest_claims()
-    )
-
-
 class AirasRecordsIndex:
     """BM25 over the store, built on first use for the life of the process."""
 
@@ -107,7 +98,6 @@ class AirasRecordsIndex:
             id=record_id,
             url=item.get("url") or f"https://github.com/{owner_repo}",
             commit=item.get("commit") or sha,
-            stage=item.get("stage") or "",
             collected_at=item.get("collected_at") or "",
             title=title or (hypotheses[0].statement if hypotheses else record_id),
             record=record,
@@ -135,9 +125,6 @@ class AirasRecordsIndex:
         self,
         query: str,
         max_results: int,
-        *,
-        verdict: str | None = None,
-        stage: str | None = None,
     ) -> list[RecordEntry]:
         await self._ensure_loaded()
         if self._bm25 is None or self._entries is None:
@@ -162,8 +149,9 @@ class AirasRecordsIndex:
             ),
             reverse=True,
         )
-        hits = (self._entries[i] for i in [*exact, *(i for _, i in ranked)])
-        return [e for e in hits if _matches(e, verdict, stage)][:max_results]
+        return [self._entries[i] for i in [*exact, *(i for _, i in ranked)]][
+            :max_results
+        ]
 
     async def get(self, record_id: str) -> RecordEntry | None:
         await self._ensure_loaded()

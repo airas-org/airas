@@ -20,7 +20,7 @@ from airas.usecases.literature.nodes.search_openalex import search_openalex
 from airas.usecases.literature.nodes.search_semantic_scholar import (
     search_semantic_scholar,
 )
-from airas.usecases.literature.search_papers import merge_results
+from airas.usecases.literature.search_papers import dedupe_results
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -58,13 +58,6 @@ class SearchPapersSubgraphState(
 
 
 class SearchPapersSubgraph:
-    """Search multiple paper sources in parallel and merge the results.
-
-    Sources that raise are reported in `search_errors` without failing the
-    whole search. Duplicates across sources are merged (DOI, then arXiv ID,
-    then normalized title).
-    """
-
     def __init__(
         self,
         openalex_client: OpenAlexClient,
@@ -155,8 +148,8 @@ class SearchPapersSubgraph:
         )
 
     @record_execution_time
-    def _merge_results(self, state: SearchPapersSubgraphState) -> dict:
-        return merge_results(dict(state.get("source_outputs", {})))
+    def _dedupe_results(self, state: SearchPapersSubgraphState) -> dict:
+        return dedupe_results(dict(state.get("source_outputs", {})))
 
     def build_graph(self):
         graph_builder = StateGraph(
@@ -169,7 +162,7 @@ class SearchPapersSubgraph:
         graph_builder.add_node("search_arxiv", self._search_arxiv)
         graph_builder.add_node("search_airas_db", self._search_airas_db)
         graph_builder.add_node("search_airas_records", self._search_airas_records)
-        graph_builder.add_node("merge_results", self._merge_results)
+        graph_builder.add_node("dedupe_results", self._dedupe_results)
 
         for node in (
             "search_openalex",
@@ -187,7 +180,7 @@ class SearchPapersSubgraph:
                 "search_airas_db",
                 "search_airas_records",
             ],
-            "merge_results",
+            "dedupe_results",
         )
-        graph_builder.add_edge("merge_results", END)
+        graph_builder.add_edge("dedupe_results", END)
         return graph_builder.compile()

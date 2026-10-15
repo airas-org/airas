@@ -26,7 +26,7 @@ classDiagram
         title, authors, year, venue
         doi, arxiv_id, url
         bibkey: str
-        verified_by: doi.org | arxiv | git | airas_records
+        verified_by: arxiv | openalex | semantic_scholar | airas_db | airas_records | git | doi.org
         verified_at: str
         fulltext: InputRef
         parser: str
@@ -243,11 +243,12 @@ classDiagram
 
 ## 文献の検査
 
-出どころ（airas-papers-db、エージェントの Web 検索、リポジトリ）に関係なく、gate は全 source に同じ検査をかける。
+論文と AIRAS の研究は、CI（`fetch_literature.yml`）が検索結果ごとに `.research/sources/<id>/`（検索結果の行の `metadata.json`、本文 `fulltext.txt` または record の `r1.txt`）へ入れ、`.research/sources/.provenance.json` に run id とエントリ番号を書く。エージェントは `source_id` で引用するだけで、メタデータも本文も書かない。コードだけの source は preregister がその commit から snapshot を取る。
 
 | 検査 | 内容 |
 | --- | --- |
-| 実在 | `verified_by` が空でない。登録時に識別子ごとのレジストリへ問い合わせ、最初に found を返したものを記録する（下の「実在の条件」）。gate は再照会しない |
+| 実在 | `verified_by` が空でない。取り込んだ source は検索ソース名、コードだけの source は `git`（`fetch_literature.yml` 以前の record は、登録時に実在を確認したレジストリ） |
+| 出どころ | `verified_by` が検索ソース名の source で `origin/main` に無いものは、`.provenance.json` の run が `fetch_literature.yml` の成功した run であり、その artifact のエントリと `.research/sources/<id>/` がファイル名・sha256 ごと一致する。`origin/main` にあるものは変更されていない（入るときに照合済みなので、artifact の保持期限は関係ない） |
 | スナップショット | `fulltext.path` / `repositories[].snapshot.path` が存在し sha256 が一致 |
 | 逐語 | 全 passage の `quote` が snapshot の部分文字列（NFKC・空白正規化、合字・改行・ソフトハイフンは無視） |
 | 参照解決 | `quoted_passage_ids` の id が既知の passage |
@@ -277,11 +278,11 @@ classDiagram
 
 - **literature[]** 依拠した文献。`preregister_record` の `literature` が書く（freeze 後の追加は `append_to_record`）
   - `id` `"s1"`, `"s2"`, …
-  - 1 件 = 1 つの研究成果。論文だけ、コードだけ（`repositories` のみ）、論文 + 公式コード、AIRAS が生成した研究（`literature=[{"airas_record": "owner/repo@sha"}]`。その record リポジトリが `repositories` に入る）のいずれか
+  - 1 件 = 1 つの研究成果。論文だけ、コードだけ（`repositories` のみ）、論文 + 公式コード、AIRAS が生成した研究（検索で取り込んだ `{"source_id": "s3"}`。その record リポジトリの commit が `repositories` に入る）のいずれか
   - `title` / `authors[]` / `year` / `venue`
   - `doi` / `arxiv_id` / `url`
   - `bibkey` `\cite` の鍵（`<surname>-<year>-<word>`）。`references.bib` はここから再生成
-  - `verified_by` / `verified_at` 登録時に実在を確認したレジストリと時刻。凍結
+  - `verified_by` / `verified_at` 取り込んだ行の検索ソース（arxiv / openalex / semantic_scholar / airas_db / airas_records）と取得時刻、コードだけなら `git` と登録時刻。凍結
   - `fulltext` `{path, sha256}` `.research/sources/<id>/fulltext.txt`。論文本文、ページを form feed 区切り
   - `parser` 抽出器（`pymupdf 1.26` / `git show`）
   - **repositories[]** この成果が出荷するコード（省略可）。passage と同じく文献配下の id 付き要素

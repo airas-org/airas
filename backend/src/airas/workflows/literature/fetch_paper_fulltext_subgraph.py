@@ -160,7 +160,11 @@ class FetchPaperFulltextSubgraph:
             if not url or url in already_tried:
                 continue
             already_tried.add(url)
-            pages = await fetch_fulltext_from_url(url)
+            try:
+                pages = await fetch_fulltext_from_url(url)
+            except Exception as e:
+                logger.warning(f"Failed to extract text from PDF {url}: {e}")
+                continue
             text = " ".join(pages).replace("\n", " ").strip()
             if text:
                 return self._as_fulltext(text, resolved_from, state, url, pages)

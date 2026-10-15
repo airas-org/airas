@@ -9,9 +9,9 @@ import pytest
 from airas.core.types.paper_search import PaperSearchResult
 from airas.usecases.literature.search_papers import (
     SourceOutput,
-    merge_results,
+    _run_source,
+    dedupe_results,
     parse_sources,
-    run_source,
 )
 
 
@@ -19,42 +19,54 @@ def _paper(source: str, **fields: object) -> PaperSearchResult:
     return PaperSearchResult(title="Attention Is All You Need", source=source, **fields)
 
 
-def test_duplicates_merge_in_source_order_and_fill_each_other() -> None:
-    result = merge_results(
+def test_an_arxiv_row_wins_over_unversioned_duplicates() -> None:
+    result = dedupe_results(
         {
             "arxiv": SourceOutput(
-                papers=[
-                    _paper("arxiv", arxiv_id="1706.03762", pdf_url="https://x/pdf")
-                ],
-                error=None,
+                papers=[_paper("arxiv", arxiv_id="1706.03762v7")], error=None
             ),
             "openalex": SourceOutput(
-                papers=[_paper("openalex", doi="10.1/a", citations=9)], error=None
+                papers=[_paper("openalex", arxiv_id="1706.03762", citations=9)],
+                error=None,
             ),
             "semantic_scholar": SourceOutput(papers=[], error="rate limited"),
         }
     )
-    (kept,) = result["papers"]
-    assert kept.source == "openalex"  # first in source order wins
-    assert (kept.doi, kept.arxiv_id, kept.pdf_url, kept.citations) == (
-        "10.1/a",
-        "1706.03762",
-        "https://x/pdf",
-        9,
+    (paper,) = result["papers"]
+    assert (paper.source, paper.arxiv_id, paper.citations) == (
+        "arxiv",
+        "1706.03762v7",
+        None,
     )
     assert result["source_results"] == {
+        "arxiv": 1,
         "openalex": 1,
         "semantic_scholar": 0,
-        "arxiv": 1,
     }
     assert result["search_errors"] == {"semantic_scholar": "rate limited"}
+
+
+def test_a_duplicate_is_dropped_not_merged() -> None:
+    result = dedupe_results(
+        {
+            "openalex": SourceOutput(
+                papers=[_paper("openalex", doi="10.1/a")], error=None
+            ),
+            "semantic_scholar": SourceOutput(
+                papers=[_paper("semantic_scholar", pdf_url="https://x/pdf")],
+                error=None,
+            ),
+        }
+    )
+    (paper,) = result["papers"]
+    assert (paper.source, paper.pdf_url) == ("openalex", None)
 
 
 def test_a_source_that_raises_is_reported_not_raised() -> None:
     async def boom() -> list[PaperSearchResult]:
         raise RuntimeError("down")
 
-    assert asyncio.run(run_source("arxiv", boom)) == (
+    assert asyncio.run(_run_source("arxiv", boom)) == (
         "arxiv",
         SourceOutput(papers=[], error="down"),
     )

@@ -117,7 +117,7 @@ claude mcp add airas -- uvx airas
 | --- | --- |
 | `get_prompts` | 執筆ステップ（`hypothesis_and_design` / `experiment_code` / `experiment_analysis` / `paper_writing`）のプロンプトを返し、MCP ホスト自身が書く。`experiment_analysis` は clone（`local_path`）から描画し、`analyze_experiment` が送るものと同じ文面。APIキー不要 |
 | `search_papers` | 複数ソース（OpenAlex / Semantic Scholar / arXiv / AIRAS DB）の並列論文検索。結果は正規化・重複排除済み。APIキー不要 |
-| `fetch_paper_fulltext` | arXiv ID / DOI / PDF URL から論文全文を取得（合法なオープンアクセス解決のみ）。APIキー不要 |
+| `dispatch_literature_fetch` | 実験リポジトリの CI（`fetch_literature.yml`）で論文を検索し、各結果の本文を検索ソース自身の `pdf_url` から取得して、全件を `.research/sources/<id>/` に commit する。`GH_PERSONAL_ACCESS_TOKEN` が必要 |
 | `retrieve_models` | サブ分野ごとの候補モデル一覧を取得。APIキー不要 |
 | `retrieve_datasets` | まず参照: サブ分野ごとの AIRAS 厳選候補データセット一覧。APIキー不要 |
 | `search_huggingface_hub` | 厳選側に該当がない場合のフォールバック: Hugging Face Hub をライブ検索し、厳選ツールと同じ形式で候補を返す。APIキー不要 |
@@ -155,7 +155,7 @@ claude mcp add airas -- uvx airas
 
 執筆ステップには 2 車線があります。skills に導かれて agent 自身が書く車線では、`get_prompts` がその step のプロンプトを返します（`hypothesis_and_design` / `experiment_code` / `experiment_analysis` / `paper_writing`、キー不要）。これらのプロンプトを共有するバックエンド LLM ツールは `analyze_experiment`（プロバイダーキーが必要）だけで、`experiment_analysis` のプロンプトに答えます。`citation_verifier_model` 付きの `verify_paper_values` は別の引用判定プロンプトを使います。各プロンプトには作成すべきデータ形式を示す `output_json_schema` と、出力の行き先を示す `flow` が付きます。
 
-典型的なフロー（順序と不変条件は `auto-research` skill が持つ）: `prepare_repository` → `set_github_actions_secrets` → `search_papers` → `fetch_paper_fulltext`（ファイルを読む）→ **仮説と実験設計を自分で書く**（`get_prompts(step="hypothesis_and_design")`）→ **実験コードを自分で書く**（`get_prompts(step="experiment_code")`、下記参照）→ `dispatch_experiment`（`sanity`）→ `preregister_record`（freeze commit。コードの上に乗る）→ **事前登録論文を書く**（`get_prompts(step="paper_writing")`）→ `verify_latex` → staging ref に push、gate が green なら fast-forward → `dispatch_experiment`（`pilot`、次に `full`）→（`get_experiment_run_status` でポーリング）→ `import_run_outputs` → `fetch_experiment_results` → `update_record` → **分析**（`get_prompts(step="experiment_analysis")` か `analyze_experiment`）→ **図を作る**（`render_chart`、下記参照）→ **Results と Discussion を埋める** → `implementation_verifier_model` 付きの `verify_record` → `citation_verifier_model` 付きの `verify_paper_values` → `verify_latex` → push。CI が再検証し、Publish Paper workflow が正式版の PDF をビルドしてコミットします。`open_in_overleaf` はユーザーが編集できる形で Overleaf に引き渡します（`local_path` 指定なら push 不要）。
+典型的なフロー（順序と不変条件は `auto-research` skill が持つ）: `prepare_repository` → `set_github_actions_secrets` → `search_papers` → `dispatch_literature_fetch`（pull して `.research/sources/` を読む）→ **仮説と実験設計を自分で書く**（`get_prompts(step="hypothesis_and_design")`）→ **実験コードを自分で書く**（`get_prompts(step="experiment_code")`、下記参照）→ `dispatch_experiment`（`sanity`）→ `preregister_record`（freeze commit。コードの上に乗る）→ **事前登録論文を書く**（`get_prompts(step="paper_writing")`）→ `verify_latex` → staging ref に push、gate が green なら fast-forward → `dispatch_experiment`（`pilot`、次に `full`）→（`get_experiment_run_status` でポーリング）→ `import_run_outputs` → `fetch_experiment_results` → `update_record` → **分析**（`get_prompts(step="experiment_analysis")` か `analyze_experiment`）→ **図を作る**（`render_chart`、下記参照）→ **Results と Discussion を埋める** → `implementation_verifier_model` 付きの `verify_record` → `citation_verifier_model` 付きの `verify_paper_values` → `verify_latex` → push。CI が再検証し、Publish Paper workflow が正式版の PDF をビルドしてコミットします。`open_in_overleaf` はユーザーが編集できる形で Overleaf に引き渡します（`local_path` 指定なら push 不要）。
 
 ### 凍結がコードの後に来る理由
 

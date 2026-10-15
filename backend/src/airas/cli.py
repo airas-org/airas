@@ -140,6 +140,47 @@ def _run_verify_record(args: argparse.Namespace) -> None:
     sys.exit(0 if verification.ok else 1)
 
 
+def _run_fetch_literature(args: argparse.Namespace) -> None:
+    # 関数内で import: どちらも読み込み時に HTTP セッションや PDF 処理系を用意するので、
+    # ツール呼び出しのたびに起動する hook など他のサブコマンドを重くしない
+    from airas.mcp.context import (
+        _arxiv_client,
+        _openalex_client,
+        _records_index,
+        _search_index,
+        _semantic_scholar_client,
+    )
+    from airas.usecases.literature.fetch_literature import fetch_literature
+    from airas.usecases.literature.search_papers import parse_sources
+
+    asyncio.run(
+        fetch_literature(
+            args.query,
+            Path(args.output_dir),
+            sources=parse_sources(args.sources),
+            max_results_per_source=args.max_results_per_source,
+            year=args.year,
+            openalex_semantic=args.openalex_semantic,
+            openalex_client=_openalex_client(),
+            semantic_scholar_client=_semantic_scholar_client(),
+            arxiv_client=_arxiv_client(),
+            airas_db_index=_search_index,
+            airas_records_index=_records_index,
+        )
+    )
+
+
+def _run_import_literature_from_artifact(args: argparse.Namespace) -> None:
+    from airas.usecases.literature.import_literature_from_artifact import (
+        import_literature_from_artifact,
+    )
+
+    imported = import_literature_from_artifact(
+        args.local_path, Path(args.artifact_dir), args.workflow_run_id
+    )
+    print(json.dumps(imported, indent=2, ensure_ascii=False))
+
+
 def _run_hook(args: argparse.Namespace) -> None:
     if args.hook_command == "install":
         print(install_codex_hooks())
@@ -371,6 +412,53 @@ def main() -> None:
         ),
     )
 
+    fetch = subparsers.add_parser(
+        "fetch-literature",
+        help=(
+            "Search papers and fetch every result's text and registry metadata "
+            "into <output-dir>/<k>/ — what fetch_literature.yml uploads as its artifact"
+        ),
+    )
+    fetch.add_argument("--query", required=True, help="Search query")
+    fetch.add_argument(
+        "--output-dir", required=True, help="Directory to write the results into"
+    )
+    fetch.add_argument(
+        "--sources",
+        default="all",
+        help='Comma-separated search sources, or "all" (default)',
+    )
+    fetch.add_argument(
+        "--max-results-per-source", type=int, default=5, help="Default: 5"
+    )
+    fetch.add_argument("--year", help='Publication year, "2024" or "2020-2024"')
+    fetch.add_argument(
+        "--openalex-semantic",
+        action="store_true",
+        help="Embedding search on openalex (requires OPENALEX_API_KEY)",
+    )
+
+    import_literature = subparsers.add_parser(
+        "import-literature-from-artifact",
+        help=(
+            "Copy what fetch-literature wrote into new .research/sources/<id>/ "
+            "directories and record the run in .research/sources/.provenance.json"
+        ),
+    )
+    import_literature.add_argument(
+        "--artifact-dir", required=True, help="The directory fetch-literature wrote"
+    )
+    import_literature.add_argument(
+        "--workflow-run-id",
+        required=True,
+        help="The fetch_literature.yml run whose artifact that directory is",
+    )
+    import_literature.add_argument(
+        "--local-path",
+        default=".",
+        help="Experiment repository checkout to import into (default: .)",
+    )
+
     publish = subparsers.add_parser(
         "publish-paper",
         help=(
@@ -412,6 +500,10 @@ def main() -> None:
         _run_publish_paper(args)
     elif args.command == "verify-record":
         _run_verify_record(args)
+    elif args.command == "fetch-literature":
+        _run_fetch_literature(args)
+    elif args.command == "import-literature-from-artifact":
+        _run_import_literature_from_artifact(args)
     elif args.command == "loop":
         _run_loop(args)
     else:

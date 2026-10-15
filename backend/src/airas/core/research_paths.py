@@ -32,6 +32,13 @@ TRUSTED_PATHS = (MAKEFILE_PATH, ".github", ".airas")
 # form feed, as pdftotext does.
 SOURCES_DIR = ".research/sources"
 FULLTEXT_FILENAME = "fulltext.txt"
+# What fetch_literature.yml wrote for a source besides its text: the search
+# row as its source returned it, the search, how the text was fetched.
+SOURCE_METADATA_FILENAME = "metadata.json"
+# Which fetch_literature.yml run each .research/sources/<id>/ was imported from.
+SOURCES_PROVENANCE_PATH = f"{SOURCES_DIR}/.provenance.json"
+# The only workflow that writes .research/sources/.
+FETCH_LITERATURE_WORKFLOW_PATH = ".github/workflows/fetch_literature.yml"
 
 
 def fulltext_relpath(source_id: str) -> str:

@@ -1,3 +1,4 @@
+import re
 from logging import getLogger
 
 import feedparser
@@ -6,6 +7,9 @@ from airas.core.types.paper_search import PaperSearchResult
 from airas.infra.arxiv_client import ArxivClient
 
 logger = getLogger(__name__)
+
+# 2007 年 4 月より前の旧形式 id (hep-th/9901001v1) は扱わない
+_NEW_STYLE_VERSIONED_ID = re.compile(r"/abs/(\d{4}\.\d{4,5}v\d+)$")
 
 
 def _year_to_date_range(year: str | None) -> tuple[str | None, str | None]:
@@ -19,9 +23,10 @@ def _year_to_date_range(year: str | None) -> tuple[str | None, str | None]:
     return f"{year_from.strip()}01010000", f"{year_to.strip()}12312359"
 
 
-def _normalize_entry(entry: feedparser.FeedParserDict) -> PaperSearchResult:
-    versioned_id = entry.id.split("/")[-1]
-    arxiv_id = versioned_id.split("v")[0]
+def _normalize_entry(entry: feedparser.FeedParserDict) -> PaperSearchResult | None:
+    if not (match := _NEW_STYLE_VERSIONED_ID.search(entry.id)):
+        return None
+    arxiv_id = match.group(1)
     return PaperSearchResult(
         title=(getattr(entry, "title", "") or "").replace("\n", " ").strip(),
         authors=[author.name for author in getattr(entry, "authors", [])],
@@ -52,4 +57,8 @@ async def search_arxiv(
         to_date=to_date,
     )
     feed = feedparser.parse(xml_feed)
-    return [_normalize_entry(entry) for entry in feed.entries if hasattr(entry, "id")]
+    return [
+        paper
+        for entry in feed.entries
+        if hasattr(entry, "id") and (paper := _normalize_entry(entry))
+    ]
