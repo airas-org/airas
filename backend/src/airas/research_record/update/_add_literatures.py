@@ -106,6 +106,34 @@ def _pin_repositories(
     return added, paths
 
 
+def _identifiers(doi: str | None, arxiv_id: str | None) -> list[str]:
+    return [
+        *([f"doi:{doi}"] if doi else []),
+        *([f"arxiv:{arxiv_id}"] if arxiv_id else []),
+    ]
+
+
+def _refuse_duplicates(
+    record: ResearchRecord, materials: list[tuple[str | None, LiteratureMaterial]]
+) -> None:
+    """DOI と arXiv id は一意: 同じ論文を別の id で二重に引用させない。何か書く前に全件見る"""
+    cited_as = {
+        key: s.id
+        for s in record.latest_literature()
+        for key in _identifiers(s.doi, s.arxiv_id)
+    }
+    for imported_id, m in materials:
+        if imported_id is None:
+            continue
+        for key in _identifiers(m.doi, m.arxiv_id):
+            other = cited_as.setdefault(key, imported_id)
+            if other != imported_id:
+                raise ValueError(
+                    f"{imported_id} is the paper already cited as {other} "
+                    "(same DOI or arXiv id) — cite it as that"
+                )
+
+
 def add_literatures(
     root: Path,
     record: ResearchRecord,
@@ -117,22 +145,17 @@ def add_literatures(
     them if anything later fails. A material comes with the id of the
     .research/sources/<id>/ it was imported into, or None for code with no
     paper, which gets a new id."""
+    _refuse_duplicates(record, materials)
     sources: list[LiteratureSource] = []
     snapshots: list[str] = []
     for imported_id, m in materials:
-        if imported_id is None:
-            source = _existing(record, m)
-        else:
-            source = next(
+        source = (
+            _existing(record, m)
+            if imported_id is None
+            else next(
                 (s for s in record.latest_literature() if s.id == imported_id), None
             )
-            # DOI と arXiv id は一意: 同じ論文を別の id で二重に引用させない
-            duplicate = None if source else _existing(record, m)
-            if duplicate is not None:
-                raise ValueError(
-                    f"{imported_id} is the paper already cited as {duplicate.id} "
-                    "(same DOI or arXiv id) — cite it as that"
-                )
+        )
         if source is None:
             source_id = imported_id or _next_source_id(root, record)
             fulltext = (

@@ -340,6 +340,22 @@ async def test_code_with_no_paper_takes_the_next_id_after_the_imported_sources(
     assert (repo / source.repositories[0].snapshot.path).read_text() == REPO_PAGE
 
 
+async def test_a_duplicate_after_new_code_leaves_no_snapshot_behind(
+    tmp_path: Path,
+) -> None:
+    repo = _repo(tmp_path)
+    _import(repo, "s5", PAPER_ROW, {"fulltext.txt": PAGE_SEPARATOR.join(PAGES)})
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "the same search again")
+    await _preregister(repo, [{"source_id": "s1"}])
+
+    with pytest.raises(ValueError, match="already cited as s1"):
+        await record_tools.append_to_record(
+            str(repo), literature=[{"repositories": [REPO]}, {"source_id": "s5"}]
+        )
+    assert _git(repo, "status", "--porcelain") == ""
+
+
 async def test_code_is_cited_as_its_own_source_not_inside_a_paper(
     tmp_path: Path,
 ) -> None:

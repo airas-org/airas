@@ -9,6 +9,7 @@ from typing import Literal
 
 from airas.core.research_paths import (
     FETCH_LITERATURE_WORKFLOW_PATH,
+    FULLTEXT_FILENAME,
     SOURCE_METADATA_FILENAME,
     SOURCES_DIR,
     SOURCES_PROVENANCE_PATH,
@@ -167,12 +168,15 @@ async def verify_sources_came_from_artifacts(
         else []
     )
     cited = {s.id: s for s in record.latest_literature()}
-    # preregister が書くのはコードの snapshot だけ。metadata.json があれば CI の取り込み
+    # preregister が書くのは論文を伴わないコードの snapshot だけ。本文や識別子があれば論文
     code = {
         i
         for i, s in cited.items()
         if s.verified_by == "git"
-        and not (sources_dir / i / SOURCE_METADATA_FILENAME).is_file()
+        and s.fulltext is None
+        and not (s.doi or s.arxiv_id)
+        and not (sources_dir / i / FULLTEXT_FILENAME).exists()
+        and not (sources_dir / i / SOURCE_METADATA_FILENAME).exists()
     }
 
     def status(
@@ -186,6 +190,16 @@ async def verify_sources_came_from_artifacts(
             verdict,
             evidence_path=f"{SOURCES_DIR}/{source_id}",
         )
+
+    # is_file() と read_bytes() はリンクを辿るので、リンク先だけ書き換えれば git diff に出ない
+    for directory in directories:
+        source_dir = sources_dir / directory
+        if source_dir.is_symlink() or any(p.is_symlink() for p in source_dir.iterdir()):
+            status(
+                directory,
+                f"{SOURCES_DIR}/{directory} is or holds a symlink",
+                "mismatch",
+            )
 
     on_main = {
         d

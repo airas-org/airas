@@ -298,3 +298,44 @@ def test_a_source_on_main_from_before_fetch_literature_is_not_its_concern(
         _imported("s2", NEW_ROW),
     )
     assert "literature[s1]" not in _statuses(repo, record, _GitHub())
+
+
+def test_a_source_whose_file_links_elsewhere_fails(tmp_path: Path) -> None:
+    """Linked to a file outside sources/, its text could change with no diff under it."""
+    repo = tmp_path
+    _git(repo, "init", "-q")
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "test")
+    _git(repo, "remote", "add", "origin", "https://github.com/acme/exp")
+    (repo / "notes.txt").write_text("page\fpage")
+    _write(repo, "s1", {"metadata.json": json.dumps(OLD_ROW).encode()})
+    (repo / ".research" / "sources" / "s1" / "fulltext.txt").symlink_to(
+        repo / "notes.txt"
+    )
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "main")
+    _git(repo, "update-ref", "refs/remotes/origin/main", "HEAD")
+    (repo / "notes.txt").write_text("page\fa quote the paper never had")
+
+    reasons = [
+        s.reason
+        for s in _statuses_all(repo, _record(_imported("s1", OLD_ROW)), _GitHub())
+        if s.status == "mismatch"
+    ]
+    assert any("holds a symlink" in r for r in reasons)
+
+
+def test_a_paper_labelled_as_code_is_not_exempt(tmp_path: Path) -> None:
+    repo = _repo(tmp_path)
+    _write(repo, "s3", {"fulltext.txt": b"forged text"})
+    forged = LiteratureSource(
+        id="s3",
+        title="A Paper",
+        bibkey="k",
+        doi="10.1/forged",
+        verified_by="git",
+        repositories=[_code("s3")],
+    )
+    status = _statuses(repo, _record(forged), _GitHub())["literature[s3]"]
+    assert status.status == "mismatch"
+    assert ".provenance.json" in status.reason
