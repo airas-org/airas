@@ -29,3 +29,19 @@ def test_the_date_range_applies_to_the_whole_query() -> None:
     assert _query("sam cifar", from_date="20200101", to_date="20201231") == (
         "(all:sam AND all:cifar) AND submittedDate:[20200101 TO 20201231]"
     )
+
+
+def test_a_quoted_phrase_stays_one_term() -> None:
+    assert _query('"sharpness aware minimization"') == (
+        'all:"sharpness aware minimization"'
+    )
+
+
+def test_a_phrase_and_keywords_are_all_required() -> None:
+    assert _query('"machine learning" optimization') == (
+        'all:"machine learning" AND all:optimization'
+    )
+
+
+def test_an_unclosed_quote_is_dropped() -> None:
+    assert _query('"machine learning') == "all:machine AND all:learning"
