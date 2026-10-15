@@ -1,4 +1,5 @@
 import asyncio
+import re
 from logging import getLogger
 from typing import Any, Protocol, runtime_checkable
 
@@ -56,8 +57,13 @@ class ArxivClient(BaseHTTPClient):
                 search_parts.append(f"au:{sanitized_author}")
 
         elif query and query.strip():
-            sanitized = query.strip().replace(":", "")
-            search_parts.append(f"{search_field}:{sanitized}")
+            # "all:a b" はフィールドが a にしか掛からず b は OR になるので、項ごとに付けて AND で結ぶ。
+            # 引用符のフレーズは 1 項のまま、閉じていない引用符は不正なクエリになるので落とす
+            terms = [
+                t if len(t) > 1 and t[0] == t[-1] == '"' else t.replace('"', "")
+                for t in re.findall(r'"[^"]+"|\S+', query.replace(":", ""))
+            ]
+            search_parts.append(" AND ".join(f"{search_field}:{t}" for t in terms if t))
         else:
             raise ValueError("Either 'query' or 'title'/'author' must be provided")
 
