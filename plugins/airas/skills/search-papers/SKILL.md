@@ -17,7 +17,8 @@ description: Author search queries, explore them with the AIRAS MCP tools and ha
    carry no PDF link, so they arrive without a text; query for the same
    title so the arXiv row brings it.
 3. **Fetch** with `dispatch_literature_fetch`, passing the query and
-   options you settled on. The repository's CI runs that search again,
+   options you settled on (`sources` defaults to `arxiv,airas_records`,
+   whose rows always yield a text). The repository's CI runs that search again,
    fetches each result's text from the search source's own `pdf_url`, and
    commits **every** result into `.research/sources/<id>/`
    (`metadata.json`, and `fulltext.txt` when a text was fetched) on the

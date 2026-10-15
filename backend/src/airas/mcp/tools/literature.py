@@ -80,14 +80,17 @@ async def dispatch_literature_fetch(
     repository_name: str,
     branch_name: str,
     query: str,
-    sources: str = "all",
+    sources: str = "arxiv,airas_records",
     max_results_per_source: int = 5,
     year: str | None = None,
     openalex_semantic: bool = False,
 ) -> dict[str, Any]:
     """Run a literature search in the repository's CI, which commits every result.
 
-    The search takes the same options as `search_papers`. fetch_literature.yml
+    The search takes the same options as `search_papers`; `sources` defaults
+    to arXiv and AIRAS's own studies, the two whose rows always carry what
+    the text is fetched from (another source may arrive without a text, its
+    reason kept in `metadata.json`). fetch_literature.yml
     fetches each result's text from the search source's own `pdf_url` and
     commits it with the search row as metadata into a new
     `.research/sources/<id>/` on `branch_name` — results without a text too,

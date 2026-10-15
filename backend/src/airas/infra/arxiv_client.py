@@ -56,8 +56,9 @@ class ArxivClient(BaseHTTPClient):
                 search_parts.append(f"au:{sanitized_author}")
 
         elif query and query.strip():
-            sanitized = query.strip().replace(":", "")
-            search_parts.append(f"{search_field}:{sanitized}")
+            # "all:a b" はフィールドが a にしか掛からず b は OR になるので、語ごとに付けて AND で結ぶ
+            terms = query.replace(":", "").split()
+            search_parts.append(" AND ".join(f"{search_field}:{t}" for t in terms))
         else:
             raise ValueError("Either 'query' or 'title'/'author' must be provided")
 
