@@ -31,11 +31,5 @@ async def search_airas_records(
     index: AirasRecordsIndex,
     query: str,
     max_results: int,
-    *,
-    verdict: str | None = None,
-    stage: str | None = None,
 ) -> list[PaperSearchResult]:
-    return [
-        to_search_result(e)
-        for e in await index.search(query, max_results, verdict=verdict, stage=stage)
-    ]
+    return [to_search_result(e) for e in await index.search(query, max_results)]

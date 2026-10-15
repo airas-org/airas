@@ -209,9 +209,22 @@ class LiteratureSource(BaseModel):
     arxiv_id: Optional[str] = None
     url: Optional[str] = None
     bibkey: str
-    verified_by: Literal["", "doi.org", "arxiv", "git", "airas_records"] = Field(
+    verified_by: Literal[
+        "",
+        "doi.org",
+        "arxiv",
+        "openalex",
+        "semantic_scholar",
+        "airas_db",
+        "git",
+        "airas_records",
+    ] = Field(
         default="",
-        description="Registry that confirmed the source exists at registration",
+        description=(
+            "Where the source came from: the search source whose row "
+            "fetch_literature.yml imported, git for code with no paper, or (records "
+            "from before fetch_literature.yml) the registry that confirmed it"
+        ),
     )
     verified_at: str = Field(default="", description="ISO-8601 UTC")
     fulltext: Optional[InputRef] = Field(

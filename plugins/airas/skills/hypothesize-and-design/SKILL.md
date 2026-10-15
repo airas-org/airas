@@ -1,21 +1,21 @@
 ---
 name: hypothesize-and-design
-description: Read the downloaded papers, then author a falsifiable research hypothesis and an experimental design that fixes run ids, metrics, models, datasets and the compute environment. Use to create or rework a hypothesis and its experimental design.
+description: Read the fetched papers in .research/sources/, then author a falsifiable research hypothesis and an experimental design that fixes run ids, metrics, models, datasets and the compute environment. Use to create or rework a hypothesis and its experimental design.
 ---
 
 # Hypothesize & design
 
-Starts from the search rows and `fulltext_path`s `search-papers` left.
+Starts from the `.research/sources/<id>/` that `search-papers` had CI fetch.
 This is a loop, not a pass: read, hypothesize, notice what the
 literature does not settle, go back to `search-papers` for it, and
 refine until the hypothesis rests on passages you have actually read.
 
-1. **Read** the downloaded papers with your own tools — a paper runs to
-   80k+ characters, so read in parts or search within the file. Keep,
-   per paper the research will rest on, its identifiers, its
-   `fulltext_path` and the passages that matter (page and verbatim
-   quote): `preregister_record` takes exactly these, and assigns ids in
-   the order given (`s1`, `s2`, …; `p1`, `p2`, … within a source), so
+1. **Read** the fetched papers (`.research/sources/<id>/fulltext.txt`,
+   with the search row in `metadata.json`) with your own tools — a paper
+   runs to 80k+ characters, so read in parts or search within the file.
+   Keep, per paper the research will rest on, its source id and the
+   passages that matter (page and verbatim quote): `preregister_record`
+   takes exactly these (passages get ids `p1`, `p2`, … within a source), so
    note which passages the hypothesis answers (its gap) and which the
    design follows; record both as `quoted_passage_ids`. A quote is
    matched against the snapshot ignoring line breaks, end-of-line
@@ -83,7 +83,7 @@ refine until the hypothesis rests on passages you have actually read.
    it.
 
 **Output**: hypothesis + experimental design, and the papers they rest
-on with their `fulltext_path` and quoted passages, committed as
+on by source id with their quoted passages, committed as
 `.research/design.json`. Nothing is in the record yet:
 `write-experiment-code` reads the draft next, and its platform sanity
 run shows what the design missed (a value read, a function called, a

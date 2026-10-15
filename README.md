@@ -136,7 +136,7 @@ The `auto-research` flow uses the following tools; the skills above are thin con
 | Step | Tools |
 | --- | --- |
 | `setup-repository` | `prepare_repository`, `set_github_actions_secrets` |
-| `search-papers` | `search_papers`, `fetch_paper_fulltext` |
+| `search-papers` | `search_papers`, `dispatch_literature_fetch` |
 | `hypothesize-and-design` | `get_prompts`, `retrieve_models`, `retrieve_datasets`, `search_huggingface_hub` |
 | `preregister-paper` | `preregister_record`, `get_prompts`, `append_to_record`, `update_record`, `verify_latex` |
 | `write-experiment-code` | `get_prompts`, `get_library_docs` |

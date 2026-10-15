@@ -63,6 +63,17 @@ def paths_changed_between(
     return text.splitlines() if text is not None else None
 
 
+def path_exists_at_commit(repo_root: Path, commit: str, repo_path: str) -> bool:
+    result = _run(repo_root, "cat-file", "-e", f"{commit}:{repo_path}")
+    return result is not None and result.returncode == 0
+
+
+def differs_from_commit(repo_root: Path, commit: str, repo_path: str) -> bool:
+    """The working tree's tracked files under `repo_path` against `commit`."""
+    result = _run(repo_root, "diff", "--quiet", commit, "--", repo_path)
+    return result is None or result.returncode != 0
+
+
 def is_shallow(repo_root: Path) -> bool:
     return _text(repo_root, "rev-parse", "--is-shallow-repository") == "true"
 

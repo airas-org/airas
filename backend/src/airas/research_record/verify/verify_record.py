@@ -4,6 +4,7 @@ the run outputs? Composes the checks in the `_verify_*` modules."""
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from pathlib import Path
 from typing import Literal
 
@@ -12,9 +13,10 @@ from pydantic import ValidationError
 from airas.core.research_paths import RECORD_PATH, RESULTS_DIR, repo_root
 from airas.core.types.record_verification import RecordVerification
 from airas.core.types.research_record import ResearchRecord
+from airas.infra.github_client import GithubClient
 from airas.infra.litellm_client import LiteLLMClient
 from airas.infra.local_git import commit_paths
-from airas.infra.run_output_store import default_store
+from airas.infra.run_output_store import default_github_client, default_store
 from airas.research_record.llm_as_a_judge.judge_implementation_against_design import (
     judge_implementation_against_design,
 )
@@ -40,6 +42,9 @@ from airas.research_record.verify._verify_run_observations import (
     verify_run_observations,
 )
 from airas.research_record.verify._verify_run_results import verify_run_results
+from airas.research_record.verify._verify_sources_came_from_artifacts import (
+    verify_sources_came_from_artifacts,
+)
 
 
 # TODO: 循環依存が気になる
@@ -109,6 +114,7 @@ async def verify_record(
     require_provenance: bool = True,
     require_history: bool = True,
     store_factory: StoreFactory = default_store,
+    github_client_factory: Callable[[], GithubClient] = default_github_client,
     implementation_verifier_model: str | None = None,
     litellm_client: LiteLLMClient | None = None,
 ) -> RecordVerification:
@@ -137,6 +143,10 @@ async def verify_record(
 
     verify_record_in_itself(record, verification)
     await asyncio.to_thread(verify_quoted_passages, root, record, verification)
+    if check_provenance:
+        await verify_sources_came_from_artifacts(
+            root, record, verification, github_client_factory
+        )
 
     # Every committed version is held to the declaration checks too: a
     # declaration may only name passages already in the record when it lands.

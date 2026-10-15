@@ -11,7 +11,7 @@ TODO:
   判断材料（research_study_list、compute_environment）は引数で受ける。
 - 探索アルゴリズムの取り込み（AI Scientist v2 の木探索など）。ループは
   `workflows/` のグラフに置き、node からここの関数と
-  `usecases/literature` の `search_papers` / `fetch_paper_fulltext` を呼ぶ。
+  `usecases/literature` の `search_papers` / `fetch_literature` を呼ぶ。
   record は `preregister_record` まで触らない。実験段階の木は展開ごとに
   `append_to_record` で design / run を追記してから dispatch し、LLM の
   判定は探索の指針までで verdict にはしない。

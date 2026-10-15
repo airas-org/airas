@@ -1,8 +1,10 @@
+import re
 from pathlib import Path
 
 from airas.core.hashing import file_sha256
 from airas.core.research_paths import (
     PAGE_SEPARATOR,
+    SOURCES_DIR,
     fulltext_relpath,
     repository_snapshot_relpath,
 )
@@ -19,8 +21,16 @@ from airas.core.types.research_record import (
 from airas.research_record.render.render_references_bib import unique_bibkey
 
 
-def _next_source_id(record: ResearchRecord) -> str:
-    return f"s{max((int(s.id[1:]) for s in record.literature), default=0) + 1}"
+def _next_source_id(root: Path, record: ResearchRecord) -> str:
+    # fetch_literature.yml が置いた sources/<id>/ は、まだ record に無くても使用済み
+    sources_dir = root / SOURCES_DIR
+    imported = (
+        [p.name for p in sources_dir.iterdir() if re.fullmatch(r"s\d+", p.name)]
+        if sources_dir.is_dir()
+        else []
+    )
+    used = [int(i[1:]) for i in [*imported, *(s.id for s in record.literature)]]
+    return f"s{max(used, default=0) + 1}"
 
 
 def _write_pages(root: Path, relpath: str, pages: list[str]) -> InputRef:
@@ -32,6 +42,17 @@ def _write_pages(root: Path, relpath: str, pages: list[str]) -> InputRef:
         raise ValueError(f"{relpath} is a symlink or leaves the repository")
     path.write_text(PAGE_SEPARATOR.join(pages), encoding="utf-8")
     return InputRef(path=relpath, sha256=file_sha256(path))
+
+
+def _snapshot(
+    root: Path, relpath: str, pages: list[str], written: list[str]
+) -> InputRef:
+    """An imported file is kept as fetch_literature.yml wrote it; anything else is written."""
+    path = root / relpath
+    if path.is_file():
+        return InputRef(path=relpath, sha256=file_sha256(path))
+    written.append(relpath)
+    return _write_pages(root, relpath, pages)
 
 
 def _same(s: LiteratureSource, m: LiteratureMaterial) -> bool:
@@ -70,10 +91,9 @@ def _pin_repositories(
         if (material.url, material.commit) in known:
             continue
         repository_id = f"{source_id}.r{len(pinned) + len(added) + 1}"
-        snapshot = _write_pages(
-            root, repository_snapshot_relpath(repository_id), material.pages
+        snapshot = _snapshot(
+            root, repository_snapshot_relpath(repository_id), material.pages, paths
         )
-        paths.append(snapshot.path)
         added.append(
             Repository(
                 id=repository_id,
@@ -86,23 +106,63 @@ def _pin_repositories(
     return added, paths
 
 
+def _identifiers(doi: str | None, arxiv_id: str | None) -> list[str]:
+    return [
+        *([f"doi:{doi}"] if doi else []),
+        *([f"arxiv:{arxiv_id}"] if arxiv_id else []),
+    ]
+
+
+def _refuse_duplicates(
+    record: ResearchRecord, materials: list[tuple[str | None, LiteratureMaterial]]
+) -> None:
+    """DOI と arXiv id は一意: 同じ論文を別の id で二重に引用させない。何か書く前に全件見る"""
+    cited_as = {
+        key: s.id
+        for s in record.latest_literature()
+        for key in _identifiers(s.doi, s.arxiv_id)
+    }
+    for imported_id, m in materials:
+        if imported_id is None:
+            continue
+        for key in _identifiers(m.doi, m.arxiv_id):
+            other = cited_as.setdefault(key, imported_id)
+            if other != imported_id:
+                raise ValueError(
+                    f"{imported_id} is the paper already cited as {other} "
+                    "(same DOI or arXiv id) — cite it as that"
+                )
+
+
 def add_literatures(
-    root: Path, record: ResearchRecord, materials: list[LiteratureMaterial]
+    root: Path,
+    record: ResearchRecord,
+    materials: list[tuple[str | None, LiteratureMaterial]],
 ) -> tuple[list[LiteratureSource], list[str]]:
     """Pin each material as a source, or find it already pinned and add the
     code it ships that is not pinned yet. Returns the sources in the
     materials' order and the snapshot paths written, so a caller can discard
-    them if anything later fails."""
+    them if anything later fails. A material comes with the id of the
+    .research/sources/<id>/ it was imported into, or None for code with no
+    paper, which gets a new id."""
+    _refuse_duplicates(record, materials)
     sources: list[LiteratureSource] = []
     snapshots: list[str] = []
-    for m in materials:
-        source = _existing(record, m)
+    for imported_id, m in materials:
+        source = (
+            _existing(record, m)
+            if imported_id is None
+            else next(
+                (s for s in record.latest_literature() if s.id == imported_id), None
+            )
+        )
         if source is None:
-            source_id = _next_source_id(record)
-            fulltext = None
-            if m.pages:
-                fulltext = _write_pages(root, fulltext_relpath(source_id), m.pages)
-                snapshots.append(fulltext.path)
+            source_id = imported_id or _next_source_id(root, record)
+            fulltext = (
+                _snapshot(root, fulltext_relpath(source_id), m.pages, snapshots)
+                if m.pages
+                else None
+            )
             repositories, paths = _pin_repositories(root, source_id, [], m.repositories)
             snapshots += paths
             source = LiteratureSource(

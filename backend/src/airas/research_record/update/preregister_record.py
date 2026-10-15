@@ -42,7 +42,7 @@ async def preregister_record(
     local_path: str,
     hypotheses: list[dict[str, Any]],
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
-    literature: list[LiteratureMaterial] | None = None,
+    literature: list[tuple[str | None, LiteratureMaterial]] | None = None,
 ) -> dict[str, Any]:
     """The literature, then the declarations, into an empty record; one
     commit is the freeze point."""
@@ -63,7 +63,7 @@ async def preregister_record(
         try:
             sources, written = add_literatures(root, record, materials)
             snapshots.extend(written)
-            for source, material in zip(sources, materials, strict=True):
+            for source, (_, material) in zip(sources, materials, strict=True):
                 add_quoted_passages(source, material.passages)
             registered = _registered(sources)
             record.hypotheses = parsed

@@ -227,12 +227,12 @@ def build_store(
     if backend == "seyval":
         return SeyvalOutputStore(seyval_client(), git_url)
     if backend == "github_actions":
-        owner, repo = _owner_and_repo(git_url)
+        owner, repo = github_owner_and_repository(git_url)
         return GithubActionsOutputStore(github_client(), owner, repo)
     raise ValueError(f"unknown execution backend {backend!r}")
 
 
-def _owner_and_repo(git_url: str) -> tuple[str, str]:
+def github_owner_and_repository(git_url: str) -> tuple[str, str]:
     match = re.match(
         r"^https://github\.com/([^/]+)/([^/]+)$", normalize_git_url(git_url)
     )
@@ -241,7 +241,7 @@ def _owner_and_repo(git_url: str) -> tuple[str, str]:
     return match.group(1), match.group(2)
 
 
-def _default_github_client() -> GithubClient:
+def default_github_client() -> GithubClient:
     token = os.getenv("GH_PERSONAL_ACCESS_TOKEN")
     if not token:
         raise RuntimeError("GH_PERSONAL_ACCESS_TOKEN is not set")
@@ -254,5 +254,5 @@ def _default_github_client() -> GithubClient:
 default_store: Callable[[str, str], RunOutputStore] = partial(
     build_store,
     seyval_client=default_seyval_client,
-    github_client=_default_github_client,
+    github_client=default_github_client,
 )

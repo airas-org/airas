@@ -165,7 +165,7 @@ async def append_to_record(
     passages: list[dict[str, Any]] | None = None,
     run_results: bool = False,
     latex_template_name: LATEX_TEMPLATE_NAME = "mdpi",
-    literature: list[LiteratureMaterial] | None = None,
+    literature: list[tuple[str | None, LiteratureMaterial]] | None = None,
 ) -> dict[str, Any]:
     """Append to an existing record — declarations the agent passes, and with
     `run_results` what the run outputs on disk say — then re-render the paper
@@ -206,7 +206,7 @@ async def append_to_record(
     ) -> dict[str, Any]:
         sources, written = add_literatures(root, record, materials)
         snapshots.extend(written)
-        for source, material in zip(sources, materials, strict=True):
+        for source, (_, material) in zip(sources, materials, strict=True):
             add_quoted_passages(source, material.passages)
         registered = _registered(sources)
         record.hypotheses.extend(new_hypotheses)

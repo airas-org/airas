@@ -6,13 +6,9 @@ from airas.core.types.latex import LATEX_TEMPLATE_NAME
 from airas.core.types.literature_material import LiteratureMaterial
 from airas.mcp.app import mcp
 from airas.mcp.context import (
-    _arxiv_client,
-    _async_session,
     _github_client,
     _litellm_client,
     _output_store,
-    _records_index,
-    _semantic_scholar_client,
 )
 from airas.research_record.render.render_verification_md import (
     write_verification_md,
@@ -33,17 +29,9 @@ from airas.usecases.verification.open_github_issues_for_verifiability import (
 
 
 async def _materials(
-    literature: list[dict[str, Any]] | None,
-) -> list[LiteratureMaterial]:
-    if not literature:
-        return []
-    return await resolve_literatures(
-        literature,
-        records_index=_records_index,
-        arxiv_client=_arxiv_client(),
-        semantic_scholar_client=_semantic_scholar_client(),
-        http=_async_session,
-    )
+    local_path: str, literature: list[dict[str, Any]] | None
+) -> list[tuple[str | None, LiteratureMaterial]]:
+    return await resolve_literatures(repo_root(local_path), literature or [])
 
 
 @mcp.tool()
@@ -156,22 +144,22 @@ async def preregister_record(
         "tables": [...], "charts": [...], "notes": [...]
       }]
 
-    `literature` is what the hypothesis rests on, pinned in the same
-    commit. Each entry is a work: a paper (`doi` / `arxiv_id` from
-    `search_papers`, with `title`, `authors`, `year`, `venue`, `pdf_url`,
-    and the `fulltext_path` `fetch_paper_fulltext` returned), optionally
-    with the code it ships as `repositories` (each `url`, a full 40-hex
-    `commit`, `files` — a file or a directory snapshotted whole — and, for
-    a method a design's `repository_integration` runs, `method_entry`, the
-    `module.Class.method` whose call runs it); code with no paper
-    (`repositories` alone); or a
-    study AIRAS produced (`airas_record`). Each carries `passages`:
+    `literature` is what the hypothesis rests on, chosen from what
+    `dispatch_literature_fetch` imported and pinned in the same commit.
+    Each entry is either a source by its id — `{"source_id": "s3"}`, a
+    paper or AIRAS study in `.research/sources/s3/`, whose title, authors
+    and text the record takes from there — or code (`repositories`, given
+    the next free id; the code a paper ships is cited this way too, as its
+    own source). A paper's DOI or arXiv id is cited under one id only.
+    Each repository is a `url`, a full 40-hex `commit`,
+    `files` (a file or a directory snapshotted whole) and, for a method a
+    design's `repository_integration` runs, `method_entry`, the
+    `module.Class.method` whose call runs it. Each entry carries `passages`:
     `[{"node_type": "gap|claim|result|method|setup|definition", "quote":
-    "<copied verbatim from the text or the code>", "anchor"?}]`. A registry
-    (doi.org, arXiv, git) must confirm each source exists, its text and
-    code are snapshotted under `.research/sources/<id>/`, and every quote
-    is checked against those snapshots. Sources get ids in the order given
-    (`s1`, `s2`, …) and passages `p1`, `p2`, … within each, so
+    "<copied verbatim from the text or the code>", "anchor"?}]`, and every
+    quote is checked against the source's text or code snapshots. A source
+    whose text could not be fetched cannot be cited. Passages get ids `p1`,
+    `p2`, … within each source, so
     `quoted_passage_ids` on a hypothesis, claim, design or criterion name
     them as `"s1.p2"`: what the declaration rests on, in the prior work's
     own words. The gate refuses a passage no source declares.
@@ -248,7 +236,7 @@ async def preregister_record(
         local_path,
         hypotheses,
         latex_template_name,
-        literature=await _materials(literature),
+        literature=await _materials(local_path, literature),
     )
 
 
@@ -305,7 +293,7 @@ async def append_to_record(
         notes=notes,
         source_id=source_id,
         passages=passages,
-        literature=await _materials(literature),
+        literature=await _materials(local_path, literature),
         latex_template_name=latex_template_name,
     )
 

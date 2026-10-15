@@ -5,8 +5,6 @@ import asyncio
 import json
 from typing import Any
 
-import pytest
-
 from airas.core.types.research_record import (
     Criterion,
     Hypothesis,
@@ -73,10 +71,10 @@ LOOKALIKE = "auto-res2/lookalike@" + "d" * 40
 
 STORE: dict[str, Any] = {
     "manifest.json": [
-        {"id": SAM, "stage": "results", "collected_at": "2026-09-10T00:00:00+00:00"},
-        {"id": SPARSE, "stage": "prereg"},
-        {"id": "auto-res2/broken@" + "c" * 40, "stage": "results"},
-        {"id": LOOKALIKE, "stage": "prereg"},
+        {"id": SAM, "collected_at": "2026-09-10T00:00:00+00:00"},
+        {"id": SPARSE},
+        {"id": "auto-res2/broken@" + "c" * 40},
+        {"id": LOOKALIKE},
     ],
     # Shares the DOI prefix tokens with SPARSE's paper, and nothing else.
     f"records/{LOOKALIKE.replace('@', '/')}/record.json": _record(
@@ -141,22 +139,6 @@ def test_the_papers_a_study_built_on_find_it_by_title_or_identifier() -> None:
         assert [h.external_ids["airas_record"] for h in hits][:1] == [SPARSE], query
 
 
-def test_verdict_and_stage_narrow_without_eating_max_results() -> None:
-    index = _index()
-    assert [
-        h.external_ids["airas_record"]
-        for h in asyncio.run(
-            search_airas_records(index, "cifar attention", 1, verdict="refuted")
-        )
-    ] == [SAM]
-    assert [
-        h.external_ids["airas_record"]
-        for h in asyncio.run(
-            search_airas_records(index, "cifar attention", 1, stage="prereg")
-        )
-    ] == [SPARSE]
-
-
 def test_a_record_that_does_not_parse_is_left_out() -> None:
     index = _index()
     assert asyncio.run(index.get("auto-res2/broken@" + "c" * 40)) is None
@@ -164,29 +146,23 @@ def test_a_record_that_does_not_parse_is_left_out() -> None:
     assert entry is not None and entry.record.hypotheses[0].id == "h1"
 
 
-def test_the_endpoint_runs_the_source_and_refuses_filters_elsewhere() -> None:
+def test_the_endpoint_runs_the_source() -> None:
     unused: Any = None
-
-    def run(**kw: Any) -> dict[str, Any]:
-        return asyncio.run(
-            search_papers(
-                "sharpness",
-                max_results_per_source=5,
-                openalex_client=unused,
-                semantic_scholar_client=unused,
-                arxiv_client=unused,
-                airas_db_index=unused,
-                airas_records_index=_index(),
-                **kw,
-            )
+    result = asyncio.run(
+        search_papers(
+            "sharpness",
+            sources=["airas_records"],
+            max_results_per_source=5,
+            openalex_client=unused,
+            semantic_scholar_client=unused,
+            arxiv_client=unused,
+            airas_db_index=unused,
+            airas_records_index=_index(),
         )
-
-    result = run(sources=["airas_records"], verdict="refuted")
+    )
     assert [p.external_ids["airas_record"] for p in result["papers"]] == [SAM]
     assert result["source_results"] == {"airas_records": 1}
     assert result["search_errors"] == {}
-    with pytest.raises(ValueError, match="airas_records only"):
-        run(sources=["arxiv", "airas_records"], verdict="refuted")
 
 
 def test_an_identifier_finds_exactly_the_study_that_cites_it() -> None:
@@ -206,7 +182,6 @@ def test_a_superseded_claim_is_left_out_of_the_abstract() -> None:
         id=SAM,
         url="u",
         commit="a" * 40,
-        stage="prereg",
         collected_at="",
         title="t",
         record=record,
