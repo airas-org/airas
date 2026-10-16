@@ -110,7 +110,7 @@ class ArxivClient(BaseHTTPClient):
         if not arxiv_id.strip():
             raise ValueError("arxiv_id must be provided")
 
-        return arxiv_id.strip().split("v")[0]
+        return arxiv_id.strip()
 
     @ARXIV_RETRY
     def search_papers(

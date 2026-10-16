@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Any
 
@@ -13,6 +14,7 @@ from airas.mcp.context import (
     _semantic_scholar_client,
 )
 from airas.usecases.literature import search_papers as search_papers_usecase
+from airas.usecases.literature.fetch_literature import validate_literature_input
 
 
 @mcp.tool()
@@ -79,37 +81,42 @@ async def dispatch_literature_fetch(
     github_owner: str,
     repository_name: str,
     branch_name: str,
-    query: str,
+    query: str | None = None,
     sources: str = "arxiv,airas_records",
     max_results_per_source: int = 5,
     year: str | None = None,
     openalex_semantic: bool = False,
+    arxiv_ids: list[str] | None = None,
+    dois: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Run a literature search in the repository's CI, which commits every result.
+    """Fetch literature in CI and commit it into `.research/sources/` on the branch.
 
-    The search takes the same options as `search_papers`; `sources` defaults
-    to arXiv and AIRAS's own studies, the two whose rows always carry what
-    the text is fetched from (another source may arrive without a text, its
-    reason kept in `metadata.json`). fetch_literature.yml
-    fetches each result's text from the search source's own `pdf_url` and
-    commits it with the search row as metadata into a new
-    `.research/sources/<id>/` on `branch_name` — results without a text too,
-    so what the search returned stays visible. Nothing passes through this
-    machine: once `get_workflow_runs` reports the run completed, pull the
-    branch and read the sources. Requires GH_PERSONAL_ACCESS_TOKEN; the
-    repository's OPENALEX_API_KEY secret for `openalex_semantic`.
+    Pass either `query` with `search_papers` options, or `arxiv_ids` and/or
+    `dois` as raw identifiers, not URLs. Direct lookup checks the identifiers,
+    preserves requested arXiv versions and records resolved versions when
+    omitted. `year` and `openalex_semantic` apply only to query searches.
+    DOI lookup uses Semantic Scholar's metadata and PDF URL. Missing text
+    is kept with its reason; a failed lookup never substitutes another paper.
+    Once `get_workflow_runs` reports success, pull the branch and read the
+    sources. Requires GH_PERSONAL_ACCESS_TOKEN and, for semantic search,
+    the repository's OPENALEX_API_KEY secret.
     """
+    validate_literature_input(
+        query, arxiv_ids, dois, year=year, openalex_semantic=openalex_semantic
+    )
     response = await _github_client().acreate_workflow_dispatch(
         github_owner,
         repository_name,
         FETCH_LITERATURE_WORKFLOW_PATH.rsplit("/", 1)[-1],
         ref=branch_name,
         inputs={
-            "query": query,
+            "query": query or "",
             "sources": sources,
             "max_results_per_source": str(max_results_per_source),
             "year": year or "",
             "openalex_semantic": str(openalex_semantic).lower(),
+            "arxiv_ids": json.dumps(arxiv_ids or []),
+            "dois": json.dumps(dois or []),
         },
         return_run_details=True,
     )
