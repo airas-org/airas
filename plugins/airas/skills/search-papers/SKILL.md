@@ -1,9 +1,21 @@
 ---
 name: search-papers
-description: Author search queries, explore them with the AIRAS MCP tools and have the repository's CI fetch every result into .research/sources/. Use to bring literature on a topic to hand; reading and distilling it happens in hypothesize-and-design, which returns here whenever it needs more.
+description: Search for literature or fetch specific papers by arXiv ID or DOI through the repository's CI into .research/sources/. Use to bring literature on a topic to hand; reading and distilling it happens in hypothesize-and-design, which returns here whenever it needs more.
 ---
 
 # Search papers
+
+When the user specifies papers, call `dispatch_literature_fetch` with
+`arxiv_ids` and/or `dois` instead of `query`, for example
+`arxiv_ids=["1706.03762v7"]`. When given an arXiv URL, extract the ID,
+preserving any version suffix, and pass that ID to the tool. CI resolves
+those exact papers, retaining a requested arXiv version (or recording the
+current version for an unversioned ID), and records the requested identifier
+in `metadata.json`. A lookup failure is reported without substituting a
+search result; unavailable text stays visible with its reason. Once the
+run completes, pull the branch and read the sources.
+
+For topic searches:
 
 1. **Write queries** yourself — 2-4 queries, each **1-4 keywords**:
    academic search backends match keywords, not sentences.

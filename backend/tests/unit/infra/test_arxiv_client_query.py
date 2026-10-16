@@ -1,5 +1,7 @@
 """A keyword query matches papers that carry every keyword, not any one of them."""
 
+import httpx
+
 from airas.infra.arxiv_client import ArxivClient
 
 
@@ -45,3 +47,16 @@ def test_a_phrase_and_keywords_are_all_required() -> None:
 
 def test_an_unclosed_quote_is_dropped() -> None:
     assert _query('"machine learning') == "all:machine AND all:learning"
+
+
+async def test_id_lookup_sends_the_requested_version() -> None:
+    requested = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        requested.append(request.url.params["id_list"])
+        return httpx.Response(200, text="<feed/>")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as session:
+        client = ArxivClient(async_session=session)
+        await client.aget_paper_by_id(" 1706.03762v1 ")
+    assert requested == ["1706.03762v1"]

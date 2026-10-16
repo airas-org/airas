@@ -1,8 +1,11 @@
 import asyncio
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+import feedparser
 
 from airas.core.research_paths import (
     FULLTEXT_FILENAME,
@@ -23,11 +26,43 @@ from airas.usecases.literature.nodes.fetch_fulltext_from_url import (
     fetch_fulltext_from_url,
     parser_version,
 )
+from airas.usecases.literature.nodes.search_arxiv import _normalize_entry
+from airas.usecases.literature.nodes.search_semantic_scholar import (
+    _FIELDS,
+    _normalize_item,
+)
 from airas.usecases.literature.search_papers import search_papers
 
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def validate_literature_input(
+    query: str | None,
+    arxiv_ids: list[str] | None,
+    dois: list[str] | None,
+    *,
+    year: str | None = None,
+    openalex_semantic: bool = False,
+) -> None:
+    direct = bool(arxiv_ids or dois)
+    if bool(query and query.strip()) == direct:
+        raise ValueError("Specify either query or arxiv_ids/dois.")
+
+    if direct and (year or openalex_semantic):
+        raise ValueError("year and openalex_semantic apply only to query searches.")
+
+    for arxiv_id in arxiv_ids or []:
+        if not re.fullmatch(
+            r"(?:\d{4}\.\d{4,5}|[a-z-]+(?:\.[A-Z]{2})?/\d{7})(?:v[1-9]\d*)?",
+            arxiv_id.strip(),
+        ):
+            raise ValueError(f"Invalid arXiv ID: {arxiv_id!r}")
+
+    for doi in dois or []:
+        if not re.fullmatch(r"10\.\d{4,9}/\S+", doi.strip()):
+            raise ValueError(f"Invalid DOI: {doi!r}")
 
 
 # 本文はメタデータと同じ行の pdf_url だけから取る: 別の経路だと版や論文がずれうる
@@ -63,9 +98,11 @@ async def _snapshot_airas_record(
 
 
 async def fetch_literature(
-    query: str,
+    query: str | None,
     output_dir: Path,
     *,
+    arxiv_ids: list[str] | None = None,
+    dois: list[str] | None = None,
     sources: list[str],
     max_results_per_source: int,
     year: str | None,
@@ -76,45 +113,90 @@ async def fetch_literature(
     airas_db_index: AirasDbPaperSearchIndex,
     airas_records_index: AirasRecordsIndex,
 ) -> None:
-    """Every search result as `<output_dir>/<k>/`: metadata.json (the result
-    as its search source returned it, the search, how the text was fetched)
-    and fulltext.txt when a PDF yielded text, or r1.txt (record.json at the
-    commit) for an airas_records study."""
-    result = await search_papers(
+    validate_literature_input(
         query,
-        sources=sources,
-        max_results_per_source=max_results_per_source,
+        arxiv_ids,
+        dois,
         year=year,
         openalex_semantic=openalex_semantic,
-        openalex_client=openalex_client,
-        semantic_scholar_client=semantic_scholar_client,
-        arxiv_client=arxiv_client,
-        airas_db_index=airas_db_index,
-        airas_records_index=airas_records_index,
     )
-    # 0 件だと metadata.json が 1 つも書かれず、何を検索して何が落ちたかが残らない
-    if not result["papers"]:
-        raise RuntimeError(
-            f"no search results for {query!r}; errors: {result['search_errors']}"
-        )
-    search = {
-        "query": query,
-        "sources": sources,
-        "max_results_per_source": max_results_per_source,
-        "year": year,
-        "openalex_semantic": openalex_semantic,
-        "source_results": result["source_results"],
-        "search_errors": result["search_errors"],
-    }
+    search = None
+    requests = [
+        *({"arxiv_id": value} for value in arxiv_ids or []),
+        *({"doi": value} for value in dois or []),
+    ]
+    if requests:
+        papers = []
+        for requested in arxiv_ids or []:
+            arxiv_id = requested.strip()
+            feed = feedparser.parse(await arxiv_client.aget_paper_by_id(arxiv_id))
+            matches = [
+                paper
+                for entry in feed.entries
+                if hasattr(entry, "id") and (paper := _normalize_entry(entry))
+            ]
+            if len(matches) != 1:
+                raise ValueError(f"arXiv did not return one paper for {arxiv_id!r}")
+            paper = matches[0]
+            resolved = paper.arxiv_id or ""
+            if not re.search(r"v\d+$", arxiv_id):
+                resolved = re.sub(r"v\d+$", "", resolved)
+            if resolved != arxiv_id or not paper.title.strip():
+                raise ValueError(f"arXiv returned {paper.arxiv_id!r} for {arxiv_id!r}")
+            papers.append(paper)
 
-    for k, paper in enumerate(result["papers"]):
+        for requested in dois or []:
+            doi = requested.strip()
+            item = await asyncio.to_thread(
+                semantic_scholar_client.get_paper_by_doi, doi, fields=_FIELDS
+            )
+            paper = _normalize_item(item)
+            if (
+                paper.doi or ""
+            ).casefold() != doi.casefold() or not paper.title.strip():
+                raise ValueError(
+                    f"Semantic Scholar did not return the paper for DOI {doi!r}"
+                )
+            papers.append(paper)
+    else:
+        result = await search_papers(
+            query or "",
+            sources=sources,
+            max_results_per_source=max_results_per_source,
+            year=year,
+            openalex_semantic=openalex_semantic,
+            openalex_client=openalex_client,
+            semantic_scholar_client=semantic_scholar_client,
+            arxiv_client=arxiv_client,
+            airas_db_index=airas_db_index,
+            airas_records_index=airas_records_index,
+        )
+        papers = result["papers"]
+        search = {
+            "query": query,
+            "sources": sources,
+            "max_results_per_source": max_results_per_source,
+            "year": year,
+            "openalex_semantic": openalex_semantic,
+            "source_results": result["source_results"],
+            "search_errors": result["search_errors"],
+        }
+        # 0 件だと metadata.json が 1 つも書かれず、何を検索して何が落ちたかが残らない
+        if not papers:
+            raise RuntimeError(
+                f"no search results for {query!r}; errors: {result['search_errors']}"
+            )
+    for k, paper in enumerate(papers):
         entry_dir = output_dir / str(k)
         entry_dir.mkdir(parents=True)
         metadata: dict[str, Any] = {
             **paper.model_dump(),
-            "search": search,
             "fetched_at": _now(),
         }
+        if search is not None:
+            metadata["search"] = search
+        else:
+            metadata["request"] = requests[k]
 
         if paper.source == "airas_records":
             try:

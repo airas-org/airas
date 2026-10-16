@@ -8,8 +8,9 @@ from airas.infra.arxiv_client import ArxivClient
 
 logger = getLogger(__name__)
 
-# 2007 年 4 月より前の旧形式 id (hep-th/9901001v1) は扱わない
-_NEW_STYLE_VERSIONED_ID = re.compile(r"/abs/(\d{4}\.\d{4,5}v\d+)$")
+_VERSIONED_ID = re.compile(
+    r"/abs/((?:\d{4}\.\d{4,5}|[a-z-]+(?:\.[A-Z]{2})?/\d{7})v[1-9]\d*)$"
+)
 
 
 def _year_to_date_range(year: str | None) -> tuple[str | None, str | None]:
@@ -24,8 +25,9 @@ def _year_to_date_range(year: str | None) -> tuple[str | None, str | None]:
 
 
 def _normalize_entry(entry: feedparser.FeedParserDict) -> PaperSearchResult | None:
-    if not (match := _NEW_STYLE_VERSIONED_ID.search(entry.id)):
+    if not (match := _VERSIONED_ID.search(entry.id)):
         return None
+
     arxiv_id = match.group(1)
     return PaperSearchResult(
         title=(getattr(entry, "title", "") or "").replace("\n", " ").strip(),

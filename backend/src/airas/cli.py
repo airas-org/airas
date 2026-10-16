@@ -140,6 +140,18 @@ def _run_verify_record(args: argparse.Namespace) -> None:
     sys.exit(0 if verification.ok else 1)
 
 
+def _parse_identifier_list(value: str) -> list[str]:
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError as e:
+        raise argparse.ArgumentTypeError("Expected a JSON array of identifiers") from e
+
+    if not isinstance(parsed, list) or any(not isinstance(v, str) for v in parsed):
+        raise argparse.ArgumentTypeError("Expected a JSON array of identifiers")
+
+    return parsed
+
+
 def _run_fetch_literature(args: argparse.Namespace) -> None:
     # 関数内で import: どちらも読み込み時に HTTP セッションや PDF 処理系を用意するので、
     # ツール呼び出しのたびに起動する hook など他のサブコマンドを重くしない
@@ -166,6 +178,8 @@ def _run_fetch_literature(args: argparse.Namespace) -> None:
             arxiv_client=_arxiv_client(),
             airas_db_index=_search_index,
             airas_records_index=_records_index,
+            arxiv_ids=args.arxiv_ids,
+            dois=args.dois,
         )
     )
 
@@ -415,11 +429,21 @@ def main() -> None:
     fetch = subparsers.add_parser(
         "fetch-literature",
         help=(
-            "Search papers and fetch every result's text and registry metadata "
+            "Search papers or look up identifiers and fetch text and registry metadata "
             "into <output-dir>/<k>/ — what fetch_literature.yml uploads as its artifact"
         ),
     )
-    fetch.add_argument("--query", required=True, help="Search query")
+    fetch.add_argument("--query", help="Search query (exclusive with identifiers)")
+    fetch.add_argument(
+        "--arxiv-ids",
+        type=_parse_identifier_list,
+        help='JSON array of raw arXiv IDs, e.g. ["1706.03762v7"]',
+    )
+    fetch.add_argument(
+        "--dois",
+        type=_parse_identifier_list,
+        help='JSON array of raw DOIs, e.g. ["10.18653/v1/N18-3011"]',
+    )
     fetch.add_argument(
         "--output-dir", required=True, help="Directory to write the results into"
     )
