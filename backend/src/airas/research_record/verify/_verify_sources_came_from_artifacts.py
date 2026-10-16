@@ -140,7 +140,7 @@ async def _problem(
         verb = "differs" if len(differing) == 1 else "differ"
         return (
             f"{relpath}: {', '.join(differing)} {verb} from entry {imported.entry} "
-            f"of {run}'s artifact — changed after the run downloaded it"
+            f"of {run}'s artifact — not what the run downloaded"
         )
     return None
 
