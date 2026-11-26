@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 from airas.core.types.latex import select_engine
+from airas.usecases.publication.nodes import build_latex_project as build_module
 from airas.usecases.publication.nodes.build_latex_project import build_latex_project
 
 # Most documents here end in \bibliography{references}, so bibtex runs too.
@@ -143,6 +144,10 @@ def test_missing_main_tex_is_rejected():
         build_latex_project({"references.bib": BIB})
 
 
+@pytest.mark.skipif(
+    build_module._bwrap() is None,
+    reason="TeX Live 2026 ignores openin_any, so reads are confined by bubblewrap",
+)
 def test_the_document_cannot_read_files_outside_the_build_directory(tmp_path):
     """The .tex comes out of a repository, so it is not trusted input.
 
@@ -174,6 +179,40 @@ def test_the_document_cannot_read_files_outside_the_build_directory(tmp_path):
     # The read is refused outright rather than silently returning nothing.
     assert not report.compiled
     assert not report.ok
+
+
+@pytest.mark.skipif(
+    build_module._bwrap() is None or shutil.which("lualatex") is None,
+    reason="requires bubblewrap and lualatex",
+)
+def test_lua_cannot_read_files_outside_the_build_directory(tmp_path):
+    """Lua code in a LuaTeX document reads files without going through TeX."""
+    secret = tmp_path / "secret.txt"
+    secret.write_text("SUPERSECRETVALUE")
+
+    report = build_latex_project(
+        {
+            "main.tex": (
+                "\\documentclass{article}\n"
+                "\\begin{document}\n"
+                f"\\directlua{{local f = io.open('{secret}'); "
+                "texio.write_nl('LEAKED: ' .. (f and f:read('a') or 'nothing'))}\n"
+                "あ\n"  # Japanese selects lualatex
+                "\\end{document}\n"
+            ).encode(),
+        }
+    )
+
+    assert "SUPERSECRETVALUE" not in report.log_tail
+    assert "LEAKED: nothing" in report.log_tail
+
+
+def test_the_build_still_runs_when_bubblewrap_is_unusable(monkeypatch):
+    monkeypatch.setattr(build_module, "_bwrap", lambda: None)
+
+    report = build_latex_project({"main.tex": _document("Text.")})
+
+    assert report.compiled
 
 
 def test_a_missing_package_is_an_error_not_a_missing_figure():
