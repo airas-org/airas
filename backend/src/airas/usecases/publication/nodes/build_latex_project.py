@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import logging
 import os
 import re
@@ -26,9 +27,16 @@ _UNWRAPPED_LOG_ENV = {
 # The .tex being compiled comes out of a repository, so it is not trusted
 # input. TeX can read and write arbitrary paths, and this tool hands the log
 # tail back to the caller — `\input{/etc/passwd}` would be enough. Paranoid
-# mode confines reads and writes to the build directory and TEXMF, and shell
-# escape is refused outright rather than left to the distribution's default.
+# mode confines writes to the build directory and TEXMF, and shell escape is
+# refused outright rather than left to the distribution's default.
+# `openin_any` is kept for TeX Live releases before 2026, which still honour
+# it; from 2026 on it is a no-op, so reads are confined by `_sandboxed`.
 _SANDBOX_ENV = {"openin_any": "p", "openout_any": "p"}
+
+# What a TeX run needs to read besides its own installation. Home, /tmp and
+# everything else on the host stay out of view. An allowlist, not a mask over
+# the sensitive paths: the next place a secret lives is not on any such list.
+_SANDBOX_READONLY_DIRS = ("/usr", "/bin", "/sbin", "/lib", "/lib32", "/lib64", "/etc")
 
 _PDFLATEX_TIMEOUT_SECONDS = 180.0
 
@@ -81,10 +89,69 @@ def _write_project(latex_files: dict[str, bytes], build_dir: Path) -> None:
                 )
 
 
+@functools.cache
+def _bwrap() -> str | None:
+    """bubblewrap, if it exists and can create the namespaces it needs.
+
+    Unprivileged user namespaces are off by default in some containers, where
+    the binary is present and every call would fail.
+    """
+    bwrap = shutil.which("bwrap")
+    if bwrap is None:
+        return None
+    probe = subprocess.run(
+        [bwrap, "--unshare-all", "--ro-bind", "/", "/", "true"],
+        capture_output=True,
+        check=False,
+    )
+    return bwrap if probe.returncode == 0 else None
+
+
+@functools.cache
+def _tex_dirs() -> list[str]:
+    """The installation plus its format and font caches, which some distros
+    (Arch) generate per user and TeX would otherwise rebuild on every run."""
+    dirs = []
+    for variable in ("TEXMFROOT", "TEXMFSYSVAR", "TEXMFVAR"):
+        result = subprocess.run(
+            ["kpsewhich", f"-var-value={variable}"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        dirs.append(result.stdout.strip())
+    return [path for path in dirs if path.startswith("/") and path != "/"]
+
+
+def _sandboxed(command: list[str], build_dir: Path) -> list[str]:
+    bwrap = _bwrap()
+    if bwrap is None:
+        logger.warning(
+            "bubblewrap (bwrap) is not usable: the LaTeX build can read any "
+            "file this process can, and TeX Live 2026 ignores openin_any"
+        )
+        return command
+    readonly_dirs = [*_SANDBOX_READONLY_DIRS, *_tex_dirs()]
+    mounts = [arg for path in readonly_dirs for arg in ("--ro-bind-try", path, path)]
+    return [
+        bwrap,
+        "--unshare-all",
+        "--die-with-parent",
+        "--dev", "/dev",
+        "--proc", "/proc",
+        "--tmpfs", "/tmp",
+        *mounts,
+        "--bind", str(build_dir), str(build_dir),
+        "--chdir", str(build_dir),
+        "--",
+        *command,
+    ]  # fmt: skip
+
+
 def _run(command: list[str], cwd: Path, timeout: float) -> subprocess.CompletedProcess:
     env = {**os.environ, **_UNWRAPPED_LOG_ENV, **_SANDBOX_ENV}
     return subprocess.run(
-        command,
+        _sandboxed(command, cwd),
         cwd=cwd,
         env=env,
         capture_output=True,
